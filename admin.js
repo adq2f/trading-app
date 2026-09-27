@@ -1173,3 +1173,199 @@ window.renderCandleTable = renderCandleTable;
 window.bindCandleButtons = bindCandleButtons;
 
 console.log('🎯 Candle Scheduler v2 loaded');
+
+/* ============================================================
+   PART 6A: Candle Save / Load / Refresh
+   ============================================================ */
+
+// Current selected market
+let currentMarketId = null;
+
+// ---------- Market Select Change ----------
+function bindMarketSelect() {
+  const sel = document.getElementById('candle-market-select');
+  if (!sel || sel.dataset.bound === '1') return;
+
+  sel.dataset.bound = '1';
+  sel.addEventListener('change', () => {
+    currentMarketId = sel.value || null;
+    console.log('📌 Market changed:', currentMarketId);
+    if (currentMarketId) {
+      loadCandlesFromFirestore(currentMarketId);
+    } else {
+      candleList = [];
+      candleCounter = 0;
+      renderCandleTable();
+    }
+  });
+
+  console.log('✅ Market select bound');
+}
+
+// ---------- Load Candles from Firestore ----------
+async function loadCandlesFromFirestore(marketId) {
+  if (!marketId) return;
+  console.log('📥 Loading candles for market:', marketId);
+
+  try {
+    const candlesSnap = await getDocs(
+      collection(db, "markets", marketId, "candles")
+    );
+
+    if (candlesSnap.empty) {
+      console.log('⚠️ No candles in Firestore');
+      candleList = [];
+      candleCounter = 0;
+      renderCandleTable();
+      return;
+    }
+
+    candleList = [];
+    candlesSnap.forEach(d => {
+      const data = d.data();
+      candleList.push({
+        id: d.id,
+        number: data.number || 0,
+        date: data.date || '-',
+        time: data.startTime || data.time || '-',
+        timeframe: data.timeframe || '1m',
+        open:  Number(data.open || 0).toFixed(2),
+        high:  Number(data.high || 0).toFixed(2),
+        low:   Number(data.low || 0).toFixed(2),
+        close: Number(data.close || 0).toFixed(2),
+        color: data.color || 'green',
+        up:    data.upDuration || data.up || 5,
+        down:  data.downDuration || data.down || 5
+      });
+    });
+
+    candleList.sort((a, b) => (a.number || 0) - (b.number || 0));
+    candleCounter = candleList.length;
+
+    renderCandleTable();
+    console.log('✅ Loaded', candleList.length, 'candles');
+
+  } catch (err) {
+    console.error('❌ Load candles error:', err);
+    alert('❌ Load error: ' + err.message);
+  }
+}
+
+// ---------- Save All Candles ----------
+async function saveAllCandles() {
+  if (!currentMarketId) {
+    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+    return;
+  }
+  if (candleList.length === 0) {
+    alert('⚠️ কোনো ক্যান্ডেল নেই');
+    return;
+  }
+
+  const confirmMsg = `মার্কেট: ${currentMarketId}\n${candleList.length}টা ক্যান্ডেল Save হবে?\n\n⚠️ পুরনো সব ক্যান্ডেল Firestore-এ থাকলে সেটা overwrite হবে।`;
+  if (!confirm(confirmMsg)) return;
+
+  console.log('💾 Saving', candleList.length, 'candles...');
+
+  try {
+    // 1. Delete old candles
+    const oldSnap = await getDocs(
+      collection(db, "markets", currentMarketId, "candles")
+    );
+    for (const d of oldSnap.docs) {
+      await deleteDoc(doc(db, "markets", currentMarketId, "candles", d.id));
+    }
+    console.log('🗑 Deleted', oldSnap.size, 'old candles');
+
+    // 2. Save new candles
+    for (let i = 0; i < candleList.length; i++) {
+      const c = candleList[i];
+      const candleId = `c_${String(i + 1).padStart(4, '0')}`;
+
+      await setDoc(
+        doc(db, "markets", currentMarketId, "candles", candleId),
+        {
+          number: i + 1,
+          date: c.date || '',
+          startTime: c.time || '',
+          endTime: '',
+          duration: 60,
+          timeframe: c.timeframe || '1m',
+          open:  Number(c.open),
+          high:  Number(c.high),
+          low:   Number(c.low),
+          close: Number(c.close),
+          color: c.color || 'green',
+          direction: Number(c.close) >= Number(c.open) ? 'up' : 'down',
+          upDuration: Number(c.up || 0),
+          downDuration: Number(c.down || 0),
+          neutralDuration: 0,
+          wickLength: 20,
+          bodySize: 60,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        }
+      );
+    }
+
+    // 3. Update market's currentCandleIndex
+    await updateDoc(doc(db, "markets", currentMarketId), {
+      currentCandleIndex: 0,
+      updatedAt: new Date().toISOString()
+    });
+
+    alert(`✅ ${candleList.length}টা ক্যান্ডেল Save হয়েছে!`);
+    console.log('✅ All saved');
+
+  } catch (err) {
+    console.error('❌ Save error:', err);
+    alert('❌ Save error: ' + err.message);
+  }
+}
+
+// ---------- Refresh Button ----------
+function bindRefreshCandles() {
+  const btn = document.getElementById('refresh-candles');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', async () => {
+    if (!currentMarketId) {
+      alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+      return;
+    }
+    await loadCandlesFromFirestore(currentMarketId);
+    alert('✅ Reloaded');
+  });
+
+  console.log('✅ Refresh button bound');
+}
+
+// ---------- Save Button ----------
+function bindSaveButton() {
+  const btn = document.getElementById('save-candles-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', saveAllCandles);
+  console.log('✅ Save button bound');
+}
+
+// ---------- Bind All (retry-safe) ----------
+function bindPart6A() {
+  bindMarketSelect();
+  bindRefreshCandles();
+  bindSaveButton();
+}
+
+bindPart6A();
+document.addEventListener('DOMContentLoaded', bindPart6A);
+setTimeout(bindPart6A, 800);
+setTimeout(bindPart6A, 2500);
+
+// Global expose
+window.loadCandlesFromFirestore = loadCandlesFromFirestore;
+window.saveAllCandles = saveAllCandles;
+window.bindPart6A = bindPart6A;
+
+console.log('🎯 Part 6A (Save/Load/Refresh) loaded');
