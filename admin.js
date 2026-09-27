@@ -1,7 +1,5 @@
-// ============================================
 // Admin Panel - admin.js
-// Part 3-6B-3 Complete (Clean)
-// ============================================
+// Part 3 to 6D Complete (Clean)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -89,34 +87,25 @@ let currentWinRate = 50;
 let currentPayout = 85;
 let currentAutoInterval = 5;
 let isAutoMode = false;
-
-// ============================================
-// ADMIN LOGIN
-// ============================================
 if (adminLoginBtn) {
   adminLoginBtn.addEventListener("click", async () => {
     const email = adminEmailInput.value.trim();
     const password = adminPasswordInput.value;
-
     if (!email || !password) {
       adminMessage.textContent = "Email and password required";
       return;
     }
-
     try {
       adminMessage.style.color = "#2196f3";
       adminMessage.textContent = "Logging in...";
-
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
-
       if (!userDoc.exists() || userDoc.data().role !== "admin") {
         await signOut(auth);
         adminMessage.style.color = "#ff5252";
         adminMessage.textContent = "Not an admin";
         return;
       }
-
       adminMessage.style.color = "#00c853";
       adminMessage.textContent = "Login successful!";
     } catch (error) {
@@ -150,7 +139,6 @@ onAuthStateChanged(auth, async (user) => {
       adminLogin.classList.add("hidden");
       adminDashboard.classList.remove("hidden");
       adminEmailDisplay.textContent = user.email;
-
       loadStats();
       loadUsers();
       loadTrades();
@@ -191,34 +179,22 @@ if (refreshTrades) refreshTrades.addEventListener("click", () => loadTrades());
 if (refreshDeposits) refreshDeposits.addEventListener("click", () => loadDeposits());
 if (refreshWithdrawals) refreshWithdrawals.addEventListener("click", () => loadWithdrawals());
 if (refreshMarkets) refreshMarkets.addEventListener("click", () => loadMarkets());
-
-// ============================================
-// MARKET CRUD
-// ============================================
 if (createMarketBtn) {
   createMarketBtn.addEventListener("click", async () => {
     const name = newMarketName.value.trim();
     const symbol = newMarketSymbol.value.trim().toUpperCase();
     const base = parseFloat(newMarketBase.value) || 50000;
-
     if (!name || !symbol) {
       alert("Name and symbol required");
       return;
     }
-
     try {
       const marketId = symbol.toLowerCase() + "_" + Date.now();
       await setDoc(doc(db, "markets", marketId), {
-        id: marketId,
-        name: name,
-        symbol: symbol,
-        basePrice: base,
-        currentPrice: base,
-        enabled: true,
-        payout: currentPayout,
-        winRate: currentWinRate,
-        candleMode: "random",
-        currentCandleIndex: 0,
+        id: marketId, name: name, symbol: symbol,
+        basePrice: base, currentPrice: base,
+        enabled: true, payout: currentPayout, winRate: currentWinRate,
+        candleMode: "random", currentCandleIndex: 0,
         autoModeInterval: currentAutoInterval,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -227,9 +203,7 @@ if (createMarketBtn) {
       newMarketSymbol.value = "";
       newMarketBase.value = "50000";
       alert(name + " created!");
-    } catch (err) {
-      alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
   });
 }
 
@@ -237,7 +211,6 @@ function loadMarkets() {
   if (!marketsList) return;
   marketsList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (marketsUnsub) marketsUnsub();
-
   marketsUnsub = onSnapshot(collection(db, "markets"), (snap) => {
     marketsList.innerHTML = "";
     if (snap.empty) {
@@ -257,33 +230,23 @@ function renderMarketItem(market) {
   const div = document.createElement("div");
   div.className = "market-item" + (market.enabled ? "" : " disabled");
   div.dataset.marketId = market.id;
-
   const enabledBadge = market.enabled
     ? '<span class="admin-item-badge badge-win">ACTIVE</span>'
     : '<span class="admin-item-badge badge-rejected">DISABLED</span>';
-
-  div.innerHTML = `
-    <div class="market-item-header">
-      <div class="market-item-name">${market.name || "no-name"}</div>
-      ${enabledBadge}
-    </div>
-    <div class="market-item-info">
-      <span>Symbol: <strong>${market.symbol || "-"}</strong></span>
-      <span>Base: <strong>$${(market.basePrice || 0).toFixed(2)}</strong></span>
-      <span>Payout: <strong>${market.payout || 85}%</strong></span>
-      <span>Win Rate: <strong>${market.winRate || 50}%</strong></span>
-      <span>Mode: <strong>${market.candleMode || "random"}</strong></span>
-      <span>Candle: <strong>#${market.currentCandleIndex || 0}</strong></span>
-    </div>
-    <div class="market-item-actions">
-      <button class="btn-action btn-edit" data-action="edit-market" data-mid="${market.id}">Edit</button>
-      <button class="btn-action ${market.enabled ? 'btn-reject' : 'btn-approve'}"
-              data-action="toggle-market" data-mid="${market.id}" data-enabled="${market.enabled}">
-        ${market.enabled ? "Disable" : "Enable"}
-      </button>
-      <button class="btn-action btn-reject" data-action="delete-market" data-mid="${market.id}">Delete</button>
-    </div>
-  `;
+  div.innerHTML = '<div class="market-item-header"><div class="market-item-name">' + (market.name || "no-name") + '</div>' + enabledBadge + '</div>' +
+    '<div class="market-item-info">' +
+      '<span>Symbol: <strong>' + (market.symbol || "-") + '</strong></span>' +
+      '<span>Base: <strong>$' + (market.basePrice || 0).toFixed(2) + '</strong></span>' +
+      '<span>Payout: <strong>' + (market.payout || 85) + '%</strong></span>' +
+      '<span>Win Rate: <strong>' + (market.winRate || 50) + '%</strong></span>' +
+      '<span>Mode: <strong>' + (market.candleMode || "random") + '</strong></span>' +
+      '<span>Candle: <strong>#' + (market.currentCandleIndex || 0) + '</strong></span>' +
+    '</div>' +
+    '<div class="market-item-actions">' +
+      '<button class="btn-action btn-edit" data-action="edit-market" data-mid="' + market.id + '">Edit</button>' +
+      '<button class="btn-action ' + (market.enabled ? 'btn-reject' : 'btn-approve') + '" data-action="toggle-market" data-mid="' + market.id + '" data-enabled="' + market.enabled + '">' + (market.enabled ? "Disable" : "Enable") + '</button>' +
+      '<button class="btn-action btn-reject" data-action="delete-market" data-mid="' + market.id + '">Delete</button>' +
+    '</div>';
   marketsList.appendChild(div);
 }
 
@@ -311,17 +274,12 @@ async function editMarket(mid) {
     if (newPayout === null) return;
     const newWinRate = prompt("Win Rate %:", m.winRate || 50);
     if (newWinRate === null) return;
-
     const payoutVal = parseInt(newPayout);
     const winVal = parseInt(newWinRate);
-
     if (isNaN(payoutVal) || payoutVal < 0 || payoutVal > 200) { alert("Payout 0-200"); return; }
     if (isNaN(winVal) || winVal < 0 || winVal > 100) { alert("Win Rate 0-100"); return; }
-
     await updateDoc(doc(db, "markets", mid), {
-      name: newName,
-      payout: payoutVal,
-      winRate: winVal,
+      name: newName, payout: payoutVal, winRate: winVal,
       updatedAt: new Date().toISOString()
     });
     alert("Updated");
@@ -333,8 +291,7 @@ async function toggleMarket(mid, isEnabled) {
   if (!confirm(action + "?")) return;
   try {
     await updateDoc(doc(db, "markets", mid), {
-      enabled: !isEnabled,
-      updatedAt: new Date().toISOString()
+      enabled: !isEnabled, updatedAt: new Date().toISOString()
     });
     alert(action + " done");
   } catch (err) { alert(err.message); }
@@ -366,10 +323,6 @@ function updateCandleMarketSelect(markets) {
   });
   if (current) sel.value = current;
 }
-
-// ============================================
-// STATS
-// ============================================
 async function loadStats() {
   try {
     const usersSnap = await getDocs(collection(db, "users"));
@@ -383,20 +336,13 @@ async function loadStats() {
   } catch (err) { console.error("Stats error:", err); }
 }
 
-// ============================================
-// USERS
-// ============================================
 function loadUsers() {
   if (!usersList) return;
   usersList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (usersUnsub) usersUnsub();
-
   usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
     usersList.innerHTML = "";
-    if (snap.empty) {
-      usersList.innerHTML = '<p class="loading-text">No users</p>';
-      return;
-    }
+    if (snap.empty) { usersList.innerHTML = '<p class="loading-text">No users</p>'; return; }
     const users = [];
     snap.forEach(d => users.push({ id: d.id, ...d.data() }));
     users.sort((a, b) => {
@@ -418,24 +364,18 @@ function renderUserItem(user) {
   const demoBal = (user.demoBalance ?? 1000).toFixed(2);
   const realBal = (user.realBalance ?? 0).toFixed(2);
   const joined = user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB") : "-";
-
-  div.innerHTML = `
-    <div class="admin-item-header">
-      <div class="admin-item-title">${user.email || "no-email"}</div>
-      ${roleBadge}
-    </div>
-    <div class="admin-item-info">
-      <span>Demo: <strong>$${demoBal}</strong></span>
-      <span>Real: <strong>$${realBal}</strong></span>
-      <span>Joined: <strong>${joined}</strong></span>
-      <span>Banned: <strong>${user.banned ? "Yes" : "No"}</strong></span>
-    </div>
-    <div class="admin-item-actions">
-      <button class="btn-action btn-edit" data-action="edit-demo" data-uid="${user.id}" data-bal="${user.demoBalance ?? 1000}">Demo</button>
-      <button class="btn-action btn-edit" data-action="edit-real" data-uid="${user.id}" data-bal="${user.realBalance ?? 0}">Real</button>
-      <button class="btn-action ${user.banned ? 'btn-approve' : 'btn-reject'}" data-action="ban" data-uid="${user.id}" data-banned="${user.banned ? "true" : "false"}">${user.banned ? "Unban" : "Ban"}</button>
-    </div>
-  `;
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (user.email || "no-email") + '</div>' + roleBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Demo: <strong>$' + demoBal + '</strong></span>' +
+      '<span>Real: <strong>$' + realBal + '</strong></span>' +
+      '<span>Joined: <strong>' + joined + '</strong></span>' +
+      '<span>Banned: <strong>' + (user.banned ? "Yes" : "No") + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-edit" data-action="edit-demo" data-uid="' + user.id + '" data-bal="' + (user.demoBalance ?? 1000) + '">Demo</button>' +
+      '<button class="btn-action btn-edit" data-action="edit-real" data-uid="' + user.id + '" data-bal="' + (user.realBalance ?? 0) + '">Real</button>' +
+      '<button class="btn-action ' + (user.banned ? 'btn-approve' : 'btn-reject') + '" data-action="ban" data-uid="' + user.id + '" data-banned="' + (user.banned ? "true" : "false") + '">' + (user.banned ? "Unban" : "Ban") + '</button>' +
+    '</div>';
   usersList.appendChild(div);
 }
 
@@ -473,20 +413,13 @@ async function toggleBan(uid, isBanned) {
   } catch (err) { alert(err.message); }
 }
 
-// ============================================
-// TRADES
-// ============================================
 function loadTrades() {
   if (!tradesList) return;
   tradesList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (tradesUnsub) tradesUnsub();
-
   tradesUnsub = onSnapshot(collection(db, "trades"), (snap) => {
     tradesList.innerHTML = "";
-    if (snap.empty) {
-      tradesList.innerHTML = '<p class="loading-text">No trades</p>';
-      return;
-    }
+    if (snap.empty) { tradesList.innerHTML = '<p class="loading-text">No trades</p>'; return; }
     const trades = [];
     snap.forEach(d => trades.push({ id: d.id, ...d.data() }));
     trades.sort((a, b) => {
@@ -501,41 +434,28 @@ function loadTrades() {
 function renderTradeItem(trade) {
   const div = document.createElement("div");
   div.className = "admin-item";
-
   let statusBadge = "";
-  if (trade.status === "pending")
-    statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
-  else if (trade.result === "win")
-    statusBadge = '<span class="admin-item-badge badge-win">WIN</span>';
-  else
-    statusBadge = '<span class="admin-item-badge badge-loss">LOSS</span>';
-
+  if (trade.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (trade.result === "win") statusBadge = '<span class="admin-item-badge badge-win">WIN</span>';
+  else statusBadge = '<span class="admin-item-badge badge-loss">LOSS</span>';
   const entryPrice = (trade.entryPrice || 0).toFixed(2);
   const exitPrice = (trade.exitPrice || 0).toFixed(2);
   const profit = trade.profit ? trade.profit.toFixed(2) : "0.00";
-  const created = trade.createdAt
-    ? new Date(trade.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" })
-    : "-";
-
-  div.innerHTML = `
-    <div class="admin-item-header">
-      <div class="admin-item-title">${trade.userEmail || "no-email"}</div>
-      ${statusBadge}
-    </div>
-    <div class="admin-item-info">
-      <span>Type: <strong>${(trade.type || "").toUpperCase()}</strong></span>
-      <span>Amount: <strong>$${trade.amount}</strong></span>
-      <span>Entry: <strong>$${entryPrice}</strong></span>
-      <span>Exit: <strong>$${exitPrice}</strong></span>
-      <span>Profit: <strong>$${profit}</strong></span>
-      <span>Time: <strong>${created}</strong></span>
-    </div>
-    <div class="admin-item-actions">
-      <button class="btn-action btn-force-win" data-action="force-win" data-tid="${trade.id}">Force Win</button>
-      <button class="btn-action btn-force-loss" data-action="force-loss" data-tid="${trade.id}">Force Loss</button>
-      <button class="btn-action btn-force-pending" data-action="force-pending" data-tid="${trade.id}">Pending</button>
-    </div>
-  `;
+  const created = trade.createdAt ? new Date(trade.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (trade.userEmail || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Type: <strong>' + (trade.type || "").toUpperCase() + '</strong></span>' +
+      '<span>Amount: <strong>$' + trade.amount + '</strong></span>' +
+      '<span>Entry: <strong>$' + entryPrice + '</strong></span>' +
+      '<span>Exit: <strong>$' + exitPrice + '</strong></span>' +
+      '<span>Profit: <strong>$' + profit + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-force-win" data-action="force-win" data-tid="' + trade.id + '">Force Win</button>' +
+      '<button class="btn-action btn-force-loss" data-action="force-loss" data-tid="' + trade.id + '">Force Loss</button>' +
+      '<button class="btn-action btn-force-pending" data-action="force-pending" data-tid="' + trade.id + '">Pending</button>' +
+    '</div>';
   tradesList.appendChild(div);
 }
 
@@ -559,24 +479,17 @@ async function forceTradeResult(tradeId, result) {
     const tradeDoc = await getDoc(tradeRef);
     if (!tradeDoc.exists()) { alert("Trade not found"); return; }
     const trade = tradeDoc.data();
-
     if (result === "pending") {
       await updateDoc(tradeRef, { status: "pending", result: null, profit: 0 });
       alert("Pending");
       return;
     }
-
     const payoutRate = currentPayout / 100 + 1;
     const profit = result === "win" ? trade.amount * payoutRate : 0;
-
     await updateDoc(tradeRef, {
-      status: "completed",
-      result: result,
-      profit: profit,
-      exitPrice: trade.entryPrice,
-      completedAt: new Date().toISOString()
+      status: "completed", result: result, profit: profit,
+      exitPrice: trade.entryPrice, completedAt: new Date().toISOString()
     });
-
     if (result === "win") {
       const userRef = doc(db, "users", trade.userId);
       const userDoc = await getDoc(userRef);
@@ -591,20 +504,13 @@ async function forceTradeResult(tradeId, result) {
   } catch (err) { alert(err.message); }
 }
 
-// ============================================
-// DEPOSITS
-// ============================================
 function loadDeposits() {
   if (!depositsList) return;
   depositsList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (depositsUnsub) depositsUnsub();
-
   depositsUnsub = onSnapshot(collection(db, "deposits"), (snap) => {
     depositsList.innerHTML = "";
-    if (snap.empty) {
-      depositsList.innerHTML = '<p class="loading-text">No deposits</p>';
-      return;
-    }
+    if (snap.empty) { depositsList.innerHTML = '<p class="loading-text">No deposits</p>'; return; }
     const deposits = [];
     snap.forEach(d => deposits.push({ id: d.id, ...d.data() }));
     deposits.sort((a, b) => {
@@ -620,35 +526,22 @@ function loadDeposits() {
 function renderDepositItem(dep) {
   const div = document.createElement("div");
   div.className = "admin-item";
-
   let statusBadge = "";
-  if (dep.status === "pending")
-    statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
-  else if (dep.status === "approved")
-    statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
-  else
-    statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
-
-  const created = dep.createdAt
-    ? new Date(dep.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" })
-    : "-";
-
-  div.innerHTML = `
-    <div class="admin-item-header">
-      <div class="admin-item-title">${dep.email || "no-email"}</div>
-      ${statusBadge}
-    </div>
-    <div class="admin-item-info">
-      <span>Amount: <strong>$${dep.amount}</strong></span>
-      <span>Method: <strong>${dep.method || "manual"}</strong></span>
-      <span>TrxID: <strong>${dep.txid || "-"}</strong></span>
-      <span>Time: <strong>${created}</strong></span>
-    </div>
-    <div class="admin-item-actions">
-      <button class="btn-action btn-approve" data-action="approve-dep" data-did="${dep.id}">Approve</button>
-      <button class="btn-action btn-reject" data-action="reject-dep" data-did="${dep.id}">Reject</button>
-    </div>
-  `;
+  if (dep.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (dep.status === "approved") statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
+  else statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
+  const created = dep.createdAt ? new Date(dep.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (dep.email || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Amount: <strong>$' + dep.amount + '</strong></span>' +
+      '<span>Method: <strong>' + (dep.method || "manual") + '</strong></span>' +
+      '<span>TrxID: <strong>' + (dep.txid || "-") + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-approve" data-action="approve-dep" data-did="' + dep.id + '">Approve</button>' +
+      '<button class="btn-action btn-reject" data-action="reject-dep" data-did="' + dep.id + '">Reject</button>' +
+    '</div>';
   depositsList.appendChild(div);
 }
 
@@ -678,10 +571,7 @@ async function approveDeposit(depositId) {
       const curReal = userDoc.data().realBalance ?? 0;
       await updateDoc(userRef, { realBalance: curReal + dep.amount });
     }
-    await updateDoc(depRef, {
-      status: "approved",
-      approvedAt: new Date().toISOString()
-    });
+    await updateDoc(depRef, { status: "approved", approvedAt: new Date().toISOString() });
     alert("Approved");
     loadStats();
   } catch (err) { alert(err.message); }
@@ -690,29 +580,19 @@ async function approveDeposit(depositId) {
 async function rejectDeposit(depositId) {
   if (!confirm("Reject?")) return;
   try {
-    await updateDoc(doc(db, "deposits", depositId), {
-      status: "rejected",
-      rejectedAt: new Date().toISOString()
-    });
+    await updateDoc(doc(db, "deposits", depositId), { status: "rejected", rejectedAt: new Date().toISOString() });
     alert("Rejected");
     loadStats();
   } catch (err) { alert(err.message); }
 }
 
-// ============================================
-// WITHDRAWALS
-// ============================================
 function loadWithdrawals() {
   if (!withdrawalsList) return;
   withdrawalsList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (withdrawalsUnsub) withdrawalsUnsub();
-
   withdrawalsUnsub = onSnapshot(collection(db, "withdrawals"), (snap) => {
     withdrawalsList.innerHTML = "";
-    if (snap.empty) {
-      withdrawalsList.innerHTML = '<p class="loading-text">No withdrawals</p>';
-      return;
-    }
+    if (snap.empty) { withdrawalsList.innerHTML = '<p class="loading-text">No withdrawals</p>'; return; }
     const ws = [];
     snap.forEach(d => ws.push({ id: d.id, ...d.data() }));
     ws.sort((a, b) => {
@@ -728,35 +608,22 @@ function loadWithdrawals() {
 function renderWithdrawItem(w) {
   const div = document.createElement("div");
   div.className = "admin-item";
-
   let statusBadge = "";
-  if (w.status === "pending")
-    statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
-  else if (w.status === "approved")
-    statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
-  else
-    statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
-
-  const created = w.createdAt
-    ? new Date(w.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" })
-    : "-";
-
-  div.innerHTML = `
-    <div class="admin-item-header">
-      <div class="admin-item-title">${w.email || "no-email"}</div>
-      ${statusBadge}
-    </div>
-    <div class="admin-item-info">
-      <span>Amount: <strong>$${w.amount}</strong></span>
-      <span>Method: <strong>${w.method || "-"}</strong></span>
-      <span>Number: <strong>${w.number || "-"}</strong></span>
-      <span>Time: <strong>${created}</strong></span>
-    </div>
-    <div class="admin-item-actions">
-      <button class="btn-action btn-approve" data-action="approve-wd" data-wid="${w.id}">Approve</button>
-      <button class="btn-action btn-reject" data-action="reject-wd" data-wid="${w.id}">Reject</button>
-    </div>
-  `;
+  if (w.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (w.status === "approved") statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
+  else statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
+  const created = w.createdAt ? new Date(w.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (w.email || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Amount: <strong>$' + w.amount + '</strong></span>' +
+      '<span>Method: <strong>' + (w.method || "-") + '</strong></span>' +
+      '<span>Number: <strong>' + (w.number || "-") + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-approve" data-action="approve-wd" data-wid="' + w.id + '">Approve</button>' +
+      '<button class="btn-action btn-reject" data-action="reject-wd" data-wid="' + w.id + '">Reject</button>' +
+    '</div>';
   withdrawalsList.appendChild(div);
 }
 
@@ -787,10 +654,7 @@ async function approveWithdrawal(wid) {
       if (curReal < w.amount) { alert("Insufficient balance"); return; }
       await updateDoc(userRef, { realBalance: curReal - w.amount });
     }
-    await updateDoc(wRef, {
-      status: "approved",
-      approvedAt: new Date().toISOString()
-    });
+    await updateDoc(wRef, { status: "approved", approvedAt: new Date().toISOString() });
     alert("Approved");
     loadStats();
   } catch (err) { alert(err.message); }
@@ -799,18 +663,11 @@ async function approveWithdrawal(wid) {
 async function rejectWithdrawal(wid) {
   if (!confirm("Reject?")) return;
   try {
-    await updateDoc(doc(db, "withdrawals", wid), {
-      status: "rejected",
-      rejectedAt: new Date().toISOString()
-    });
+    await updateDoc(doc(db, "withdrawals", wid), { status: "rejected", rejectedAt: new Date().toISOString() });
     alert("Rejected");
     loadStats();
   } catch (err) { alert(err.message); }
 }
-
-// ============================================
-// SETTINGS
-// ============================================
 async function loadSettings() {
   try {
     const sDoc = await getDoc(doc(db, "settings", "global"));
@@ -823,7 +680,7 @@ async function loadSettings() {
       if (winRateInput) winRateInput.value = currentWinRate;
       if (payoutInput) payoutInput.value = currentPayout;
       if (autoIntervalInput) autoIntervalInput.value = currentAutoInterval;
-      updateAutoModeButton();
+      updateAutoModeUI();
     }
   } catch (err) { console.error(err); }
 }
@@ -864,22 +721,8 @@ if (saveAutoIntervalBtn) {
   });
 }
 
-if (autoModeToggle) {
-  autoModeToggle.addEventListener("click", async () => {
-    isAutoMode = !isAutoMode;
-    try {
-      await setDoc(doc(db, "settings", "global"), { autoMode: isAutoMode }, { merge: true });
-      updateAutoModeButton();
-      alert(isAutoMode ? "Auto Mode ON" : "Auto Mode OFF");
-    } catch (err) {
-      alert(err.message);
-      isAutoMode = !isAutoMode;
-      updateAutoModeButton();
-    }
-  });
-}
-
-function updateAutoModeButton() {
+// Renamed: updateAutoModeUI (was updateAutoModeButton - renamed to avoid conflict)
+function updateAutoModeUI() {
   if (!autoModeToggle) return;
   if (isAutoMode) {
     autoModeToggle.classList.add("active");
@@ -890,9 +733,20 @@ function updateAutoModeButton() {
   }
 }
 
-// ============================================
-// CANDLE SCHEDULER
-// ============================================
+if (autoModeToggle) {
+  autoModeToggle.addEventListener("click", async () => {
+    isAutoMode = !isAutoMode;
+    try {
+      await setDoc(doc(db, "settings", "global"), { autoMode: isAutoMode }, { merge: true });
+      updateAutoModeUI();
+      if (window.toggleAutoMode) window.toggleAutoMode();
+    } catch (err) {
+      alert(err.message);
+      isAutoMode = !isAutoMode;
+      updateAutoModeUI();
+    }
+  });
+}
 window.candleList = [];
 window.candleCounter = 0;
 window.currentMarketId = null;
@@ -900,17 +754,14 @@ window.currentMarketId = null;
 function renderCandleTable() {
   const tbody = document.getElementById('candle-table-body');
   if (!tbody) return;
-
   if (window.candleList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="12" class="empty-text">No candles</td></tr>';
     return;
   }
-
   tbody.innerHTML = window.candleList.map((c, i) => {
     const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
     const color = c.color || (dir === 'up' ? 'green' : 'red');
     const colorEmoji = color === 'green' ? 'G' : 'R';
-
     return '<tr>' +
       '<td>' + (i + 1) + '</td>' +
       '<td>' + (c.date || '-') + '</td>' +
@@ -930,13 +781,11 @@ function renderCandleTable() {
       '</td>' +
     '</tr>';
   }).join('');
-
-  tbody.querySelectorAll('.act-btn.edit').forEach(b =>
-    b.onclick = () => editCandle(Number(b.dataset.i)));
-  tbody.querySelectorAll('.act-btn.del').forEach(b =>
-    b.onclick = () => deleteCandle(Number(b.dataset.i)));
-  tbody.querySelectorAll('.act-btn.copy').forEach(b =>
-    b.onclick = () => copyCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.edit').forEach(b => b.onclick = () => editCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.del').forEach(b => b.onclick = () => deleteCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.copy').forEach(b => b.onclick = () => copyCandle(Number(b.dataset.i)));
+  if (typeof renderCandlePreview === 'function') renderCandlePreview();
+  if (typeof renderDirectionTimeline === 'function') renderDirectionTimeline();
 }
 
 function addCandle() {
@@ -952,22 +801,15 @@ function addCandle() {
     const now = new Date();
     const date = now.toISOString().split('T')[0];
     const time = now.toTimeString().slice(0, 8);
-
     window.candleList.push({
-      number: window.candleCounter,
-      date, time,
+      number: window.candleCounter, date, time,
       timeframe: document.getElementById('candle-timeframe')?.value || '1m',
-      open: open.toFixed(2),
-      high: high.toFixed(2),
-      low: low.toFixed(2),
-      close: close.toFixed(2),
-      color,
-      direction: close >= open ? 'up' : 'down',
-      size: 'medium',
+      open: open.toFixed(2), high: high.toFixed(2),
+      low: low.toFixed(2), close: close.toFixed(2),
+      color, direction: close >= open ? 'up' : 'down', size: 'medium',
       up: Number(document.getElementById('bulk-up')?.value || 5),
       down: Number(document.getElementById('bulk-down')?.value || 5)
     });
-
     renderCandleTable();
     console.log('Candle added, total =', window.candleList.length);
   } catch (err) {
@@ -988,14 +830,12 @@ function editCandle(index) {
   const newClose = prompt('Close:', c.close); if (newClose === null) return;
   const newHigh = prompt('High:', c.high); if (newHigh === null) return;
   const newLow = prompt('Low:', c.low); if (newLow === null) return;
-
   c.open = Number(newOpen).toFixed(2);
   c.close = Number(newClose).toFixed(2);
   c.high = Number(newHigh).toFixed(2);
   c.low = Number(newLow).toFixed(2);
   c.color = Number(newClose) >= Number(newOpen) ? 'green' : 'red';
   c.direction = Number(newClose) >= Number(newOpen) ? 'up' : 'down';
-
   renderCandleTable();
 }
 
@@ -1015,9 +855,9 @@ function clearCandles() {
 
 function bindCandleButtons() {
   const add = document.getElementById('add-candle-btn');
-  if (add) { add.onclick = addCandle; }
+  if (add) add.onclick = addCandle;
   const clr = document.getElementById('clear-candles-btn');
-  if (clr) { clr.onclick = clearCandles; }
+  if (clr) clr.onclick = clearCandles;
   renderCandleTable();
 }
 
@@ -1026,9 +866,6 @@ document.addEventListener('DOMContentLoaded', bindCandleButtons);
 setTimeout(bindCandleButtons, 800);
 setTimeout(bindCandleButtons, 2500);
 
-// ============================================
-// SAVE / LOAD / REFRESH
-// ============================================
 function bindMarketSelect() {
   const sel = document.getElementById('candle-market-select');
   if (!sel || sel.dataset.bound === '1') return;
@@ -1062,8 +899,7 @@ async function loadCandlesFromFirestore(marketId) {
     candlesSnap.forEach(d => {
       const data = d.data();
       window.candleList.push({
-        id: d.id,
-        number: data.number || 0,
+        id: d.id, number: data.number || 0,
         date: data.date || '-',
         time: data.startTime || data.time || '-',
         endTime: data.endTime || '',
@@ -1094,10 +930,8 @@ async function loadCandlesFromFirestore(marketId) {
 async function saveAllCandles() {
   if (!window.currentMarketId) { alert('Select market first'); return; }
   if (window.candleList.length === 0) { alert('No candles'); return; }
-
   const confirmMsg = 'Market: ' + window.currentMarketId + '\n' + window.candleList.length + ' candles will be saved.\n\nOverwrite old?';
   if (!confirm(confirmMsg)) return;
-
   console.log('Saving', window.candleList.length, 'candles...');
   try {
     const oldSnap = await getDocs(collection(db, "markets", window.currentMarketId, "candles"));
@@ -1105,37 +939,32 @@ async function saveAllCandles() {
       await deleteDoc(doc(db, "markets", window.currentMarketId, "candles", d.id));
     }
     console.log('Deleted', oldSnap.size, 'old candles');
-
     for (let i = 0; i < window.candleList.length; i++) {
       const c = window.candleList[i];
       const candleId = 'c_' + String(i + 1).padStart(4, '0');
       const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
-
-      await setDoc(
-        doc(db, "markets", window.currentMarketId, "candles", candleId),
-        {
-          number: i + 1,
-          date: c.date || '',
-          startTime: c.time || '',
-          endTime: c.endTime || '',
-          duration: 60,
-          timeframe: c.timeframe || '1m',
-          open: Number(c.open),
-          high: Number(c.high),
-          low: Number(c.low),
-          close: Number(c.close),
-          color: c.color || 'green',
-          direction: dir,
-          size: c.size || 'medium',
-          upDuration: Number(c.up || 0),
-          downDuration: Number(c.down || 0),
-          neutralDuration: 0,
-          wickLength: Number(c.wick || 20),
-          bodySize: Number(c.body || 60),
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        }
-      );
+      await setDoc(doc(db, "markets", window.currentMarketId, "candles", candleId), {
+        number: i + 1,
+        date: c.date || '',
+        startTime: c.time || '',
+        endTime: c.endTime || '',
+        duration: 60,
+        timeframe: c.timeframe || '1m',
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close),
+        color: c.color || 'green',
+        direction: dir,
+        size: c.size || 'medium',
+        upDuration: Number(c.up || 0),
+        downDuration: Number(c.down || 0),
+        neutralDuration: 0,
+        wickLength: Number(c.wick || 20),
+        bodySize: Number(c.body || 60),
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
     }
     await updateDoc(doc(db, "markets", window.currentMarketId), {
       currentCandleIndex: 0,
@@ -1179,10 +1008,6 @@ bindPart6A();
 document.addEventListener('DOMContentLoaded', bindPart6A);
 setTimeout(bindPart6A, 800);
 setTimeout(bindPart6A, 2500);
-
-// ============================================
-// TIME CALCULATION
-// ============================================
 function timeframeToSeconds(tf) {
   const map = { '5s': 5, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
   return map[tf] || 60;
@@ -1230,13 +1055,11 @@ function validateBulkForm() {
   const neutral = parseInt(document.getElementById('bulk-neutral')?.value || 0);
   const wick = parseInt(document.getElementById('bulk-wick')?.value || 20);
   const body = parseInt(document.getElementById('bulk-body')?.value || 60);
-
   if (!startDate) { alert('Start Date required'); return null; }
   if (!startTime) { alert('Start Time required'); return null; }
   if (isNaN(count) || count < 1 || count > 500) { alert('Count 1-500'); return null; }
   if (isNaN(base) || base <= 0) { alert('Base Price required'); return null; }
   if (up + down + neutral <= 0) { alert('Duration required'); return null; }
-
   return { startDate, startTime, count, base, tf, up, down, neutral, wick, body };
 }
 
@@ -1255,9 +1078,6 @@ function clearCurrentCandleList() {
   renderCandleTable();
 }
 
-// ============================================
-// PRICE CALCULATION
-// ============================================
 function getPriceMovement(direction) {
   const baseMove = 30 + Math.random() * 90;
   if (direction === 'up') return Math.abs(baseMove);
@@ -1274,11 +1094,9 @@ function getSizeMultiplier(sizeType) {
 function buildCandleWithPrice(params) {
   const { number, date, time, endTime, timeframe, prevClose, basePrice,
           direction, wick, body, sizeType } = params;
-
   const sizeMul = getSizeMultiplier(sizeType);
   const wickScaled = wick * sizeMul;
   const bodyScaled = body * sizeMul;
-
   const open = prevClose !== null ? prevClose : basePrice;
   const movement = getPriceMovement(direction);
   const close = open + movement;
@@ -1286,12 +1104,10 @@ function buildCandleWithPrice(params) {
   const minOC = Math.min(open, close);
   const high = maxOC + wickScaled;
   const low = minOC - wickScaled;
-
   let color;
   if (direction === 'up') color = 'green';
   else if (direction === 'down') color = 'red';
   else color = close >= open ? 'green' : 'red';
-
   return {
     number, date, time, endTime, timeframe,
     open: open.toFixed(2),
@@ -1312,18 +1128,14 @@ async function bulkGenerateCandles() {
   if (!window.currentMarketId) { alert('Select market first'); return; }
   const ok = await confirmOverwrite();
   if (!ok) return;
-
   const tfSeconds = timeframeToSeconds(form.tf);
   const patternLength = form.up + form.down + form.neutral;
   const sizeType = 'medium';
-
   console.log('Generating', form.count, 'candles');
   clearCurrentCandleList();
-
   const tempList = [];
   let prevClose = null;
   let upCount = 0, downCount = 0, neutralCount = 0;
-
   for (let i = 0; i < form.count; i++) {
     const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
     let direction = 'up';
@@ -1347,11 +1159,9 @@ async function bulkGenerateCandles() {
     else neutralCount++;
     tempList.push(candle);
   }
-
   window.candleList = tempList;
   window.candleCounter = tempList.length;
   renderCandleTable();
-
   console.log('Generated', tempList.length, 'candles');
   console.log('UP: ' + upCount + ' | DOWN: ' + downCount + ' | NEUTRAL: ' + neutralCount);
   alert(tempList.length + ' candles generated!\n\nUP: ' + upCount + ' | DOWN: ' + downCount + ' | NEUTRAL: ' + neutralCount + '\nPrice: $' + tempList[0].open + ' -> $' + tempList[tempList.length - 1].close);
@@ -1370,41 +1180,19 @@ rebindBulkGenerate();
 document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
 setTimeout(rebindBulkGenerate, 800);
 setTimeout(rebindBulkGenerate, 2500);
-
-// ============================================
-// Global Expose
-// ============================================
-window.addCandle = addCandle;
-window.clearCandles = clearCandles;
-window.renderCandleTable = renderCandleTable;
-window.saveAllCandles = saveAllCandles;
-window.loadCandlesFromFirestore = loadCandlesFromFirestore;
-window.bulkGenerateCandles = bulkGenerateCandles;
-window.timeframeToSeconds = timeframeToSeconds;
-window.calcCandleTime = calcCandleTime;
-
-console.log('admin.js FULLY loaded - Part 3 to 6B-3');
-
-// ============================================
-// PART 6C-1: Playback Controls
-// ============================================
-
 window.playbackIndex = 0;
 window.playbackTimer = null;
-window.playbackSpeed = 1000; // 1 second default
+window.playbackSpeed = 1000;
 
-// ---------- Highlight Active Row ----------
 function highlightActiveRow() {
   const tbody = document.getElementById('candle-table-body');
   if (!tbody) return;
-
   const rows = tbody.querySelectorAll('tr');
   rows.forEach((row, i) => {
     if (i === window.playbackIndex) {
       row.style.background = 'rgba(255, 179, 0, 0.25)';
       row.style.borderLeft = '4px solid #ffb300';
       row.style.fontWeight = 'bold';
-      // auto scroll into view
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       row.style.background = '';
@@ -1412,50 +1200,32 @@ function highlightActiveRow() {
       row.style.fontWeight = '';
     }
   });
-
-  // Update status label
   const status = document.getElementById('playback-status');
   if (status) {
-    const total = window.candleList.length;
-    status.textContent = 'Candle ' + (window.playbackIndex + 1) + ' / ' + total;
+    status.textContent = 'Candle ' + (window.playbackIndex + 1) + ' / ' + window.candleList.length;
   }
 }
 
-// ---------- Play ----------
 function playbackPlay() {
-  if (window.candleList.length === 0) {
-    alert('No candles to play');
-    return;
-  }
-
-  if (window.playbackTimer) {
-    console.log('Already playing');
-    return;
-  }
-
+  if (window.candleList.length === 0) { alert('No candles to play'); return; }
+  if (window.playbackTimer) { console.log('Already playing'); return; }
   console.log('Playback START from index', window.playbackIndex);
-
-  // If at end, reset to 0
   if (window.playbackIndex >= window.candleList.length - 1) {
     window.playbackIndex = 0;
   }
-
   highlightActiveRow();
-
   window.playbackTimer = setInterval(() => {
     if (window.playbackIndex < window.candleList.length - 1) {
       window.playbackIndex++;
       highlightActiveRow();
       console.log('Playback -> candle', window.playbackIndex + 1);
     } else {
-      // reached end
       playbackPause();
       console.log('Playback FINISHED');
     }
   }, window.playbackSpeed);
 }
 
-// ---------- Pause ----------
 function playbackPause() {
   if (window.playbackTimer) {
     clearInterval(window.playbackTimer);
@@ -1464,7 +1234,6 @@ function playbackPause() {
   }
 }
 
-// ---------- Skip (Next) ----------
 function playbackSkip() {
   if (window.candleList.length === 0) return;
   if (window.playbackIndex < window.candleList.length - 1) {
@@ -1474,7 +1243,6 @@ function playbackSkip() {
   }
 }
 
-// ---------- Back (Previous) ----------
 function playbackBack() {
   if (window.candleList.length === 0) return;
   if (window.playbackIndex > 0) {
@@ -1484,7 +1252,6 @@ function playbackBack() {
   }
 }
 
-// ---------- Reset ----------
 function playbackReset() {
   playbackPause();
   window.playbackIndex = 0;
@@ -1492,50 +1259,27 @@ function playbackReset() {
   console.log('Playback RESET to 0');
 }
 
-// ---------- Speed Change ----------
 function playbackSetSpeed(ms) {
   window.playbackSpeed = ms;
   console.log('Playback speed set to', ms, 'ms');
   if (window.playbackTimer) {
-    // restart with new speed
     playbackPause();
     playbackPlay();
   }
 }
 
-// ---------- Bind Playback Buttons ----------
 function bindPlaybackButtons() {
   const playBtn = document.getElementById('play-btn');
   const pauseBtn = document.getElementById('pause-btn');
   const skipBtn = document.getElementById('skip-btn');
   const backBtn = document.getElementById('back-btn');
   const resetBtn = document.getElementById('reset-btn');
-
-  if (playBtn && playBtn.dataset.bound !== '1') {
-    playBtn.dataset.bound = '1';
-    playBtn.onclick = playbackPlay;
-    console.log('Play button bound');
-  }
-  if (pauseBtn && pauseBtn.dataset.bound !== '1') {
-    pauseBtn.dataset.bound = '1';
-    pauseBtn.onclick = playbackPause;
-    console.log('Pause button bound');
-  }
-  if (skipBtn && skipBtn.dataset.bound !== '1') {
-    skipBtn.dataset.bound = '1';
-    skipBtn.onclick = playbackSkip;
-    console.log('Skip button bound');
-  }
-  if (backBtn && backBtn.dataset.bound !== '1') {
-    backBtn.dataset.bound = '1';
-    backBtn.onclick = playbackBack;
-    console.log('Back button bound');
-  }
-  if (resetBtn && resetBtn.dataset.bound !== '1') {
-    resetBtn.dataset.bound = '1';
-    resetBtn.onclick = playbackReset;
-    console.log('Reset button bound');
-  }
+  if (playBtn && playBtn.dataset.bound !== '1') { playBtn.dataset.bound = '1'; playBtn.onclick = playbackPlay; }
+  if (pauseBtn && pauseBtn.dataset.bound !== '1') { pauseBtn.dataset.bound = '1'; pauseBtn.onclick = playbackPause; }
+  if (skipBtn && skipBtn.dataset.bound !== '1') { skipBtn.dataset.bound = '1'; skipBtn.onclick = playbackSkip; }
+  if (backBtn && backBtn.dataset.bound !== '1') { backBtn.dataset.bound = '1'; backBtn.onclick = playbackBack; }
+  if (resetBtn && resetBtn.dataset.bound !== '1') { resetBtn.dataset.bound = '1'; resetBtn.onclick = playbackReset; }
+  console.log('Playback buttons bound');
 }
 
 bindPlaybackButtons();
@@ -1543,36 +1287,12 @@ document.addEventListener('DOMContentLoaded', bindPlaybackButtons);
 setTimeout(bindPlaybackButtons, 800);
 setTimeout(bindPlaybackButtons, 2500);
 
-// ---------- Auto Highlight After Render ----------
-const originalRenderCandleTable = window.renderCandleTable;
-window.renderCandleTable = function() {
-  if (originalRenderCandleTable) originalRenderCandleTable();
-  setTimeout(() => {
-    if (window.candleList.length > 0) {
-      highlightActiveRow();
-    }
-  }, 50);
-};
-
-// ---------- Global Expose ----------
-window.playbackPlay = playbackPlay;
-window.playbackPause = playbackPause;
-window.playbackSkip = playbackSkip;
-window.playbackBack = playbackBack;
-window.playbackReset = playbackReset;
-window.playbackSetSpeed = playbackSetSpeed;
-window.highlightActiveRow = highlightActiveRow;
-
-console.log('Part 6C-1 (Playback) loaded');
-
-// ---------- Speed Selector Bind ----------
 function bindSpeedSelector() {
   const sel = document.getElementById('playback-speed');
   if (!sel || sel.dataset.bound === '1') return;
   sel.dataset.bound = '1';
   sel.addEventListener('change', () => {
-    const ms = parseInt(sel.value);
-    window.playbackSetSpeed(ms);
+    playbackSetSpeed(parseInt(sel.value));
   });
   console.log('Speed selector bound');
 }
@@ -1581,195 +1301,118 @@ bindSpeedSelector();
 document.addEventListener('DOMContentLoaded', bindSpeedSelector);
 setTimeout(bindSpeedSelector, 800);
 setTimeout(bindSpeedSelector, 2500);
+window.previewMaxCandles = 20;
 
-// ============================================
-// PART 6C-2: Live Preview Chart (CSS-based)
-// ============================================
-
-window.previewMaxCandles = 20; // show last 20 candles max
-
-// ---------- Render Live Preview ----------
 function renderCandlePreview() {
   const container = document.getElementById('candle-preview');
   if (!container) return;
-
   const list = window.candleList || [];
-
   if (list.length === 0) {
     container.innerHTML = '<span class="empty-text">No candles to preview</span>';
     return;
   }
-
-  // Take last N candles
   const startIdx = Math.max(0, list.length - window.previewMaxCandles);
   const slice = list.slice(startIdx);
-
-  // Find min/max across all highs/lows
   let minPrice = Infinity;
   let maxPrice = -Infinity;
-
   slice.forEach(c => {
     const h = Number(c.high || 0);
     const l = Number(c.low || 0);
     if (h > maxPrice) maxPrice = h;
     if (l < minPrice) minPrice = l;
   });
-
-  // Handle equal range
-  if (maxPrice === minPrice) {
-    maxPrice = minPrice + 1;
-  }
-
+  if (maxPrice === minPrice) maxPrice = minPrice + 1;
   const range = maxPrice - minPrice;
-  const CHART_HEIGHT = 180; // px for the price area
-
-  // Build HTML for each candle
+  const CHART_HEIGHT = 180;
   const barsHTML = slice.map((c, idx) => {
     const open = Number(c.open || 0);
     const close = Number(c.close || 0);
     const high = Number(c.high || 0);
     const low = Number(c.low || 0);
-
-    // Y positions (inverted: high price = top)
     const yHigh = ((maxPrice - high) / range) * CHART_HEIGHT;
     const yLow = ((maxPrice - low) / range) * CHART_HEIGHT;
     const yOpen = ((maxPrice - open) / range) * CHART_HEIGHT;
     const yClose = ((maxPrice - close) / range) * CHART_HEIGHT;
-
     const bodyTop = Math.min(yOpen, yClose);
     const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
-
-    // Color
     const isGreen = close >= open;
     const color = isGreen ? '#00c853' : '#ff5252';
-
-    // Wick (vertical line)
     const wickTop = yHigh;
     const wickHeight = Math.max(1, yLow - yHigh);
-
-    // Real index in full list
     const realIdx = startIdx + idx;
-
-    // Highlight active?
     const isActive = (realIdx === window.playbackIndex);
-
     return '<div class="pv-candle' + (isActive ? ' pv-active' : '') + '" data-idx="' + realIdx + '" style="height:' + CHART_HEIGHT + 'px;">' +
       '<div class="pv-wick" style="top:' + wickTop + 'px; height:' + wickHeight + 'px; background:' + color + ';"></div>' +
       '<div class="pv-body" style="top:' + bodyTop + 'px; height:' + bodyHeight + 'px; background:' + color + ';"></div>' +
       '<div class="pv-label">' + (realIdx + 1) + '</div>' +
     '</div>';
   }).join('');
-
-  // Price labels (max/min)
   const maxLabel = '<div class="pv-price-label pv-price-top">$' + maxPrice.toFixed(2) + '</div>';
   const minLabel = '<div class="pv-price-label pv-price-bottom">$' + minPrice.toFixed(2) + '</div>';
-
   container.innerHTML =
-    '<div class="pv-chart-wrap">' +
-      maxLabel +
-      minLabel +
+    '<div class="pv-chart-wrap">' + maxLabel + minLabel +
       '<div class="pv-chart">' + barsHTML + '</div>' +
     '</div>' +
-    '<div class="pv-info">' +
-      'Showing last ' + slice.length + ' of ' + list.length + ' candles' +
-    '</div>';
-
-  // Click to jump
+    '<div class="pv-info">Showing last ' + slice.length + ' of ' + list.length + ' candles</div>';
   container.querySelectorAll('.pv-candle').forEach(el => {
     el.onclick = () => {
       const idx = Number(el.dataset.idx);
       window.playbackIndex = idx;
-      if (window.highlightActiveRow) window.highlightActiveRow();
+      if (typeof highlightActiveRow === 'function') highlightActiveRow();
       renderCandlePreview();
     };
   });
 }
 
-// ---------- Highlight Integration ----------
-// Override highlightActiveRow to also update preview
 const _origHighlight = window.highlightActiveRow;
 window.highlightActiveRow = function() {
   if (_origHighlight) _origHighlight();
   renderCandlePreview();
 };
 
-// ---------- Auto-Render on Data Change ----------
-// Override renderCandleTable to also render preview
 const _origRenderTable = window.renderCandleTable;
 window.renderCandleTable = function() {
   if (_origRenderTable) _origRenderTable();
-  setTimeout(() => {
-    renderCandlePreview();
-  }, 60);
+  setTimeout(() => { renderCandlePreview(); }, 60);
 };
 
-// ---------- Initial Render ----------
 renderCandlePreview();
 document.addEventListener('DOMContentLoaded', renderCandlePreview);
 setTimeout(renderCandlePreview, 1000);
 setTimeout(renderCandlePreview, 2500);
 
-// ---------- Global Expose ----------
-window.renderCandlePreview = renderCandlePreview;
-
 console.log('Part 6C-2 (Live Preview) loaded');
 
-// ============================================
-// PART 6C-2 FIX: Auto-trigger Preview
-// ============================================
-
-// Watch candleList changes and auto-render preview
 (function startPreviewWatcher() {
   let lastCount = -1;
   let lastFirstClose = '';
-
   setInterval(function() {
     const container = document.getElementById('candle-preview');
     if (!container) return;
-
     const list = window.candleList || [];
     const count = list.length;
     const firstClose = count > 0 ? (list[0].close || '') : '';
-    const lastClose = count > 0 ? (list[count - 1].close || '') : '';
-
     const isBlank = container.innerHTML.indexOf('No candles') !== -1 ||
                     container.innerHTML.indexOf('empty-text') !== -1;
-
-    const changed = (count !== lastCount) ||
-                    (firstClose !== lastFirstClose) ||
+    const changed = (count !== lastCount) || (firstClose !== lastFirstClose) ||
                     (isBlank && count > 0);
-
     if (changed) {
       lastCount = count;
       lastFirstClose = firstClose;
-
-      if (typeof renderCandlePreview === 'function') {
-        renderCandlePreview();
-        console.log('Preview auto-updated:', count, 'candles');
-      }
+      renderCandlePreview();
+      console.log('Preview auto-updated:', count, 'candles');
     }
   }, 400);
-
   console.log('Preview auto-watcher started');
 })();
-
-// ============================================
-// PART 6C-3: Direction Timeline
-// ============================================
-
-// ---------- Render Direction Timeline ----------
 function renderDirectionTimeline() {
   const container = document.getElementById('direction-timeline');
   if (!container) return;
-
   const list = window.candleList || [];
-
   if (list.length === 0) {
     container.innerHTML = '<span class="empty-text">No timeline data</span>';
     return;
   }
-
-  // Count Up / Down / Neutral
   let upCount = 0, downCount = 0, neutralCount = 0;
   list.forEach(c => {
     const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
@@ -1777,64 +1420,42 @@ function renderDirectionTimeline() {
     else if (dir === 'down') downCount++;
     else neutralCount++;
   });
-
-  // Group consecutive same-direction candles into blocks
   const blocks = [];
   let currentBlock = null;
-
   list.forEach((c, i) => {
     const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
-
     if (!currentBlock || currentBlock.dir !== dir) {
       if (currentBlock) blocks.push(currentBlock);
-      currentBlock = {
-        dir: dir,
-        candles: [i],
-        startIdx: i,
-        endIdx: i
-      };
+      currentBlock = { dir: dir, candles: [i], startIdx: i, endIdx: i };
     } else {
       currentBlock.candles.push(i);
       currentBlock.endIdx = i;
     }
   });
   if (currentBlock) blocks.push(currentBlock);
-
-  // Build blocks HTML
-  const blocksHTML = blocks.map((block, bIdx) => {
+  const blocksHTML = blocks.map((block) => {
     const colorClass = block.dir === 'up' ? 'tl-up' :
                        block.dir === 'down' ? 'tl-down' : 'tl-neutral';
-
-    // Each candle inside block = colored square
     const squaresHTML = block.candles.map(cIdx => {
       const c = list[cIdx];
       const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
       const sqClass = dir === 'up' ? 'tl-sq-up' :
                       dir === 'down' ? 'tl-sq-down' : 'tl-sq-neutral';
       const isActive = (cIdx === window.playbackIndex);
-
       return '<div class="tl-square ' + sqClass + (isActive ? ' tl-sq-active' : '') + '" ' +
-             'data-idx="' + cIdx + '" ' +
-             'title="Candle ' + (cIdx + 1) + ' - ' + dir + '">' +
-             '<span class="tl-sq-num">' + (cIdx + 1) + '</span>' +
-             '</div>';
+             'data-idx="' + cIdx + '" title="Candle ' + (cIdx + 1) + ' - ' + dir + '">' +
+             '<span class="tl-sq-num">' + (cIdx + 1) + '</span></div>';
     }).join('');
-
     const blockLabel = block.dir === 'up' ? 'UP' :
                        block.dir === 'down' ? 'DOWN' : 'NEUTRAL';
-    const blockCount = block.candles.length;
-
     return '<div class="tl-block ' + colorClass + '">' +
-      '<div class="tl-block-label">' + blockLabel + ' x' + blockCount + '</div>' +
+      '<div class="tl-block-label">' + blockLabel + ' x' + block.candles.length + '</div>' +
       '<div class="tl-squares">' + squaresHTML + '</div>' +
     '</div>';
   }).join('');
-
-  // Summary
   const firstCandle = list[0];
   const lastCandle = list[list.length - 1];
   const timeRange = (firstCandle.time || '--:--') + ' to ' + (lastCandle.time || '--:--');
-
   const summaryHTML =
     '<div class="tl-summary">' +
       '<span class="tl-summary-item tl-sum-up">UP: ' + upCount + '</span>' +
@@ -1842,14 +1463,8 @@ function renderDirectionTimeline() {
       '<span class="tl-summary-item tl-sum-neutral">NEUTRAL: ' + neutralCount + '</span>' +
       '<span class="tl-summary-item tl-sum-time">' + timeRange + '</span>' +
     '</div>';
-
-  container.innerHTML =
-    summaryHTML +
-    '<div class="tl-blocks-wrap">' +
-      '<div class="tl-blocks">' + blocksHTML + '</div>' +
-    '</div>';
-
-  // Bind click to jump
+  container.innerHTML = summaryHTML +
+    '<div class="tl-blocks-wrap"><div class="tl-blocks">' + blocksHTML + '</div></div>';
   container.querySelectorAll('.tl-square').forEach(el => {
     el.onclick = () => {
       const idx = Number(el.dataset.idx);
@@ -1861,42 +1476,38 @@ function renderDirectionTimeline() {
   });
 }
 
-// ---------- Override highlightActiveRow ----------
 const _origHighlight2 = window.highlightActiveRow;
 window.highlightActiveRow = function() {
   if (_origHighlight2) _origHighlight2();
   renderDirectionTimeline();
 };
 
-// ---------- Override renderCandleTable ----------
 const _origRenderTable2 = window.renderCandleTable;
 window.renderCandleTable = function() {
   if (_origRenderTable2) _origRenderTable2();
-  setTimeout(function() {
-    renderDirectionTimeline();
-  }, 60);
+  setTimeout(function() { renderDirectionTimeline(); }, 60);
 };
 
-// ---------- Auto-Watcher for Timeline ----------
+renderDirectionTimeline();
+document.addEventListener('DOMContentLoaded', renderDirectionTimeline);
+setTimeout(renderDirectionTimeline, 1000);
+setTimeout(renderDirectionTimeline, 2500);
+
+console.log('Part 6C-3 (Direction Timeline) loaded');
+
 (function startTimelineWatcher() {
   let lastCount = -1;
   let lastFirstClose = '';
-
   setInterval(function() {
     const container = document.getElementById('direction-timeline');
     if (!container) return;
-
     const list = window.candleList || [];
     const count = list.length;
     const firstClose = count > 0 ? (list[0].close || '') : '';
-
     const isBlank = container.innerHTML.indexOf('No timeline') !== -1 ||
                     container.innerHTML.indexOf('empty-text') !== -1;
-
-    const changed = (count !== lastCount) ||
-                    (firstClose !== lastFirstClose) ||
+    const changed = (count !== lastCount) || (firstClose !== lastFirstClose) ||
                     (isBlank && count > 0);
-
     if (changed) {
       lastCount = count;
       lastFirstClose = firstClose;
@@ -1904,50 +1515,28 @@ window.renderCandleTable = function() {
       console.log('Timeline auto-updated:', count, 'candles');
     }
   }, 500);
-
   console.log('Timeline auto-watcher started');
 })();
-
-// ---------- Initial Render ----------
-renderDirectionTimeline();
-document.addEventListener('DOMContentLoaded', renderDirectionTimeline);
-setTimeout(renderDirectionTimeline, 1000);
-setTimeout(renderDirectionTimeline, 2500);
-
-// ---------- Global Expose ----------
-window.renderDirectionTimeline = renderDirectionTimeline;
-
-console.log('Part 6C-3 (Direction Timeline) loaded');
-
-// ============================================
-// PART 6D: Auto Mode Toggle + Real-Time Generate
-// ============================================
-
 window.autoModeActive = false;
 window.autoModeTimer = null;
-window.autoModeInterval = 5000; // 5 seconds default
+window.autoModeInterval = 5000;
 window.autoModeMaxCandles = 500;
 
-// ---------- Generate One Candle (Auto) ----------
 function autoGenerateOneCandle() {
   if (!window.currentMarketId) {
     console.log('Auto: No market selected, stopping');
     stopAutoMode();
     return;
   }
-
   if (window.candleList.length >= window.autoModeMaxCandles) {
     console.log('Auto: Max candles reached, stopping');
     stopAutoMode();
     return;
   }
-
-  // Get last candle for continuity
   let lastCandle = null;
   if (window.candleList.length > 0) {
     lastCandle = window.candleList[window.candleList.length - 1];
   }
-
   const baseEl = document.getElementById('bulk-base');
   const basePrice = Number(baseEl?.value || 50000);
   const tf = document.getElementById('candle-timeframe')?.value || '1m';
@@ -1957,8 +1546,6 @@ function autoGenerateOneCandle() {
   const upDuration = Number(document.getElementById('bulk-up')?.value || 5);
   const downDuration = Number(document.getElementById('bulk-down')?.value || 5);
   const patternLength = upDuration + downDuration;
-
-  // Determine direction from pattern
   const idx = window.candleList.length;
   let direction = 'up';
   if (patternLength > 0) {
@@ -1966,114 +1553,62 @@ function autoGenerateOneCandle() {
     if (pos < upDuration) direction = 'up';
     else direction = 'down';
   }
-
-  // Calculate time
   const now = new Date();
   const date = now.toISOString().split('T')[0];
   const timeStr = now.toTimeString().slice(0, 8);
   const endTimeSec = timeToSeconds(timeStr) + tfSeconds;
   const endTimeStr = secondsToTime(endTimeSec);
-
-  // Build candle
   const prevClose = lastCandle ? parseFloat(lastCandle.close) : null;
   const candle = buildCandleWithPrice({
     number: idx + 1,
-    date: date,
-    time: timeStr,
-    endTime: endTimeStr,
-    timeframe: tf,
-    prevClose: prevClose,
-    basePrice: basePrice,
-    direction: direction,
-    wick: wick,
-    body: body,
-    sizeType: 'medium'
+    date: date, time: timeStr, endTime: endTimeStr,
+    timeframe: tf, prevClose: prevClose, basePrice: basePrice,
+    direction: direction, wick: wick, body: body, sizeType: 'medium'
   });
-
   candle.up = upDuration;
   candle.down = downDuration;
-
-  // Append to list
   window.candleList.push(candle);
   window.candleCounter = window.candleList.length;
-
-  // Render
   renderCandleTable();
-
   console.log('Auto-generated candle #' + candle.number + ' (' + direction + ') price: ' + candle.close);
 }
 
-// ---------- Start Auto Mode ----------
 function startAutoMode() {
-  if (window.autoModeActive) {
-    console.log('Auto already running');
-    return;
-  }
-
-  if (!window.currentMarketId) {
-    alert('Select a market first');
-    return;
-  }
-
+  if (window.autoModeActive) return;
+  if (!window.currentMarketId) { alert('Select a market first'); return; }
   window.autoModeActive = true;
   console.log('Auto Mode STARTED with interval', window.autoModeInterval, 'ms');
-
-  // Pause playback if running (conflict)
-  if (window.playbackTimer) {
-    playbackPause();
-  }
-
-  // Immediate first generate
+  if (window.playbackTimer) playbackPause();
   autoGenerateOneCandle();
-
-  // Then loop
-  window.autoModeTimer = setInterval(function() {
-    autoGenerateOneCandle();
-  }, window.autoModeInterval);
-
-  updateAutoModeButton();
+  window.autoModeTimer = setInterval(function() { autoGenerateOneCandle(); }, window.autoModeInterval);
+  updateAutoModeUI2();
 }
 
-// ---------- Stop Auto Mode ----------
 function stopAutoMode() {
   if (!window.autoModeActive) return;
-
   if (window.autoModeTimer) {
     clearInterval(window.autoModeTimer);
     window.autoModeTimer = null;
   }
-
   window.autoModeActive = false;
   console.log('Auto Mode STOPPED');
-  updateAutoModeButton();
+  updateAutoModeUI2();
 }
 
-// ---------- Toggle Auto Mode ----------
 function toggleAutoMode() {
-  if (window.autoModeActive) {
-    stopAutoMode();
-  } else {
-    startAutoMode();
-  }
+  if (window.autoModeActive) stopAutoMode();
+  else startAutoMode();
 }
 
-// ---------- Set Auto Mode Interval ----------
 function setAutoModeInterval(ms) {
   window.autoModeInterval = ms;
   console.log('Auto interval set to', ms, 'ms');
-
-  // Restart if running
-  if (window.autoModeActive) {
-    stopAutoMode();
-    startAutoMode();
-  }
+  if (window.autoModeActive) { stopAutoMode(); startAutoMode(); }
 }
 
-// ---------- Update Auto Mode Button UI ----------
-function updateAutoModeButton() {
+function updateAutoModeUI2() {
   const btn = document.getElementById('auto-mode-toggle');
   if (!btn) return;
-
   if (window.autoModeActive) {
     btn.textContent = 'Auto Mode: ON';
     btn.classList.add('active');
@@ -2087,23 +1622,23 @@ function updateAutoModeButton() {
   }
 }
 
-// ---------- Bind Auto Mode Controls ----------
 function bindAutoMode() {
   const btn = document.getElementById('auto-mode-toggle');
-  if (btn && btn.dataset.bound !== '1') {
-    btn.dataset.bound = '1';
-    btn.onclick = toggleAutoMode;
+  if (btn && btn.dataset.boundAuto !== '1') {
+    btn.dataset.boundAuto = '1';
+    btn.onclick = function(e) {
+      // if event has our custom flag, skip toggle (handled by settings)
+      toggleAutoMode();
+    };
     console.log('Auto Mode toggle bound');
   }
-
-  // Create interval selector dynamically if not exists
   let sel = document.getElementById('auto-mode-speed');
   if (!sel && btn && btn.parentNode) {
     sel = document.createElement('select');
     sel.id = 'auto-mode-speed';
     sel.className = 'playback-speed-select';
     sel.style.marginLeft = '8px';
-    sel.innerHTML = 
+    sel.innerHTML =
       '<option value="1000">1s</option>' +
       '<option value="5000" selected>5s</option>' +
       '<option value="10000">10s</option>' +
@@ -2111,12 +1646,9 @@ function bindAutoMode() {
       '<option value="60000">1m</option>';
     btn.parentNode.appendChild(sel);
   }
-
-  if (sel && sel.dataset.bound !== '1') {
-    sel.dataset.bound = '1';
-    sel.onchange = function() {
-      setAutoModeInterval(parseInt(sel.value));
-    };
+  if (sel && sel.dataset.boundAuto !== '1') {
+    sel.dataset.boundAuto = '1';
+    sel.onchange = function() { setAutoModeInterval(parseInt(sel.value)); };
     console.log('Auto Mode speed selector bound');
   }
 }
@@ -2126,34 +1658,32 @@ document.addEventListener('DOMContentLoaded', bindAutoMode);
 setTimeout(bindAutoMode, 800);
 setTimeout(bindAutoMode, 2500);
 
-// ---------- Also Bind to Settings Auto Mode Toggle ----------
-function bindSettingsAutoMode() {
-  const settingBtn = document.getElementById('auto-mode-toggle');
-  const settingsBtn = document.getElementById('auto-mode-toggle');
-  // Use the same button - the existing one
+console.log('Part 6D (Auto Mode) loaded');
 
-  // Also hook into existing Settings save
-  const autoIntervalInput = document.getElementById('auto-interval-input');
-  if (autoIntervalInput && autoIntervalInput.dataset.boundAuto !== '1') {
-    autoIntervalInput.dataset.boundAuto = '1';
-    // When Settings interval changes, update auto mode interval
-    autoIntervalInput.addEventListener('change', function() {
-      const min = parseInt(autoIntervalInput.value);
-      if (!isNaN(min) && min >= 1) {
-        setAutoModeInterval(min * 1000); // convert min to ms
-      }
-    });
-  }
-}
-
-bindSettingsAutoMode();
-setTimeout(bindSettingsAutoMode, 1500);
-
-// ---------- Global Expose ----------
+console.log('Part 6C-1 (Playback) loaded');
+window.addCandle = addCandle;
+window.clearCandles = clearCandles;
+window.renderCandleTable = renderCandleTable;
+window.saveAllCandles = saveAllCandles;
+window.loadCandlesFromFirestore = loadCandlesFromFirestore;
+window.bulkGenerateCandles = bulkGenerateCandles;
+window.timeframeToSeconds = timeframeToSeconds;
+window.calcCandleTime = calcCandleTime;
+window.renderCandlePreview = renderCandlePreview;
+window.renderDirectionTimeline = renderDirectionTimeline;
+window.playbackPlay = playbackPlay;
+window.playbackPause = playbackPause;
+window.playbackSkip = playbackSkip;
+window.playbackBack = playbackBack;
+window.playbackReset = playbackReset;
+window.playbackSetSpeed = playbackSetSpeed;
+window.highlightActiveRow = highlightActiveRow;
 window.startAutoMode = startAutoMode;
 window.stopAutoMode = stopAutoMode;
 window.toggleAutoMode = toggleAutoMode;
 window.setAutoModeInterval = setAutoModeInterval;
 window.autoGenerateOneCandle = autoGenerateOneCandle;
+window.updateAutoModeUI = updateAutoModeUI;
+window.updateAutoModeUI2 = updateAutoModeUI2;
 
-console.log('Part 6D (Auto Mode) loaded');
+console.log('admin.js FULLY loaded - Part 3 to 6D');
