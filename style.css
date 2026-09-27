@@ -159,9 +159,8 @@ input, select {
   min-height: 18px;
   font-weight: 500;
 }
-
 /* ============================================
-   Part 2: Top Header + Balance Card
+   Part 2: Header + Balance Card
 ============================================ */
 
 #dashboard-page {
@@ -359,12 +358,10 @@ input, select {
   font-size: 12px;
   color: #4a5568;
 }
-
 /* ============================================
    Part 3: Chart Section + Drawing Toolbar
 ============================================ */
 
-/* ===== চার্ট সেকশন ===== */
 .chart-section {
   background: #0d1522;
   border: 1px solid #1f2a3d;
@@ -463,7 +460,7 @@ input, select {
   margin-bottom: 8px;
 }
 
-/* বাম দিকে উল্লম্ব ড্রয়িং টুলবার (Quotex-এর মতো) */
+/* বাম দিকে উল্লম্ব ড্রয়িং টুলবার */
 .drawing-toolbar {
   display: flex;
   flex-direction: column;
@@ -510,7 +507,7 @@ input, select {
   box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
 }
 
-/* চার্ট র্যাপার (chart + overlay canvas একসাথে) */
+/* চার্ট র্যাপার */
 #chart-wrapper {
   position: relative;
   flex: 1;
@@ -546,7 +543,6 @@ input, select {
   cursor: crosshair;
 }
 
-/* TradingView attribution hide */
 #chart a#tv-attr-logo {
   display: none !important;
 }
@@ -582,12 +578,10 @@ input, select {
 .tf-btn.active:active {
   background: #1976d2;
 }
-
 /* ============================================
    Part 4: Trade Panel + CALL/PUT Buttons
 ============================================ */
 
-/* ===== ট্রেড প্যানেল ===== */
 .trade-panel {
   background: #0d1522;
   border: 1px solid #1f2a3d;
@@ -634,7 +628,6 @@ input, select {
   border-color: #00c853;
 }
 
-/* Chrome number arrows hide */
 .amount-input-wrap input::-webkit-outer-spin-button,
 .amount-input-wrap input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -776,7 +769,6 @@ input, select {
   opacity: 0.85;
 }
 
-/* ===== ট্রেড মেসেজ ===== */
 #trade-message {
   text-align: center;
   margin-top: 10px;
@@ -784,7 +776,6 @@ input, select {
   font-weight: 700;
   min-height: 18px;
 }
-
 /* ============================================
    Part 5: Tabs + Trade Items + Flash + Mobile
 ============================================ */
@@ -876,7 +867,6 @@ input, select {
   margin-bottom: 0;
 }
 
-/* CALL/PUT অনুযায়ী বর্ডার */
 .trade-item.call {
   border-left-color: #00c853;
 }
@@ -885,7 +875,6 @@ input, select {
   border-left-color: #ff5252;
 }
 
-/* Win/Loss অনুযায়ী ব্যাকগ্রাউন্ড */
 .trade-item.win {
   background: linear-gradient(90deg, #0a2818 0%, #141d2e 100%);
   border-left-color: #00c853;
@@ -949,7 +938,7 @@ input, select {
   font-size: 12px;
 }
 
-/* ===== রেজাল্ট ফ্ল্যাশ (উইন/লস) ===== */
+/* ===== রেজাল্ট ফ্ল্যাশ ===== */
 .result-flash {
   position: fixed;
   top: 0;
