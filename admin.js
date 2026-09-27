@@ -1331,3 +1331,219 @@ window.loadCandlesFromFirestore = loadCandlesFromFirestore;
 window.bindPart6A = bindPart6A;
 
 console.log('🎯 Part 6 v3 (FINAL) loaded');
+
+/* ============================================================
+   PART 6B-1: Bulk Generate — Time Calculation
+   ============================================================ */
+
+// ---------- Timeframe → Seconds ----------
+function timeframeToSeconds(tf) {
+  const map = {
+    '5s':  5,
+    '1m':  60,
+    '5m':  300,
+    '15m': 900,
+    '1h':  3600,
+    '4h':  14400
+  };
+  return map[tf] || 60;
+}
+
+// ---------- Seconds → HH:MM:SS ----------
+function secondsToTime(totalSec) {
+  const h = Math.floor(totalSec / 3600) % 24;
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// ---------- Parse Time "HH:MM:SS" → seconds ----------
+function timeToSeconds(timeStr) {
+  const parts = (timeStr || '00:00:00').split(':').map(Number);
+  const h = parts[0] || 0;
+  const m = parts[1] || 0;
+  const s = parts[2] || 0;
+  return h * 3600 + m * 60 + s;
+}
+
+// ---------- Add Days to Date (ISO format) ----------
+function addDaysToDate(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+// ---------- Calculate Time for Nth Candle ----------
+function calcCandleTime(startDate, startTime, index, tfSeconds) {
+  const startSec = timeToSeconds(startTime);
+  const totalSec = startSec + index * tfSeconds;
+  
+  const dayOffset = Math.floor(totalSec / 86400); // 24 * 3600
+  const daySec = totalSec % 86400;
+  
+  const date = addDaysToDate(startDate, dayOffset);
+  const startT = secondsToTime(daySec);
+  const endT = secondsToTime(daySec + tfSeconds);
+  
+  return { date, startTime: startT, endTime: endT, dayOffset };
+}
+
+// ---------- Validate Bulk Form ----------
+function validateBulkForm() {
+  const startDate = document.getElementById('bulk-date')?.value;
+  const startTime = document.getElementById('bulk-time')?.value;
+  const count = parseInt(document.getElementById('bulk-count')?.value || 0);
+  const base = parseFloat(document.getElementById('bulk-base')?.value || 0);
+  const tf = document.getElementById('candle-timeframe')?.value || '1m';
+  const up = parseInt(document.getElementById('bulk-up')?.value || 0);
+  const down = parseInt(document.getElementById('bulk-down')?.value || 0);
+  const neutral = parseInt(document.getElementById('bulk-neutral')?.value || 0);
+  const wick = parseInt(document.getElementById('bulk-wick')?.value || 20);
+  const body = parseInt(document.getElementById('bulk-body')?.value || 60);
+
+  // Validations
+  if (!startDate) { alert('❌ Start Date দিন'); return null; }
+  if (!startTime) { alert('❌ Start Time দিন'); return null; }
+  if (isNaN(count) || count < 1 || count > 500) {
+    alert('❌ Candle Count 1-500 এর মধ্যে দিন');
+    return null;
+  }
+  if (isNaN(base) || base <= 0) {
+    alert('❌ Base Price সঠিকভাবে দিন');
+    return null;
+  }
+  if (up + down + neutral <= 0) {
+    alert('❌ Up/Down/Neutral Duration কমপক্ষে ১টা দিন');
+    return null;
+  }
+
+  return { startDate, startTime, count, base, tf, up, down, neutral, wick, body };
+}
+
+// ---------- Confirm Overwrite (existing candles) ----------
+async function confirmOverwrite() {
+  if (!window.currentMarketId) {
+    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+    return false;
+  }
+
+  try {
+    const snap = await getDocs(
+      collection(db, "markets", window.currentMarketId, "candles")
+    );
+    if (snap.size === 0) return true;
+
+    const msg = `⚠️ এই মার্কেটে ${snap.size}টা ক্যান্ডেল আগে থেকেই আছে।\n\nBulk Generate করলে সব পুরনো overwrite হবে?\n(হ্যাঁ চাপলে সব মুছে নতুন হবে)`;
+    return confirm(msg);
+  } catch (err) {
+    console.error('❌ Overwrite check error:', err);
+    return true;
+  }
+}
+
+// ---------- Clear Current Candle List ----------
+function clearCurrentCandleList() {
+  window.candleList = [];
+  window.candleCounter = 0;
+  renderCandleTable();
+}
+
+// ---------- Bulk Generate (Main Function) ----------
+async function bulkGenerateCandles() {
+  console.log('⚡ Bulk Generate clicked');
+
+  // 1. Validate
+  const form = validateBulkForm();
+  if (!form) return;
+
+  // 2. Check market
+  if (!window.currentMarketId) {
+    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+    return;
+  }
+
+  // 3. Confirm overwrite
+  const ok = await confirmOverwrite();
+  if (!ok) return;
+
+  // 4. Calculate
+  const tfSeconds = timeframeToSeconds(form.tf);
+  const patternLength = form.up + form.down + form.neutral;
+
+  console.log('⚡ Generating', form.count, 'candles');
+  console.log('⚡ TF:', form.tf, '(', tfSeconds, 'sec )');
+  console.log('⚡ Pattern: Up', form.up, '/ Down', form.down, '/ Neutral', form.neutral);
+
+  // 5. Clear existing
+  clearCurrentCandleList();
+
+  // 6. Generate candles (time only — price 6B-2-তে)
+  const tempList = [];
+  for (let i = 0; i < form.count; i++) {
+    const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
+
+    // Determine direction (0=up, 1=down, 2=neutral)
+    let direction = 'up';
+    if (patternLength > 0) {
+      const pos = i % patternLength;
+      if (pos < form.up) direction = 'up';
+      else if (pos < form.up + form.down) direction = 'down';
+      else direction = 'neutral';
+    }
+
+    tempList.push({
+      number: i + 1,
+      date: timeInfo.date,
+      time: timeInfo.startTime,
+      endTime: timeInfo.endTime,
+      timeframe: form.tf,
+      direction: direction,
+      wick: form.wick,
+      body: form.body,
+      // Price fields placeholder (6B-2-তে fill হবে)
+      open: '0.00',
+      high: '0.00',
+      low: '0.00',
+      close: '0.00',
+      color: 'green',
+      up: form.up,
+      down: form.down
+    });
+  }
+
+  // 7. Save to global list
+  window.candleList = tempList;
+  window.candleCounter = tempList.length;
+  renderCandleTable();
+
+  // 8. Log first & last for verify
+  const first = tempList[0];
+  const last = tempList[tempList.length - 1];
+  console.log('✅ Generated', tempList.length, 'candles');
+  console.log('   First:', first.date, first.time, '→', first.endTime, `(${first.direction})`);
+  console.log('   Last: ', last.date, last.time, '→', last.endTime, `(${last.direction})`);
+
+  alert(`✅ ${tempList.length}টা ক্যান্ডেল তৈরি হয়েছে!\n\n(দাম এখনো বসেনি — Part 6B-2-তে আসবে)`);
+}
+
+// ---------- Bind Bulk Generate Button ----------
+function bindBulkGenerate() {
+  const btn = document.getElementById('bulk-generate-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', bulkGenerateCandles);
+  console.log('✅ Bulk Generate button bound');
+}
+
+bindBulkGenerate();
+document.addEventListener('DOMContentLoaded', bindBulkGenerate);
+setTimeout(bindBulkGenerate, 800);
+setTimeout(bindBulkGenerate, 2500);
+
+// ---------- Global Expose ----------
+window.bulkGenerateCandles = bulkGenerateCandles;
+window.timeframeToSeconds = timeframeToSeconds;
+window.calcCandleTime = calcCandleTime;
+
+console.log('🎯 Part 6B-1 (Time Calc) loaded');
