@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trading App</title>
+  <title>Quotex Clone</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
@@ -12,60 +12,106 @@
 
   <!-- লগইন পেজ -->
   <div id="login-page" class="page">
-    <h1>লগইন</h1>
+    <div class="logo-box">
+      <div class="logo-icon">Q</div>
+      <h1>Quotex Clone</h1>
+      <p class="tagline">ট্রেড করুন, জিতুন</p>
+    </div>
     <input type="email" id="email" placeholder="ইমেইল">
     <input type="password" id="password" placeholder="পাসওয়ার্ড">
     <button id="login-btn">লগইন</button>
-    <button id="signup-btn">নতুন অ্যাকাউন্ট</button>
+    <button id="signup-btn" class="secondary-btn">নতুন অ্যাকাউন্ট</button>
     <p id="message"></p>
   </div>
 
   <!-- ট্রেডিং পেজ -->
   <div id="dashboard-page" class="page hidden">
-    <div class="header">
-      <span class="balance-text">ব্যালেন্স: $<span id="balance">0</span></span>
-      <button id="logout-btn" class="small-btn">লগআউট</button>
+
+    <!-- হেডার -->
+    <div class="top-bar">
+      <div class="user-info">
+        <div class="avatar">👤</div>
+        <div class="user-email" id="user-email-display">user@email.com</div>
+      </div>
+      <button id="logout-btn" class="icon-btn">⏻</button>
     </div>
 
-    <div class="chart-container">
-      <div id="price-display">
-        <span class="asset-name">BTC/USD</span>
-        <span id="current-price">0.00</span>
+    <!-- ব্যালেন্স কার্ড -->
+    <div class="balance-card">
+      <div class="balance-label">ডেমো ব্যালেন্স</div>
+      <div class="balance-value">$<span id="balance">0</span></div>
+      <div class="balance-change" id="balance-change"></div>
+    </div>
+
+    <!-- চার্ট সেকশন -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="asset-selector">
+          <span class="asset-dot"></span>
+          <span class="asset-name">BTC/USD</span>
+          <span class="asset-arrow">▾</span>
+        </div>
+        <div class="price-box">
+          <span id="current-price">0.00</span>
+          <span id="price-arrow" class="price-arrow">▲</span>
+        </div>
       </div>
       <div id="chart"></div>
     </div>
 
+    <!-- ট্রেড প্যানেল -->
     <div class="trade-panel">
-      <div class="trade-amount">
-        <label>পরিমাণ ($)</label>
-        <input type="number" id="trade-amount" value="10" min="1">
-      </div>
 
-      <div class="trade-time">
-        <label>সময়</label>
-        <div class="time-buttons">
-          <button class="time-btn active" data-time="60">১ মিনিট</button>
-          <button class="time-btn" data-time="300">৫ মিনিট</button>
+      <div class="trade-amount-row">
+        <label>পরিমাণ ($)</label>
+        <div class="amount-input-wrap">
+          <button class="amount-btn" data-action="minus">−</button>
+          <input type="number" id="trade-amount" value="10" min="1">
+          <button class="amount-btn" data-action="plus">+</button>
         </div>
       </div>
 
+      <div class="trade-time-row">
+        <label>সময়</label>
+        <div class="time-buttons">
+          <button class="time-btn active" data-time="60">01:00</button>
+          <button class="time-btn" data-time="300">05:00</button>
+          <button class="time-btn" data-time="900">15:00</button>
+        </div>
+      </div>
+
+      <!-- বড় টাইমার -->
+      <div id="big-timer" class="big-timer hidden">01:00</div>
+
       <div class="trade-buttons">
-        <button id="call-btn" class="call-btn">CALL ▲</button>
-        <button id="put-btn" class="put-btn">PUT ▼</button>
+        <button id="call-btn" class="call-btn">
+          <span class="arrow">▲</span>
+          <span class="btn-label">CALL</span>
+        </button>
+        <button id="put-btn" class="put-btn">
+          <span class="arrow">▼</span>
+          <span class="btn-label">PUT</span>
+        </button>
       </div>
 
       <p id="trade-message"></p>
     </div>
 
-    <div class="active-trades">
-      <h3>চলমান ট্রেড</h3>
-      <div id="active-trades-list"></div>
+    <!-- ট্যাব -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="active">চলমান <span id="active-count">0</span></button>
+      <button class="tab-btn" data-tab="history">হিস্ট্রি</button>
     </div>
 
-    <div class="trade-history">
-      <h3>ট্রেড হিস্ট্রি</h3>
-      <div id="history-list"></div>
+    <div class="tab-content">
+      <div id="active-trades-list" class="tab-pane active">
+        <p class="empty-text">কোনো চলমান ট্রেড নেই</p>
+      </div>
+      <div id="history-list" class="tab-pane">
+        <p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>
+      </div>
     </div>
+
   </div>
 
   <script type="module" src="app.js"></script>
