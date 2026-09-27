@@ -680,7 +680,7 @@ async function loadSettings() {
       if (winRateInput) winRateInput.value = currentWinRate;
       if (payoutInput) payoutInput.value = currentPayout;
       if (autoIntervalInput) autoIntervalInput.value = currentAutoInterval;
-      updateAutoModeUI();
+
     }
   } catch (err) { console.error(err); }
 }
@@ -733,20 +733,6 @@ function updateAutoModeUI() {
   }
 }
 
-if (autoModeToggle) {
-  autoModeToggle.addEventListener("click", async () => {
-    isAutoMode = !isAutoMode;
-    try {
-      await setDoc(doc(db, "settings", "global"), { autoMode: isAutoMode }, { merge: true });
-      updateAutoModeUI();
-      if (window.toggleAutoMode) window.toggleAutoMode();
-    } catch (err) {
-      alert(err.message);
-      isAutoMode = !isAutoMode;
-      updateAutoModeUI();
-    }
-  });
-}
 window.candleList = [];
 window.candleCounter = 0;
 window.currentMarketId = null;
@@ -1683,7 +1669,4 @@ window.stopAutoMode = stopAutoMode;
 window.toggleAutoMode = toggleAutoMode;
 window.setAutoModeInterval = setAutoModeInterval;
 window.autoGenerateOneCandle = autoGenerateOneCandle;
-window.updateAutoModeUI = updateAutoModeUI;
-window.updateAutoModeUI2 = updateAutoModeUI2;
-
 console.log('admin.js FULLY loaded - Part 3 to 6D');
