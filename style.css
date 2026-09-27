@@ -8,15 +8,15 @@ body {
   font-family: Arial, sans-serif;
   background: #0d1117;
   color: #fff;
-  padding: 20px;
+  padding: 10px;
   min-height: 100vh;
 }
 
 .page {
-  max-width: 400px;
-  margin: 40px auto;
+  max-width: 500px;
+  margin: 20px auto;
   background: #161b22;
-  padding: 25px;
+  padding: 20px;
   border-radius: 12px;
 }
 
@@ -28,6 +28,12 @@ h1 {
   font-size: 22px;
   margin-bottom: 20px;
   text-align: center;
+}
+
+h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #8b949e;
 }
 
 input {
@@ -66,4 +72,239 @@ button:active {
   font-size: 14px;
   text-align: center;
   margin-top: 10px;
+}
+
+/* ===== ট্রেডিং পেজ ===== */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #30363d;
+}
+
+.balance-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #3fb950;
+}
+
+.small-btn {
+  width: auto;
+  padding: 8px 15px;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* চার্ট */
+.chart-container {
+  background: #0d1117;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+#price-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 5px;
+}
+
+.asset-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #58a6ff;
+}
+
+#current-price {
+  font-size: 20px;
+  font-weight: bold;
+  color: #3fb950;
+}
+
+#chart {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ট্রেড প্যানেল */
+.trade-panel {
+  background: #0d1117;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.trade-amount label,
+.trade-time label {
+  display: block;
+  font-size: 13px;
+  color: #8b949e;
+  margin-bottom: 6px;
+}
+
+.trade-amount input {
+  margin-bottom: 15px;
+}
+
+.time-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.time-btn {
+  flex: 1;
+  background: #21262d;
+  border: 1px solid #30363d;
+  margin: 0;
+  font-size: 13px;
+}
+
+.time-btn.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.trade-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.call-btn,
+.put-btn {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 15px;
+}
+
+.call-btn {
+  background: #238636;
+}
+
+.put-btn {
+  background: #da3633;
+}
+
+#trade-message {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+/* অ্যাক্টিভ ট্রেড ও হিস্ট্রি */
+.active-trades,
+.trade-history {
+  background: #0d1117;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.trade-item {
+  background: #161b22;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  border-left: 4px solid #30363d;
+}
+
+.trade-item.call {
+  border-left-color: #3fb950;
+}
+
+.trade-item.put {
+  border-left-color: #f85149;
+}
+
+.trade-item.win {
+  border-left-color: #3fb950;
+  background: #12261e;
+}
+
+.trade-item.loss {
+  border-left-color: #f85149;
+  background: #2a1215;
+}
+
+.trade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trade-type {
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.trade-type.call {
+  color: #3fb950;
+}
+
+.trade-type.put {
+  color: #f85149;
+}
+
+.trade-time {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.trade-result {
+  text-align: right;
+  font-weight: bold;
+}
+
+.trade-result.win {
+  color: #3fb950;
+}
+
+.trade-result.loss {
+  color: #f85149;
+}
+
+.trade-result.pending {
+  color: #d29922;
+  font-size: 12px;
+}
+
+/* অ্যাডমিন বাটন */
+.admin-btn {
+  background: #8957e5;
+  margin-bottom: 10px;
+}
+
+.admin-btn:active {
+  background: #a371f7;
+}
+
+/* স্পিনার */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #30363d;
+  border-top-color: #58a6ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
