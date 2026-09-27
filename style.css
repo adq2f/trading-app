@@ -29,6 +29,40 @@ h1 {
   text-align: center;
 }
 
+input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #3fb950;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.98);
+  background: #2ea043;
+}
+
 /* ===== লগইন পেজ ===== */
 #login-page {
   background: linear-gradient(160deg, #161b22 0%, #0d1117 100%);
@@ -54,53 +88,13 @@ h1 {
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 12px;
-  box-shadow: 0 4px 20px rgba(63, 185, 80, 0.3);
+  color: #fff;
 }
 
 .tagline {
   color: #8b949e;
   font-size: 13px;
   margin-top: 4px;
-}
-
-input {
-  width: 100%;
-  padding: 14px;
-  margin-bottom: 12px;
-  background: #0d1117;
-  border: 1px solid #30363d;
-  color: #fff;
-  border-radius: 10px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-input:focus {
-  border-color: #3fb950;
-}
-
-input::placeholder {
-  color: #6e7681;
-}
-
-button {
-  width: 100%;
-  padding: 14px;
-  margin-bottom: 10px;
-  background: #238636;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
-}
-
-button:active {
-  transform: scale(0.98);
-  background: #2ea043;
 }
 
 .secondary-btn {
@@ -214,13 +208,9 @@ button:active {
   min-height: 14px;
 }
 
-.balance-change.up {
-  color: #3fb950;
-}
+.balance-change.up { color: #3fb950; }
+.balance-change.down { color: #f85149; }
 
-.balance-change.down {
-  color: #f85149;
-}
 /* ===== চার্ট সেকশন ===== */
 .chart-section {
   background: #0d1117;
@@ -238,32 +228,21 @@ button:active {
   padding: 0 4px;
 }
 
-.asset-selector {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.asset-selector-select {
   background: #161b22;
-  padding: 6px 12px;
+  color: #fff;
+  border: 1px solid #21262d;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
 }
 
-.asset-dot {
-  width: 8px;
-  height: 8px;
-  background: #f7931a;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #f7931a;
-}
-
-.asset-name {
-  color: #fff;
-}
-
-.asset-arrow {
-  color: #8b949e;
-  font-size: 10px;
+.asset-selector-select:focus {
+  border-color: #3fb950;
 }
 
 .price-box {
@@ -284,13 +263,8 @@ button:active {
   transition: color 0.2s;
 }
 
-.price-arrow.up {
-  color: #3fb950;
-}
-
-.price-arrow.down {
-  color: #f85149;
-}
+.price-arrow.up { color: #3fb950; }
+.price-arrow.down { color: #f85149; }
 
 #chart {
   width: 100%;
@@ -306,9 +280,33 @@ button:active {
   height: 100% !important;
 }
 
-/* TradingView attribution */
 #chart a#tv-attr-logo {
   display: none !important;
+}
+
+.chart-timeframe {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.tf-btn {
+  flex: 1;
+  padding: 6px 8px;
+  margin: 0;
+  background: #161b22;
+  border: 1px solid #21262d;
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.tf-btn.active {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
 }
 
 /* ===== ট্রেড প্যানেল ===== */
@@ -382,12 +380,13 @@ button:active {
   padding: 12px 8px;
   border-radius: 10px;
   font-weight: 600;
+  color: #8b949e;
 }
 
 .time-btn.active {
   background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
   border-color: #1f6feb;
-  box-shadow: 0 0 12px rgba(31, 111, 235, 0.3);
+  color: #fff;
 }
 
 /* বড় টাইমার */
@@ -429,6 +428,8 @@ button:active {
   gap: 4px;
   font-weight: bold;
   transition: transform 0.1s;
+  color: #fff;
+  border: none;
 }
 
 .call-btn {
@@ -464,6 +465,7 @@ button:active {
   font-weight: 600;
   min-height: 20px;
 }
+
 /* ===== ট্যাব ===== */
 .tabs {
   display: flex;
@@ -485,7 +487,6 @@ button:active {
   font-size: 13px;
   font-weight: 600;
   border-radius: 8px;
-  transition: all 0.2s;
 }
 
 .tab-btn.active {
@@ -538,7 +539,6 @@ button:active {
   align-items: center;
   font-size: 14px;
   border-left: 3px solid #30363d;
-  transition: all 0.3s;
 }
 
 .trade-item:last-child {
@@ -633,24 +633,13 @@ button:active {
   100% { opacity: 0; }
 }
 
-/* ===== এরর মেসেজ ===== */
-.error-box {
-  background: #2a1215;
-  border: 1px solid #f85149;
-  color: #f85149;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-
 /* ===== মোবাইল অপটিমাইজ ===== */
 @media (max-width: 400px) {
   .balance-value {
     font-size: 24px;
   }
   #chart {
-    height: 180px;
+    height: 220px;
   }
   .big-timer {
     font-size: 30px;
@@ -658,78 +647,4 @@ button:active {
   .user-email {
     max-width: 150px;
   }
-}
-
-/* ===== অ্যাসেট সিলেক্টর ===== */
-.asset-selector-select {
-  background: #161b22;
-  color: #fff;
-  border: 1px solid #21262d;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  outline: none;
-  cursor: pointer;
-  min-width: 120px;
-}
-
-.asset-selector-select:focus {
-  border-color: #3fb950;
-}
-
-/* ===== টাইমফ্রেম ===== */
-.chart-timeframe {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 0 4px;
-}
-
-.tf-btn {
-  flex: 1;
-  padding: 6px 8px;
-  margin: 0;
-  background: #161b22;
-  border: 1px solid #21262d;
-  color: #8b949e;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-}
-
-.tf-btn.active {
-  background: #1f6feb;
-  color: #fff;
-  border-color: #1f6feb;
-}
-
-/* ===== চার্ট ক্যানভাস ===== */
-#chart {
-  width: 100%;
-  height: 260px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #0a0e17;
-  position: relative;
-}
-
-#price-canvas {
-  display: block;
-}
-
-/* ট্রেড মার্কার */
-.trade-marker {
-  position: absolute;
-  font-size: 14px;
-  font-weight: bold;
-  pointer-events: none;
-  z-index: 10;
-  animation: markerPop 0.4s ease-out;
-}
-
-@keyframes markerPop {
-  0% { transform: scale(0); }
-  80% { transform: scale(1.3); }
-  100% { transform: scale(1); }
 }
