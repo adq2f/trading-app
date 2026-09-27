@@ -1012,14 +1012,13 @@ function updateAutoModeButton() {
   }
 }
 /* ============================================================
-   CANDLE SCHEDULER — Mini Logic (Part 6 Preview)
+   CANDLE SCHEDULER — Robust Logic (v2)
    ============================================================ */
 
-// State: সব ক্যান্ডেল এখানে থাকবে
 let candleList = [];
 let candleCounter = 0;
 
-// ------ Render Table ------
+// ---------- Render Table ----------
 function renderCandleTable() {
   const tbody = document.getElementById('candle-table-body');
   if (!tbody) return;
@@ -1039,7 +1038,7 @@ function renderCandleTable() {
       <td>${c.high}</td>
       <td>${c.low}</td>
       <td>${c.close}</td>
-      <td class="${c.color}">${c.color === 'green' ? '🟢' : '🔴'} ${c.color}</td>
+      <td class="${c.color}">${c.color === 'green' ? '🟢' : '🔴'}</td>
       <td>${c.up || 0}m</td>
       <td>${c.down || 0}m</td>
       <td>
@@ -1050,66 +1049,71 @@ function renderCandleTable() {
     </tr>
   `).join('');
 
-  // Event bind
   tbody.querySelectorAll('.act-btn.edit').forEach(b =>
     b.onclick = () => editCandle(Number(b.dataset.i)));
   tbody.querySelectorAll('.act-btn.del').forEach(b =>
     b.onclick = () => deleteCandle(Number(b.dataset.i)));
   tbody.querySelectorAll('.act-btn.copy').forEach(b =>
     b.onclick = () => copyCandle(Number(b.dataset.i)));
+
+  if (typeof renderCandlePreview === 'function') renderCandlePreview();
+  if (typeof renderDirectionTimeline === 'function') renderDirectionTimeline();
 }
 
-// ------ Add New Candle ------
+// ---------- Add Candle ----------
 function addCandle() {
-  candleCounter++;
+  try {
+    candleCounter++;
 
-  const base = Number(document.getElementById('bulk-base')?.value || 50000);
-  const open  = base + (Math.random() * 100 - 50);
-  const close = open + (Math.random() * 80 - 40);
-  const high  = Math.max(open, close) + Math.random() * 20;
-  const low   = Math.min(open, close) - Math.random() * 20;
-  const color = close >= open ? 'green' : 'red';
+    const baseEl = document.getElementById('bulk-base');
+    const base   = Number(baseEl?.value || 50000);
 
-  const now = new Date();
-  const date = now.toISOString().split('T')[0];
-  const time = now.toTimeString().slice(0, 8);
+    const open  = base + (Math.random() * 100 - 50);
+    const close = open + (Math.random() * 80 - 40);
+    const high  = Math.max(open, close) + Math.random() * 20;
+    const low   = Math.min(open, close) - Math.random() * 20;
+    const color = close >= open ? 'green' : 'red';
 
-  candleList.push({
-    number: candleCounter,
-    date,
-    time,
-    timeframe: document.getElementById('candle-timeframe')?.value || '1m',
-    open:  open.toFixed(2),
-    high:  high.toFixed(2),
-    low:   low.toFixed(2),
-    close: close.toFixed(2),
-    color,
-    up:   Number(document.getElementById('bulk-up')?.value   || 5),
-    down: Number(document.getElementById('bulk-down')?.value || 5)
-  });
+    const now  = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().slice(0, 8);
 
-  renderCandleTable();
-  console.log('✅ Candle added:', candleList[candleList.length - 1]);
+    candleList.push({
+      number: candleCounter,
+      date,
+      time,
+      timeframe: document.getElementById('candle-timeframe')?.value || '1m',
+      open:  open.toFixed(2),
+      high:  high.toFixed(2),
+      low:   low.toFixed(2),
+      close: close.toFixed(2),
+      color,
+      up:   Number(document.getElementById('bulk-up')?.value   || 5),
+      down: Number(document.getElementById('bulk-down')?.value || 5)
+    });
+
+    renderCandleTable();
+    console.log('✅ Candle added, total =', candleList.length);
+  } catch (err) {
+    console.error('❌ addCandle error:', err);
+    alert('Error: ' + err.message);
+  }
 }
 
-// ------ Delete ------
+// ---------- Delete ----------
 function deleteCandle(index) {
-  if (!confirm(`ক্যান্ডেল #${index + 1} ডিলিট করবেন?`)) return;
+  if (!confirm(`ক্যান্ডেল #${index + 1} ডিলিট?`)) return;
   candleList.splice(index, 1);
   renderCandleTable();
 }
 
-// ------ Edit ------
+// ---------- Edit ----------
 function editCandle(index) {
   const c = candleList[index];
-  const newOpen  = prompt('Open:', c.open);
-  if (newOpen === null) return;
-  const newClose = prompt('Close:', c.close);
-  if (newClose === null) return;
-  const newHigh  = prompt('High:', c.high);
-  if (newHigh === null) return;
-  const newLow   = prompt('Low:', c.low);
-  if (newLow === null) return;
+  const newOpen  = prompt('Open:', c.open);  if (newOpen  === null) return;
+  const newClose = prompt('Close:', c.close); if (newClose === null) return;
+  const newHigh  = prompt('High:', c.high);  if (newHigh  === null) return;
+  const newLow   = prompt('Low:', c.low);    if (newLow   === null) return;
 
   c.open  = Number(newOpen).toFixed(2);
   c.close = Number(newClose).toFixed(2);
@@ -1120,35 +1124,52 @@ function editCandle(index) {
   renderCandleTable();
 }
 
-// ------ Copy ------
+// ---------- Copy ----------
 function copyCandle(index) {
-  const c = { ...candleList[index] };
   candleCounter++;
-  c.number = candleCounter;
+  const c = { ...candleList[index], number: candleCounter };
   candleList.splice(index + 1, 0, c);
   renderCandleTable();
 }
 
-// ------ Bind Buttons (DOM Ready) ------
-document.addEventListener('DOMContentLoaded', () => {
-  const addBtn = document.getElementById('add-candle-btn');
-  if (addBtn) {
-    addBtn.onclick = addCandle;
-    console.log('✅ Add Candle button bound');
-  }
-  const clearBtn = document.getElementById('clear-candles-btn');
-  if (clearBtn) {
-    clearBtn.onclick = () => {
-      if (confirm('সব ক্যান্ডেল মুছবেন?')) {
-        candleList = [];
-        candleCounter = 0;
-        renderCandleTable();
-      }
-    };
-  }
+// ---------- Clear ----------
+function clearCandles() {
+  if (!confirm('সব ক্যান্ডেল মুছবেন?')) return;
+  candleList = [];
+  candleCounter = 0;
   renderCandleTable();
-});
+}
 
-// Global expose (console থেকে টেস্ট করার জন্য)
+// ---------- Bind (works regardless of timing) ----------
+function bindCandleButtons() {
+  const add = document.getElementById('add-candle-btn');
+  if (add) {
+    add.onclick = addCandle;
+    console.log('✅ Add button bound');
+  } else {
+    console.warn('⚠️ add-candle-btn not found');
+  }
+
+  const clr = document.getElementById('clear-candles-btn');
+  if (clr) {
+    clr.onclick = clearCandles;
+    console.log('✅ Clear button bound');
+  }
+
+  renderCandleTable();
+}
+
+// Run bind immediately AND on DOMContentLoaded AND after small delay
+bindCandleButtons();
+document.addEventListener('DOMContentLoaded', bindCandleButtons);
+setTimeout(bindCandleButtons, 800);
+setTimeout(bindCandleButtons, 2500);
+
+// Global expose
 window.addCandle = addCandle;
+window.clearCandles = clearCandles;
 window.candleList = candleList;
+window.renderCandleTable = renderCandleTable;
+window.bindCandleButtons = bindCandleButtons;
+
+console.log('🎯 Candle Scheduler v2 loaded');
