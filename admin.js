@@ -1449,82 +1449,7 @@ function clearCurrentCandleList() {
 }
 
 // ---------- Bulk Generate (Main Function) ----------
-async function bulkGenerateCandles() {
-  console.log('⚡ Bulk Generate clicked');
 
-  // 1. Validate
-  const form = validateBulkForm();
-  if (!form) return;
-
-  // 2. Check market
-  if (!window.currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return;
-  }
-
-  // 3. Confirm overwrite
-  const ok = await confirmOverwrite();
-  if (!ok) return;
-
-  // 4. Calculate
-  const tfSeconds = timeframeToSeconds(form.tf);
-  const patternLength = form.up + form.down + form.neutral;
-
-  console.log('⚡ Generating', form.count, 'candles');
-  console.log('⚡ TF:', form.tf, '(', tfSeconds, 'sec )');
-  console.log('⚡ Pattern: Up', form.up, '/ Down', form.down, '/ Neutral', form.neutral);
-
-  // 5. Clear existing
-  clearCurrentCandleList();
-
-  // 6. Generate candles (time only — price 6B-2-তে)
-  const tempList = [];
-  for (let i = 0; i < form.count; i++) {
-    const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
-
-    // Determine direction (0=up, 1=down, 2=neutral)
-    let direction = 'up';
-    if (patternLength > 0) {
-      const pos = i % patternLength;
-      if (pos < form.up) direction = 'up';
-      else if (pos < form.up + form.down) direction = 'down';
-      else direction = 'neutral';
-    }
-
-    tempList.push({
-      number: i + 1,
-      date: timeInfo.date,
-      time: timeInfo.startTime,
-      endTime: timeInfo.endTime,
-      timeframe: form.tf,
-      direction: direction,
-      wick: form.wick,
-      body: form.body,
-      // Price fields placeholder (6B-2-তে fill হবে)
-      open: '0.00',
-      high: '0.00',
-      low: '0.00',
-      close: '0.00',
-      color: 'green',
-      up: form.up,
-      down: form.down
-    });
-  }
-
-  // 7. Save to global list
-  window.candleList = tempList;
-  window.candleCounter = tempList.length;
-  renderCandleTable();
-
-  // 8. Log first & last for verify
-  const first = tempList[0];
-  const last = tempList[tempList.length - 1];
-  console.log('✅ Generated', tempList.length, 'candles');
-  console.log('   First:', first.date, first.time, '→', first.endTime, `(${first.direction})`);
-  console.log('   Last: ', last.date, last.time, '→', last.endTime, `(${last.direction})`);
-
-  alert(`✅ ${tempList.length}টা ক্যান্ডেল তৈরি হয়েছে!\n\n(দাম এখনো বসেনি — Part 6B-2-তে আসবে)`);
-}
 
 // ---------- Bind Bulk Generate Button ----------
 function bindBulkGenerate() {
@@ -1542,8 +1467,166 @@ setTimeout(bindBulkGenerate, 800);
 setTimeout(bindBulkGenerate, 2500);
 
 // ---------- Global Expose ----------
-window.bulkGenerateCandles = bulkGenerateCandles;
 window.timeframeToSeconds = timeframeToSeconds;
 window.calcCandleTime = calcCandleTime;
 
 console.log('🎯 Part 6B-1 (Time Calc) loaded');
+/* ============================================================
+   PART 6B-2: Price Calculation + Direction + Color
+   ============================================================ */
+
+function getPriceMovement(direction) {
+  const baseMove = 30 + Math.random() * 90;
+  if (direction === 'up') {
+    return Math.abs(baseMove);
+  } else if (direction === 'down') {
+    return -Math.abs(baseMove);
+  } else {
+    return (Math.random() - 0.5) * 10;
+  }
+}
+
+function getSizeMultiplier(sizeType) {
+  if (sizeType === 'small')  return 0.5;
+  if (sizeType === 'large')  return 1.8;
+  return 1.0;
+}
+
+function buildCandleWithPrice(params) {
+  const {
+    number, date, time, endTime, timeframe,
+    prevClose, basePrice, direction,
+    wick, body, sizeType
+  } = params;
+
+  const sizeMul = getSizeMultiplier(sizeType);
+  const wickScaled = wick * sizeMul;
+  const bodyScaled = body * sizeMul;
+
+  const open = prevClose !== null ? prevClose : basePrice;
+  const movement = getPriceMovement(direction);
+  const close = open + movement;
+
+  const maxOC = Math.max(open, close);
+  const minOC = Math.min(open, close);
+  const high = maxOC + wickScaled;
+  const low  = minOC - wickScaled;
+
+  let color;
+  if (direction === 'up')      color = 'green';
+  else if (direction === 'down') color = 'red';
+  else                          color = close >= open ? 'green' : 'red';
+
+  return {
+    number, date, time, endTime, timeframe,
+    open:  open.toFixed(2),
+    high:  high.toFixed(2),
+    low:   low.toFixed(2),
+    close: close.toFixed(2),
+    color,
+    direction,
+    size: sizeType,
+    wick: wickScaled.toFixed(0),
+    body: bodyScaled.toFixed(0),
+    up: 0,
+    down: 0
+  };
+}
+
+async function bulkGenerateCandles() {
+  console.log('⚡ Bulk Generate (v2) clicked');
+
+  const form = validateBulkForm();
+  if (!form) return;
+
+  if (!window.currentMarketId) {
+    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+    return;
+  }
+
+  const ok = await confirmOverwrite();
+  if (!ok) return;
+
+  const tfSeconds = timeframeToSeconds(form.tf);
+  const patternLength = form.up + form.down + form.neutral;
+  const sizeType = 'medium';
+
+  console.log('⚡ Generating', form.count, 'candles | Size:', sizeType);
+
+  clearCurrentCandleList();
+
+  const tempList = [];
+  let prevClose = null;
+  let upCount = 0, downCount = 0, neutralCount = 0;
+
+  for (let i = 0; i < form.count; i++) {
+    const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
+
+    let direction = 'up';
+    if (patternLength > 0) {
+      const pos = i % patternLength;
+      if (pos < form.up) direction = 'up';
+      else if (pos < form.up + form.down) direction = 'down';
+      else direction = 'neutral';
+    }
+
+    const candle = buildCandleWithPrice({
+      number: i + 1,
+      date: timeInfo.date,
+      time: timeInfo.startTime,
+      endTime: timeInfo.endTime,
+      timeframe: form.tf,
+      prevClose: prevClose,
+      basePrice: form.base,
+      direction,
+      wick: form.wick,
+      body: form.body,
+      sizeType
+    });
+
+    candle.up = form.up;
+    candle.down = form.down;
+
+    prevClose = parseFloat(candle.close);
+
+    if (direction === 'up') upCount++;
+    else if (direction === 'down') downCount++;
+    else neutralCount++;
+
+    tempList.push(candle);
+  }
+
+  window.candleList = tempList;
+  window.candleCounter = tempList.length;
+  renderCandleTable();
+
+  console.log('✅ Generated', tempList.length, 'candles');
+  console.log(`   UP: ${upCount} | DOWN: ${downCount} | NEUTRAL: ${neutralCount}`);
+  console.log('   First:', tempList[0].open, '→', tempList[0].close);
+  console.log('   Last:', tempList[tempList.length - 1].open, '→', tempList[tempList.length - 1].close);
+
+  alert(
+    `✅ ${tempList.length}টা ক্যান্ডেল তৈরি!\n\n` +
+    `🟢 UP: ${upCount} | 🔴 DOWN: ${downCount} | ⚪ NEUTRAL: ${neutralCount}\n` +
+    `📊 Price: $${tempList[0].open} → $${tempList[tempList.length - 1].close}`
+  );
+}
+
+function rebindBulkGenerate() {
+  const btn = document.getElementById('bulk-generate-btn');
+  if (!btn) return;
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', bulkGenerateCandles);
+  console.log('✅ Bulk Generate rebound (v2)');
+}
+
+rebindBulkGenerate();
+document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
+setTimeout(rebindBulkGenerate, 800);
+setTimeout(rebindBulkGenerate, 2500);
+
+window.buildCandleWithPrice = buildCandleWithPrice;
+window.getPriceMovement = getPriceMovement;
+
+console.log('🎯 Part 6B-2 (Price + Direction) loaded');
