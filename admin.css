@@ -1088,3 +1088,127 @@ input, select {
   background: rgba(255, 179, 0, 0.25) !important;
   border-left: 4px solid #ffb300 !important;
 }
+
+/* ============================================
+   PART 6C-2: Live Preview Chart
+   ============================================ */
+
+.candle-preview {
+  padding: 12px !important;
+  background: #0b1220 !important;
+  border: 1px solid #1f2a3d !important;
+  border-radius: 10px !important;
+  min-height: 220px;
+  overflow-x: auto;
+}
+
+.pv-chart-wrap {
+  position: relative;
+  padding: 20px 12px 30px 12px;
+  min-height: 200px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 8px;
+}
+
+.pv-chart {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  height: 180px;
+  padding-bottom: 20px;
+  min-width: fit-content;
+}
+
+.pv-candle {
+  position: relative;
+  width: 16px;
+  min-width: 16px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.pv-candle:hover {
+  transform: translateY(-3px);
+}
+
+.pv-candle.pv-active {
+  background: rgba(255, 179, 0, 0.15);
+  border-radius: 4px;
+  border: 1px solid #ffb300;
+}
+
+.pv-wick {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  border-radius: 1px;
+}
+
+.pv-body {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
+}
+
+.pv-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #6b7a90;
+  white-space: nowrap;
+}
+
+.pv-price-label {
+  position: absolute;
+  right: 8px;
+  font-size: 10px;
+  color: #6b7a90;
+  font-weight: 600;
+  background: rgba(11, 18, 32, 0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.pv-price-top {
+  top: 8px;
+}
+
+.pv-price-bottom {
+  bottom: 38px;
+}
+
+.pv-info {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #6b7a90;
+  text-align: center;
+  padding: 6px;
+}
+
+/* Scroll for many candles */
+.pv-chart-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pv-chart-wrap::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+
+.pv-chart-wrap::-webkit-scrollbar-thumb {
+  background: #1f2a3d;
+  border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+  .pv-candle { width: 12px; min-width: 12px; }
+  .pv-body { width: 8px; }
+  .pv-chart { gap: 4px; }
+  .pv-chart-wrap { padding: 20px 6px 30px 6px; }
+}
