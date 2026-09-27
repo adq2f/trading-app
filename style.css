@@ -1318,3 +1318,8 @@ input, select {
   background: #00c853;
   color: #fff;
 }
+
+/* ===== পপআপ ফিক্স ===== */
+.popup.hidden {
+  display: none !important;
+}
