@@ -1,34 +1,15 @@
 <!DOCTYPE html>
 <html lang="bn">
-    <!-- চার্ট সেকশন -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <select id="asset-select" class="asset-selector-select">
-          <option value="BTCUSDT">BTC/USDT</option>
-          <option value="ETHUSDT">ETH/USDT</option>
-          <option value="BNBUSDT">BNB/USDT</option>
-          <option value="SOLUSDT">SOL/USDT</option>
-          <option value="XRPUSDT">XRP/USDT</option>
-          <option value="ADAUSDT">ADA/USDT</option>
-          <option value="DOGEUSDT">DOGE/USDT</option>
-          <option value="MATICUSDT">MATIC/USDT</option>
-          <option value="DOTUSDT">DOT/USDT</option>
-          <option value="LINKUSDT">LINK/USDT</option>
-          <option value="AVAXUSDT">AVAX/USDT</option>
-          <option value="LTCUSDT">LTC/USDT</option>
-        </select>
-        <div class="price-box">
-          <span id="current-price">0.00</span>
-          <span id="price-arrow" class="price-arrow">▲</span>
-        </div>
-      </div>
-      <div id="chart"></div>
-      <div class="chart-timeframe">
-        <button class="tf-btn active" data-tf="1m">1m</button>
-        <button class="tf-btn" data-tf="5m">5m</button>
-        <button class="tf-btn" data-tf="15m">15m</button>
-      </div>
-    </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quotex Clone</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+</head>
+<body>
 
   <!-- লগইন পেজ -->
   <div id="login-page" class="page">
@@ -63,7 +44,6 @@
       <div class="balance-change" id="balance-change"></div>
     </div>
 
-        <!-- চার্ট সেকশন -->
     <!-- চার্ট সেকশন -->
     <div class="chart-section">
       <div class="chart-header">
@@ -93,10 +73,9 @@
         <button class="tf-btn" data-tf="15m">15m</button>
       </div>
     </div>
-    
+
     <!-- ট্রেড প্যানেল -->
     <div class="trade-panel">
-
       <div class="trade-amount-row">
         <label>পরিমাণ ($)</label>
         <div class="amount-input-wrap">
@@ -115,7 +94,6 @@
         </div>
       </div>
 
-      <!-- বড় টাইমার -->
       <div id="big-timer" class="big-timer hidden">01:00</div>
 
       <div class="trade-buttons">
