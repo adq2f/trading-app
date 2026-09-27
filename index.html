@@ -43,22 +43,31 @@
       <div class="balance-change" id="balance-change"></div>
     </div>
 
-    <!-- চার্ট সেকশন -->
+        <!-- চার্ট সেকশন -->
     <div class="chart-section">
       <div class="chart-header">
-        <div class="asset-selector">
-          <span class="asset-dot"></span>
-          <span class="asset-name">BTC/USD</span>
-          <span class="asset-arrow">▾</span>
-        </div>
+        <select id="asset-select" class="asset-selector-select">
+          <option value="BTCUSDT">BTC/USD</option>
+          <option value="ETHUSDT">ETH/USD</option>
+          <option value="BNBUSDT">BNB/USD</option>
+          <option value="SOLUSDT">SOL/USD</option>
+          <option value="XRPUSDT">XRP/USD</option>
+          <option value="ADAUSDT">ADA/USD</option>
+          <option value="DOGEUSDT">DOGE/USD</option>
+          <option value="EURUSDT">EUR/USD</option>
+        </select>
         <div class="price-box">
           <span id="current-price">0.00</span>
           <span id="price-arrow" class="price-arrow">▲</span>
         </div>
       </div>
       <div id="chart"></div>
+      <div class="chart-timeframe">
+        <button class="tf-btn active" data-tf="1m">1m</button>
+        <button class="tf-btn" data-tf="5m">5m</button>
+        <button class="tf-btn" data-tf="15m">15m</button>
+      </div>
     </div>
-
     <!-- ট্রেড প্যানেল -->
     <div class="trade-panel">
 
