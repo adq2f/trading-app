@@ -1012,11 +1012,339 @@ function updateAutoModeButton() {
   }
 }
 /* ============================================================
-   CANDLE SCHEDULER — Robust Logic (v2)
+   CANDLE SCHEDULER — Robust Logic (v3 - FINAL)
    ============================================================ */
 
-let candleList = [];
-let candleCounter = 0;
+window.candleList = [];
+window.candleCounter = 0;
+window.currentMarketId = null;
+
+// ---------- Render Table ----------
+function renderCandleTable() {
+  const tbody = document.getElementById('candle-table-body');
+  if (!tbody) return;
+
+  if (window.candleList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-text">কোনো ক্যান্ডেল নেই</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = window.candleList.map((c, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${c.date || '-'}</td>
+      <td>${c.time || '-'}</td>
+      <td>${c.timeframe || '1m'}</td>
+      <td>${c.open}</td>
+      <td>${c.high}</td>
+      <td>${c.low}</td>
+      <td>${c.close}</td>
+      <td class="${c.color}">${c.color === 'green' ? '🟢' : '🔴'}</td>
+      <td>${c.up || 0}m</td>
+      <td>${c.down || 0}m</td>
+      <td>
+        <button class="act-btn edit" data-i="${i}">✏️</button>
+        <button class="act-btn del"  data-i="${i}">🗑</button>
+        <button class="act-btn copy" data-i="${i}">📋</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.act-btn.edit').forEach(b =>
+    b.onclick = () => editCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.del').forEach(b =>
+    b.onclick = () => deleteCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.copy').forEach(b =>
+    b.onclick = () => copyCandle(Number(b.dataset.i)));
+
+  if (typeof renderCandlePreview === 'function') renderCandlePreview();
+  if (typeof renderDirectionTimeline === 'function') renderDirectionTimeline();
+}
+
+// ---------- Add Candle ----------
+function addCandle() {
+  try {
+    window.candleCounter++;
+
+    const baseEl = document.getElementById('bulk-base');
+    const base   = Number(baseEl?.value || 50000);
+
+    const open  = base + (Math.random() * 100 - 50);
+    const close = open + (Math.random() * 80 - 40);
+    const high  = Math.max(open, close) + Math.random() * 20;
+    const low   = Math.min(open, close) - Math.random() * 20;
+    const color = close >= open ? 'green' : 'red';
+
+    const now  = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().slice(0, 8);
+
+    window.candleList.push({
+      number: window.candleCounter,
+      date, time,
+      timeframe: document.getElementById('candle-timeframe')?.value || '1m',
+      open:  open.toFixed(2),
+      high:  high.toFixed(2),
+      low:   low.toFixed(2),
+      close: close.toFixed(2),
+      color,
+      up:   Number(document.getElementById('bulk-up')?.value   || 5),
+      down: Number(document.getElementById('bulk-down')?.value || 5)
+    });
+
+    renderCandleTable();
+    console.log('✅ Candle added, total =', window.candleList.length);
+  } catch (err) {
+    console.error('❌ addCandle error:', err);
+    alert('Error: ' + err.message);
+  }
+}
+
+// ---------- Delete ----------
+function deleteCandle(index) {
+  if (!confirm(`ক্যান্ডেল #${index + 1} ডিলিট?`)) return;
+  window.candleList.splice(index, 1);
+  renderCandleTable();
+}
+
+// ---------- Edit ----------
+function editCandle(index) {
+  const c = window.candleList[index];
+  const newOpen  = prompt('Open:', c.open);  if (newOpen  === null) return;
+  const newClose = prompt('Close:', c.close); if (newClose === null) return;
+  const newHigh  = prompt('High:', c.high);  if (newHigh  === null) return;
+  const newLow   = prompt('Low:', c.low);    if (newLow   === null) return;
+
+  c.open  = Number(newOpen).toFixed(2);
+  c.close = Number(newClose).toFixed(2);
+  c.high  = Number(newHigh).toFixed(2);
+  c.low   = Number(newLow).toFixed(2);
+  c.color = Number(newClose) >= Number(newOpen) ? 'green' : 'red';
+
+  renderCandleTable();
+}
+
+// ---------- Copy ----------
+function copyCandle(index) {
+  window.candleCounter++;
+  const c = { ...window.candleList[index], number: window.candleCounter };
+  window.candleList.splice(index + 1, 0, c);
+  renderCandleTable();
+}
+
+// ---------- Clear ----------
+function clearCandles() {
+  if (!confirm('সব ক্যান্ডেল মুছবেন?')) return;
+  window.candleList = [];
+  window.candleCounter = 0;
+  renderCandleTable();
+}
+
+// ---------- Bind Buttons ----------
+function bindCandleButtons() {
+  const add = document.getElementById('add-candle-btn');
+  if (add) {
+    add.onclick = addCandle;
+    console.log('✅ Add button bound');
+  }
+
+  const clr = document.getElementById('clear-candles-btn');
+  if (clr) {
+    clr.onclick = clearCandles;
+    console.log('✅ Clear button bound');
+  }
+
+  renderCandleTable();
+}
+
+bindCandleButtons();
+document.addEventListener('DOMContentLoaded', bindCandleButtons);
+setTimeout(bindCandleButtons, 800);
+setTimeout(bindCandleButtons, 2500);
+
+// ---------- PART 6A: Save / Load / Refresh ----------
+
+function bindMarketSelect() {
+  const sel = document.getElementById('candle-market-select');
+  if (!sel || sel.dataset.bound === '1') return;
+  sel.dataset.bound = '1';
+
+  sel.addEventListener('change', () => {
+    window.currentMarketId = sel.value || null;
+    console.log('📌 Market changed:', window.currentMarketId);
+    if (window.currentMarketId) {
+      loadCandlesFromFirestore(window.currentMarketId);
+    } else {
+      window.candleList = [];
+      window.candleCounter = 0;
+      renderCandleTable();
+    }
+  });
+  console.log('✅ Market select bound');
+}
+
+async function loadCandlesFromFirestore(marketId) {
+  if (!marketId) return;
+  console.log('📥 Loading candles for market:', marketId);
+
+  try {
+    const candlesSnap = await getDocs(
+      collection(db, "markets", marketId, "candles")
+    );
+
+    if (candlesSnap.empty) {
+      window.candleList = [];
+      window.candleCounter = 0;
+      renderCandleTable();
+      console.log('⚠️ No candles in Firestore');
+      return;
+    }
+
+    window.candleList = [];
+    candlesSnap.forEach(d => {
+      const data = d.data();
+      window.candleList.push({
+        id: d.id,
+        number: data.number || 0,
+        date: data.date || '-',
+        time: data.startTime || data.time || '-',
+        timeframe: data.timeframe || '1m',
+        open:  Number(data.open || 0).toFixed(2),
+        high:  Number(data.high || 0).toFixed(2),
+        low:   Number(data.low || 0).toFixed(2),
+        close: Number(data.close || 0).toFixed(2),
+        color: data.color || 'green',
+        up:    data.upDuration || data.up || 5,
+        down:  data.downDuration || data.down || 5
+      });
+    });
+
+    window.candleList.sort((a, b) => (a.number || 0) - (b.number || 0));
+    window.candleCounter = window.candleList.length;
+
+    renderCandleTable();
+    console.log('✅ Loaded', window.candleList.length, 'candles');
+  } catch (err) {
+    console.error('❌ Load candles error:', err);
+    alert('❌ Load error: ' + err.message);
+  }
+}
+
+async function saveAllCandles() {
+  if (!window.currentMarketId) {
+    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+    return;
+  }
+  if (window.candleList.length === 0) {
+    alert('⚠️ কোনো ক্যান্ডেল নেই');
+    return;
+  }
+
+  const confirmMsg = `মার্কেট: ${window.currentMarketId}\n${window.candleList.length}টা ক্যান্ডেল Save হবে?\n\n⚠️ পুরনো সব overwrite হবে।`;
+  if (!confirm(confirmMsg)) return;
+
+  console.log('💾 Saving', window.candleList.length, 'candles...');
+
+  try {
+    const oldSnap = await getDocs(
+      collection(db, "markets", window.currentMarketId, "candles")
+    );
+    for (const d of oldSnap.docs) {
+      await deleteDoc(doc(db, "markets", window.currentMarketId, "candles", d.id));
+    }
+    console.log('🗑 Deleted', oldSnap.size, 'old candles');
+
+    for (let i = 0; i < window.candleList.length; i++) {
+      const c = window.candleList[i];
+      const candleId = `c_${String(i + 1).padStart(4, '0')}`;
+
+      await setDoc(
+        doc(db, "markets", window.currentMarketId, "candles", candleId),
+        {
+          number: i + 1,
+          date: c.date || '',
+          startTime: c.time || '',
+          endTime: '',
+          duration: 60,
+          timeframe: c.timeframe || '1m',
+          open:  Number(c.open),
+          high:  Number(c.high),
+          low:   Number(c.low),
+          close: Number(c.close),
+          color: c.color || 'green',
+          direction: Number(c.close) >= Number(c.open) ? 'up' : 'down',
+          upDuration: Number(c.up || 0),
+          downDuration: Number(c.down || 0),
+          neutralDuration: 0,
+          wickLength: 20,
+          bodySize: 60,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        }
+      );
+    }
+
+    await updateDoc(doc(db, "markets", window.currentMarketId), {
+      currentCandleIndex: 0,
+      updatedAt: new Date().toISOString()
+    });
+
+    alert(`✅ ${window.candleList.length}টা ক্যান্ডেল Save হয়েছে!`);
+    console.log('✅ All saved');
+  } catch (err) {
+    console.error('❌ Save error:', err);
+    alert('❌ Save error: ' + err.message);
+  }
+}
+
+function bindRefreshCandles() {
+  const btn = document.getElementById('refresh-candles');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', async () => {
+    if (!window.currentMarketId) {
+      alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
+      return;
+    }
+    await loadCandlesFromFirestore(window.currentMarketId);
+    alert('✅ Reloaded');
+  });
+  console.log('✅ Refresh button bound');
+}
+
+function bindSaveButton() {
+  const btn = document.getElementById('save-candles-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+
+  btn.addEventListener('click', saveAllCandles);
+  console.log('✅ Save button bound');
+}
+
+function bindPart6A() {
+  bindMarketSelect();
+  bindRefreshCandles();
+  bindSaveButton();
+}
+
+bindPart6A();
+document.addEventListener('DOMContentLoaded', bindPart6A);
+setTimeout(bindPart6A, 800);
+setTimeout(bindPart6A, 2500);
+
+// ---------- Global Expose ----------
+window.addCandle = addCandle;
+window.clearCandles = clearCandles;
+window.renderCandleTable = renderCandleTable;
+window.saveAllCandles = saveAllCandles;
+window.loadCandlesFromFirestore = loadCandlesFromFirestore;
+window.bindPart6A = bindPart6A;
+
+console.log('🎯 Part 6 v3 (FINAL) loaded');
+
+window.candleList = [];
+window.candleCounter = 0;
 
 // ---------- Render Table ----------
 function renderCandleTable() {
@@ -1193,10 +1521,10 @@ function bindMarketSelect() {
     if (currentMarketId) {
       loadCandlesFromFirestore(currentMarketId);
     } else {
-      candleList = [];
-      candleCounter = 0;
-      renderCandleTable();
-    }
+  window.candleList = [];
+  window.candleCounter = 0;
+  renderCandleTable();
+}
   });
 
   console.log('✅ Market select bound');
@@ -1253,19 +1581,15 @@ async function loadCandlesFromFirestore(marketId) {
 
 // ---------- Save All Candles ----------
 async function saveAllCandles() {
-  if (!currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return;
-  }
-  if (candleList.length === 0) {
-    alert('⚠️ কোনো ক্যান্ডেল নেই');
-    return;
-  }
+ if (window.candleList.length === 0) {
+  alert('⚠️ কোনো ক্যান্ডেল নেই');
+  return;
+}
 
-  const confirmMsg = `মার্কেট: ${currentMarketId}\n${candleList.length}টা ক্যান্ডেল Save হবে?\n\n⚠️ পুরনো সব ক্যান্ডেল Firestore-এ থাকলে সেটা overwrite হবে।`;
+const confirmMsg = `মার্কেট: ${currentMarketId}\n${window.candleList.length}টা ক্যান্ডেল Save হবে?\n\n⚠️ পুরনো সব ক্যান্ডেল Firestore-এ থাকলে সেটা overwrite হবে।`;
   if (!confirm(confirmMsg)) return;
 
-  console.log('💾 Saving', candleList.length, 'candles...');
+  console.log('💾 Saving', window.candleList.length, 'candles...');
 
   try {
     // 1. Delete old candles
@@ -1278,8 +1602,8 @@ async function saveAllCandles() {
     console.log('🗑 Deleted', oldSnap.size, 'old candles');
 
     // 2. Save new candles
-    for (let i = 0; i < candleList.length; i++) {
-      const c = candleList[i];
+    for (let i = 0; i < window.candleList.length; i++) {
+  const c = window.candleList[i];
       const candleId = `c_${String(i + 1).padStart(4, '0')}`;
 
       await setDoc(
@@ -1314,7 +1638,7 @@ async function saveAllCandles() {
       updatedAt: new Date().toISOString()
     });
 
-    alert(`✅ ${candleList.length}টা ক্যান্ডেল Save হয়েছে!`);
+    alert(`✅ ${window.candleList.length}টা ক্যান্ডেল Save হয়েছে!`);
     console.log('✅ All saved');
 
   } catch (err) {
@@ -1369,30 +1693,4 @@ window.saveAllCandles = saveAllCandles;
 window.bindPart6A = bindPart6A;
 
 console.log('🎯 Part 6A (Save/Load/Refresh) loaded');
-/* ============================================================
-   FIX: Ensure addCandle updates the SAME candleList
-   ============================================================ */
 
-// Force addCandle to use the global list
-const _originalAddCandle = window.addCandle;
-
-window.addCandle = function() {
-  console.log('🔵 addCandle called');
-  console.log('🔵 Before push, length:', candleList.length);
-
-  // call original
-  _originalAddCandle();
-
-  console.log('🔵 After push, length:', candleList.length);
-};
-
-// Force saveAllCandles to read the same list
-const _originalSave = window.saveAllCandles;
-
-window.saveAllCandles = async function() {
-  console.log('🟢 saveAllCandles called');
-  console.log('🟢 candleList length:', candleList.length);
-  return await _originalSave();
-};
-
-console.log('✅ Debug wrappers installed');
