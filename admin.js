@@ -1384,3 +1384,183 @@ window.timeframeToSeconds = timeframeToSeconds;
 window.calcCandleTime = calcCandleTime;
 
 console.log('admin.js FULLY loaded - Part 3 to 6B-3');
+
+// ============================================
+// PART 6C-1: Playback Controls
+// ============================================
+
+window.playbackIndex = 0;
+window.playbackTimer = null;
+window.playbackSpeed = 1000; // 1 second default
+
+// ---------- Highlight Active Row ----------
+function highlightActiveRow() {
+  const tbody = document.getElementById('candle-table-body');
+  if (!tbody) return;
+
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach((row, i) => {
+    if (i === window.playbackIndex) {
+      row.style.background = 'rgba(255, 179, 0, 0.25)';
+      row.style.borderLeft = '4px solid #ffb300';
+      row.style.fontWeight = 'bold';
+      // auto scroll into view
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      row.style.background = '';
+      row.style.borderLeft = '';
+      row.style.fontWeight = '';
+    }
+  });
+
+  // Update status label
+  const status = document.getElementById('playback-status');
+  if (status) {
+    const total = window.candleList.length;
+    status.textContent = 'Candle ' + (window.playbackIndex + 1) + ' / ' + total;
+  }
+}
+
+// ---------- Play ----------
+function playbackPlay() {
+  if (window.candleList.length === 0) {
+    alert('No candles to play');
+    return;
+  }
+
+  if (window.playbackTimer) {
+    console.log('Already playing');
+    return;
+  }
+
+  console.log('Playback START from index', window.playbackIndex);
+
+  // If at end, reset to 0
+  if (window.playbackIndex >= window.candleList.length - 1) {
+    window.playbackIndex = 0;
+  }
+
+  highlightActiveRow();
+
+  window.playbackTimer = setInterval(() => {
+    if (window.playbackIndex < window.candleList.length - 1) {
+      window.playbackIndex++;
+      highlightActiveRow();
+      console.log('Playback -> candle', window.playbackIndex + 1);
+    } else {
+      // reached end
+      playbackPause();
+      console.log('Playback FINISHED');
+    }
+  }, window.playbackSpeed);
+}
+
+// ---------- Pause ----------
+function playbackPause() {
+  if (window.playbackTimer) {
+    clearInterval(window.playbackTimer);
+    window.playbackTimer = null;
+    console.log('Playback PAUSED at index', window.playbackIndex);
+  }
+}
+
+// ---------- Skip (Next) ----------
+function playbackSkip() {
+  if (window.candleList.length === 0) return;
+  if (window.playbackIndex < window.candleList.length - 1) {
+    window.playbackIndex++;
+    highlightActiveRow();
+    console.log('Skip -> candle', window.playbackIndex + 1);
+  }
+}
+
+// ---------- Back (Previous) ----------
+function playbackBack() {
+  if (window.candleList.length === 0) return;
+  if (window.playbackIndex > 0) {
+    window.playbackIndex--;
+    highlightActiveRow();
+    console.log('Back -> candle', window.playbackIndex + 1);
+  }
+}
+
+// ---------- Reset ----------
+function playbackReset() {
+  playbackPause();
+  window.playbackIndex = 0;
+  highlightActiveRow();
+  console.log('Playback RESET to 0');
+}
+
+// ---------- Speed Change ----------
+function playbackSetSpeed(ms) {
+  window.playbackSpeed = ms;
+  console.log('Playback speed set to', ms, 'ms');
+  if (window.playbackTimer) {
+    // restart with new speed
+    playbackPause();
+    playbackPlay();
+  }
+}
+
+// ---------- Bind Playback Buttons ----------
+function bindPlaybackButtons() {
+  const playBtn = document.getElementById('play-btn');
+  const pauseBtn = document.getElementById('pause-btn');
+  const skipBtn = document.getElementById('skip-btn');
+  const backBtn = document.getElementById('back-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  if (playBtn && playBtn.dataset.bound !== '1') {
+    playBtn.dataset.bound = '1';
+    playBtn.onclick = playbackPlay;
+    console.log('Play button bound');
+  }
+  if (pauseBtn && pauseBtn.dataset.bound !== '1') {
+    pauseBtn.dataset.bound = '1';
+    pauseBtn.onclick = playbackPause;
+    console.log('Pause button bound');
+  }
+  if (skipBtn && skipBtn.dataset.bound !== '1') {
+    skipBtn.dataset.bound = '1';
+    skipBtn.onclick = playbackSkip;
+    console.log('Skip button bound');
+  }
+  if (backBtn && backBtn.dataset.bound !== '1') {
+    backBtn.dataset.bound = '1';
+    backBtn.onclick = playbackBack;
+    console.log('Back button bound');
+  }
+  if (resetBtn && resetBtn.dataset.bound !== '1') {
+    resetBtn.dataset.bound = '1';
+    resetBtn.onclick = playbackReset;
+    console.log('Reset button bound');
+  }
+}
+
+bindPlaybackButtons();
+document.addEventListener('DOMContentLoaded', bindPlaybackButtons);
+setTimeout(bindPlaybackButtons, 800);
+setTimeout(bindPlaybackButtons, 2500);
+
+// ---------- Auto Highlight After Render ----------
+const originalRenderCandleTable = window.renderCandleTable;
+window.renderCandleTable = function() {
+  if (originalRenderCandleTable) originalRenderCandleTable();
+  setTimeout(() => {
+    if (window.candleList.length > 0) {
+      highlightActiveRow();
+    }
+  }, 50);
+};
+
+// ---------- Global Expose ----------
+window.playbackPlay = playbackPlay;
+window.playbackPause = playbackPause;
+window.playbackSkip = playbackSkip;
+window.playbackBack = playbackBack;
+window.playbackReset = playbackReset;
+window.playbackSetSpeed = playbackSetSpeed;
+window.highlightActiveRow = highlightActiveRow;
+
+console.log('Part 6C-1 (Playback) loaded');
