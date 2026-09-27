@@ -159,3 +159,860 @@ input, select {
   min-height: 18px;
   font-weight: 500;
 }
+
+/* ============================================
+   Part 2: Top Header + Balance Card
+============================================ */
+
+#dashboard-page {
+  max-width: 500px;
+  margin: 0 auto;
+  padding-bottom: 30px;
+}
+
+/* ===== টপ হেডার ===== */
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 4px 14px;
+  border-bottom: 1px solid #1a2436;
+  margin-bottom: 12px;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 10px;
+  color: #c9d4e3;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.icon-btn:active {
+  background: #243044;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #00c853 0%, #00893a 100%);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ===== ব্যালেন্স কার্ড ===== */
+.balance-card {
+  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00c853 0%, #2196f3 50%, #00c853 100%);
+}
+
+/* ডেমো/রিয়েল টগল */
+.account-toggle {
+  display: flex;
+  gap: 6px;
+  background: #0b1220;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #1a2436;
+}
+
+.acc-btn {
+  flex: 1;
+  padding: 9px 8px;
+  background: transparent;
+  color: #6b7a90;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  transition: all 0.2s;
+}
+
+.acc-btn.active {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 200, 83, 0.35);
+}
+
+/* ব্যালেন্স ডিসপ্লে */
+.balance-display {
+  text-align: center;
+  padding: 8px 0 16px;
+}
+
+.balance-label {
+  font-size: 11px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.balance-value {
+  font-size: 36px;
+  font-weight: 800;
+  color: #00c853;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(0, 200, 83, 0.3);
+}
+
+.balance-change {
+  font-size: 13px;
+  margin-top: 8px;
+  min-height: 16px;
+  font-weight: 700;
+}
+
+.balance-change.up {
+  color: #00c853;
+}
+
+.balance-change.down {
+  color: #ff5252;
+}
+
+/* ডিপোজিট / উইথড্র */
+.balance-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.action-btn.deposit {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.action-btn.deposit:active {
+  background: #00a844;
+}
+
+.action-btn.withdraw {
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  color: #c9d4e3;
+}
+
+.action-btn.withdraw:active {
+  background: #243044;
+}
+
+/* ইউজার ইমেইল বার */
+.user-email-bar {
+  text-align: center;
+  padding: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+/* ============================================
+   Part 3: Chart Section + Drawing Toolbar
+============================================ */
+
+/* ===== চার্ট সেকশন ===== */
+.chart-section {
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+/* চার্ট হেডার */
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.asset-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  padding: 6px 10px;
+  position: relative;
+}
+
+.asset-dot {
+  width: 8px;
+  height: 8px;
+  background: #f7931a;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #f7931a;
+  flex-shrink: 0;
+}
+
+.asset-select {
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 14px;
+  cursor: pointer;
+}
+
+.asset-select option {
+  background: #141d2e;
+  color: #fff;
+}
+
+.asset-arrow {
+  color: #6b7a90;
+  font-size: 10px;
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+}
+
+/* প্রাইস ডিসপ্লে */
+.price-box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+#current-price {
+  color: #00c853;
+  transition: color 0.2s;
+}
+
+.price-arrow {
+  font-size: 11px;
+}
+
+.price-arrow.up {
+  color: #00c853;
+}
+
+.price-arrow.down {
+  color: #ff5252;
+}
+
+/* ===== চার্ট মেইন (টুলবার + চার্ট) ===== */
+.chart-main {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* বাম দিকে উল্লম্ব ড্রয়িং টুলবার (Quotex-এর মতো) */
+.drawing-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #0b1220;
+  border: 1px solid #1a2436;
+  border-radius: 10px;
+  padding: 4px;
+  flex-shrink: 0;
+  height: fit-content;
+  max-height: 290px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.drawing-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.drawing-btn {
+  width: 34px;
+  height: 34px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 7px;
+  color: #8b98ab;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.drawing-btn:active {
+  background: #1f2a3d;
+}
+
+.drawing-btn.active {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border-color: #2196f3;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+}
+
+/* চার্ট র্যাপার (chart + overlay canvas একসাথে) */
+#chart-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 290px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0a0f1a;
+}
+
+#chart {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ড্রয়িং ওভারলে ক্যানভাস */
+#drawing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  touch-action: none;
+}
+
+#drawing-canvas.active {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* TradingView attribution hide */
+#chart a#tv-attr-logo {
+  display: none !important;
+}
+
+/* ===== টাইমফ্রেম ===== */
+.chart-timeframe {
+  display: flex;
+  gap: 5px;
+  padding: 0 2px;
+}
+
+.tf-btn {
+  flex: 1;
+  padding: 8px 4px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 7px;
+  color: #8b98ab;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tf-btn.active {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border-color: #2196f3;
+  color: #fff;
+}
+
+.tf-btn:active {
+  background: #1f2a3d;
+}
+
+.tf-btn.active:active {
+  background: #1976d2;
+}
+
+/* ============================================
+   Part 4: Trade Panel + CALL/PUT Buttons
+============================================ */
+
+/* ===== ট্রেড প্যানেল ===== */
+.trade-panel {
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.trade-row {
+  margin-bottom: 14px;
+}
+
+.trade-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7a90;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* ===== পরিমাণ ইনপুট ===== */
+.amount-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.amount-input-wrap input {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  padding: 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-input-wrap input:focus {
+  border-color: #00c853;
+}
+
+/* Chrome number arrows hide */
+.amount-input-wrap input::-webkit-outer-spin-button,
+.amount-input-wrap input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amount-input-wrap input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.amount-btn {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  color: #e6edf3;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.amount-btn:active {
+  background: #1f2a3d;
+}
+
+/* ===== টাইম বাটন ===== */
+.time-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.time-btn {
+  flex: 1;
+  padding: 12px 6px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  color: #8b98ab;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-btn.active {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border-color: #2196f3;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(33, 150, 243, 0.4);
+}
+
+.time-btn:active {
+  background: #1f2a3d;
+}
+
+.time-btn.active:active {
+  background: #1976d2;
+}
+
+/* ===== বড় টাইমার ===== */
+.big-timer {
+  text-align: center;
+  font-size: 38px;
+  font-weight: 800;
+  color: #58a6ff;
+  padding: 14px;
+  margin: 6px 0 12px;
+  background: #0b1220;
+  border: 2px solid #1f6feb;
+  border-radius: 12px;
+  letter-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+  animation: timerPulse 1s ease-in-out infinite;
+  text-shadow: 0 0 16px rgba(88, 166, 255, 0.5);
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* ===== CALL / PUT বাটন ===== */
+.trade-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.call-btn,
+.put-btn {
+  flex: 1;
+  padding: 14px 6px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #fff;
+  transition: transform 0.1s;
+}
+
+.call-btn {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  box-shadow: 0 4px 16px rgba(0, 200, 83, 0.35);
+}
+
+.put-btn {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  box-shadow: 0 4px 16px rgba(255, 82, 82, 0.35);
+}
+
+.call-btn:active,
+.put-btn:active {
+  transform: scale(0.96);
+}
+
+.call-btn .arrow,
+.put-btn .arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.call-btn .btn-label,
+.put-btn .btn-label {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.call-btn .btn-payout,
+.put-btn .btn-payout {
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+/* ===== ট্রেড মেসেজ ===== */
+#trade-message {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 18px;
+}
+
+/* ============================================
+   Part 5: Tabs + Trade Items + Flash + Mobile
+============================================ */
+
+/* ===== ট্যাব ===== */
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: #0d1522;
+  padding: 5px;
+  border-radius: 12px;
+  border: 1px solid #1f2a3d;
+  margin-bottom: 10px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: #6b7a90;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tab-btn.active {
+  background: #1a2333;
+  color: #fff;
+}
+
+.tab-btn span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #00c853;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 18px;
+  height: 16px;
+}
+
+/* ===== ট্যাব কনটেন্ট ===== */
+.tab-content {
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 140px;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.empty-text {
+  text-align: center;
+  color: #4a5568;
+  font-size: 13px;
+  padding: 30px 10px;
+  font-weight: 500;
+}
+
+/* ===== ট্রেড আইটেম ===== */
+.trade-item {
+  background: #141d2e;
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 3px solid #2a3648;
+  font-size: 13px;
+}
+
+.trade-item:last-child {
+  margin-bottom: 0;
+}
+
+/* CALL/PUT অনুযায়ী বর্ডার */
+.trade-item.call {
+  border-left-color: #00c853;
+}
+
+.trade-item.put {
+  border-left-color: #ff5252;
+}
+
+/* Win/Loss অনুযায়ী ব্যাকগ্রাউন্ড */
+.trade-item.win {
+  background: linear-gradient(90deg, #0a2818 0%, #141d2e 100%);
+  border-left-color: #00c853;
+}
+
+.trade-item.loss {
+  background: linear-gradient(90deg, #2a1014 0%, #141d2e 100%);
+  border-left-color: #ff5252;
+}
+
+.trade-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trade-type {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.trade-type.call {
+  color: #00c853;
+}
+
+.trade-type.put {
+  color: #ff5252;
+}
+
+.trade-time {
+  font-size: 11px;
+  color: #6b7a90;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-result {
+  text-align: right;
+  font-weight: 800;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.trade-result.win {
+  color: #00c853;
+}
+
+.trade-result.loss {
+  color: #ff5252;
+}
+
+.trade-result.pending {
+  color: #ffb300;
+  font-size: 12px;
+}
+
+/* ===== রেজাল্ট ফ্ল্যাশ (উইন/লস) ===== */
+.result-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  animation: flashAnim 0.7s ease-out;
+}
+
+.result-flash.win {
+  background: radial-gradient(circle at center, rgba(0, 200, 83, 0.35) 0%, transparent 70%);
+}
+
+.result-flash.loss {
+  background: radial-gradient(circle at center, rgba(255, 82, 82, 0.35) 0%, transparent 70%);
+}
+
+@keyframes flashAnim {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===== মোবাইল অপটিমাইজ ===== */
+@media (max-width: 400px) {
+  .balance-value {
+    font-size: 32px;
+  }
+
+  #chart-wrapper {
+    height: 260px;
+  }
+
+  .drawing-toolbar {
+    max-height: 260px;
+  }
+
+  .big-timer {
+    font-size: 32px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .trade-item {
+    padding: 10px 11px;
+  }
+
+  .trade-result {
+    font-size: 13px;
+  }
+}
+
+/* ===== স্ক্রলবার লুকানো ===== */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* ===== সিলেকশন রঙ ===== */
+::selection {
+  background: #00c853;
+  color: #fff;
+}
