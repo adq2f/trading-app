@@ -1404,3 +1404,39 @@ input, select {
     padding: 3px 8px;
   }
 }
+
+/* ============================================
+   PART 6D: Auto Mode
+   ============================================ */
+
+#auto-mode-toggle {
+  transition: all 0.2s;
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #1f2a3d;
+}
+
+#auto-mode-toggle:hover {
+  transform: scale(1.02);
+}
+
+#auto-mode-toggle.active {
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.5);
+}
+
+#auto-mode-speed {
+  padding: 8px 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  color: #e6edf3;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#auto-mode-speed:focus {
+  outline: none;
+  border-color: #2196f3;
+}
