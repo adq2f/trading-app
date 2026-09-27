@@ -1,6 +1,6 @@
 // ============================================
 // Admin Panel — admin.js
-// Part 3-6B-3 Complete
+// Part 3-6B-3 Complete (Final Clean)
 // ============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -68,13 +68,11 @@ const refreshDeposits = document.getElementById("refresh-deposits");
 const refreshWithdrawals = document.getElementById("refresh-withdrawals");
 const refreshMarkets = document.getElementById("refresh-markets");
 
-// Market Form
 const newMarketName = document.getElementById("new-market-name");
 const newMarketSymbol = document.getElementById("new-market-symbol");
 const newMarketBase = document.getElementById("new-market-base");
 const createMarketBtn = document.getElementById("create-market-btn");
 
-// Settings
 const winRateInput = document.getElementById("win-rate-input");
 const saveWinRateBtn = document.getElementById("save-win-rate");
 const payoutInput = document.getElementById("payout-input");
@@ -95,7 +93,9 @@ let currentPayout = 85;
 let currentAutoInterval = 5;
 let isAutoMode = false;
 
-// ===== Admin Login =====
+// ============================================
+// ADMIN LOGIN
+// ============================================
 if (adminLoginBtn) {
   adminLoginBtn.addEventListener("click", async () => {
     const email = adminEmailInput.value.trim();
@@ -122,7 +122,6 @@ if (adminLoginBtn) {
 
       adminMessage.style.color = "#00c853";
       adminMessage.textContent = "লগইন সফল!";
-
     } catch (error) {
       adminMessage.style.color = "#ff5252";
       adminMessage.textContent = error.message;
@@ -130,7 +129,6 @@ if (adminLoginBtn) {
   });
 }
 
-// ===== Admin Logout =====
 if (adminLogoutBtn) {
   adminLogoutBtn.addEventListener("click", async () => {
     if (confirm("লগআউট করবেন?")) {
@@ -139,7 +137,9 @@ if (adminLogoutBtn) {
   });
 }
 
-// ===== Auth State =====
+// ============================================
+// AUTH STATE
+// ============================================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     try {
@@ -166,7 +166,6 @@ onAuthStateChanged(auth, async (user) => {
       loadWithdrawals();
       loadMarkets();
       loadSettings();
-
     } catch (err) {
       console.error(err);
       await signOut(auth);
@@ -186,7 +185,9 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ===== Tab Switch =====
+// ============================================
+// TAB SWITCH
+// ============================================
 adminTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     adminTabs.forEach(t => t.classList.remove("active"));
@@ -197,7 +198,6 @@ adminTabs.forEach(tab => {
   });
 });
 
-// ===== Refresh Buttons =====
 if (refreshUsers) refreshUsers.addEventListener("click", () => loadUsers());
 if (refreshTrades) refreshTrades.addEventListener("click", () => loadTrades());
 if (refreshDeposits) refreshDeposits.addEventListener("click", () => loadDeposits());
@@ -207,7 +207,6 @@ if (refreshMarkets) refreshMarkets.addEventListener("click", () => loadMarkets()
 // ============================================
 // MARKET CRUD
 // ============================================
-
 if (createMarketBtn) {
   createMarketBtn.addEventListener("click", async () => {
     const name = newMarketName.value.trim();
@@ -243,7 +242,6 @@ if (createMarketBtn) {
       newMarketBase.value = "50000";
 
       alert(`✅ ${name} তৈরি হয়েছে!`);
-
     } catch (err) {
       alert("❌ " + err.message);
     }
@@ -394,9 +392,8 @@ function updateCandleMarketSelect(markets) {
 }
 
 // ============================================
-// Part 4: Stats + Users + Trades + Deposits + Withdrawals + Settings
+// STATS
 // ============================================
-
 async function loadStats() {
   try {
     const usersSnap = await getDocs(collection(db, "users"));
@@ -419,6 +416,9 @@ async function loadStats() {
   } catch (err) { console.error("Stats error:", err); }
 }
 
+// ============================================
+// USERS
+// ============================================
 function loadUsers() {
   if (!usersList) return;
   usersList.innerHTML = '<p class="loading-text">লোড হচ্ছে...</p>';
@@ -511,7 +511,6 @@ async function toggleBan(uid, isBanned) {
 // ============================================
 // TRADES
 // ============================================
-
 function loadTrades() {
   if (!tradesList) return;
   tradesList.innerHTML = '<p class="loading-text">লোড হচ্ছে...</p>';
@@ -633,7 +632,6 @@ async function forceTradeResult(tradeId, result) {
 // ============================================
 // DEPOSITS
 // ============================================
-
 function loadDeposits() {
   if (!depositsList) return;
   depositsList.innerHTML = '<p class="loading-text">লোড হচ্ছে...</p>';
@@ -743,7 +741,6 @@ async function rejectDeposit(depositId) {
 // ============================================
 // WITHDRAWALS
 // ============================================
-
 function loadWithdrawals() {
   if (!withdrawalsList) return;
   withdrawalsList.innerHTML = '<p class="loading-text">লোড হচ্ছে...</p>';
@@ -854,7 +851,6 @@ async function rejectWithdrawal(wid) {
 // ============================================
 // SETTINGS
 // ============================================
-
 async function loadSettings() {
   try {
     const sDoc = await getDoc(doc(db, "settings", "global"));
@@ -936,9 +932,8 @@ function updateAutoModeButton() {
 }
 
 // ============================================
-// PART 6 v3: CANDLE SCHEDULER
+// CANDLE SCHEDULER — PART 6 v3
 // ============================================
-
 window.candleList = [];
 window.candleCounter = 0;
 window.currentMarketId = null;
@@ -953,8 +948,10 @@ function renderCandleTable() {
   }
 
   tbody.innerHTML = window.candleList.map((c, i) => {
-    const color = c.color || 'green';
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+    const color = c.color || (dir === 'up' ? 'green' : 'red');
     const colorEmoji = color === 'green' ? '🟢' : '🔴';
+
     return `
       <tr>
         <td>${i + 1}</td>
@@ -1078,7 +1075,6 @@ setTimeout(bindCandleButtons, 2500);
 // ============================================
 // PART 6A: Save / Load / Refresh
 // ============================================
-
 function bindMarketSelect() {
   const sel = document.getElementById('candle-market-select');
   if (!sel || sel.dataset.bound === '1') return;
@@ -1159,6 +1155,8 @@ async function saveAllCandles() {
     for (let i = 0; i < window.candleList.length; i++) {
       const c = window.candleList[i];
       const candleId = `c_${String(i + 1).padStart(4, '0')}`;
+      const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+
       await setDoc(
         doc(db, "markets", window.currentMarketId, "candles", candleId),
         {
@@ -1173,7 +1171,7 @@ async function saveAllCandles() {
           low: Number(c.low),
           close: Number(c.close),
           color: c.color || 'green',
-          direction: c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down'),
+          direction: dir,
           size: c.size || 'medium',
           upDuration: Number(c.up || 0),
           downDuration: Number(c.down || 0),
@@ -1231,7 +1229,6 @@ setTimeout(bindPart6A, 2500);
 // ============================================
 // PART 6B-1: Time Calculation
 // ============================================
-
 function timeframeToSeconds(tf) {
   const map = { '5s': 5, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
   return map[tf] || 60;
@@ -1305,9 +1302,8 @@ function clearCurrentCandleList() {
 }
 
 // ============================================
-// PART 6B-2: Price Calculation
+// PART 6B-2: Price Calculation (FINAL — Single Source of Truth)
 // ============================================
-
 function getPriceMovement(direction) {
   const baseMove = 30 + Math.random() * 90;
   if (direction === 'up') return Math.abs(baseMove);
@@ -1430,5 +1426,7 @@ window.renderCandleTable = renderCandleTable;
 window.saveAllCandles = saveAllCandles;
 window.loadCandlesFromFirestore = loadCandlesFromFirestore;
 window.bulkGenerateCandles = bulkGenerateCandles;
+window.timeframeToSeconds = timeframeToSeconds;
+window.calcCandleTime = calcCandleTime;
 
-console.log('🎯 admin.js FULLY loaded (Part 3 → 6B-3)');
+console.log('🎯 admin.js FULLY loaded (Part 3 → 6B-3 FINAL)');
