@@ -1,3 +1,6 @@
+// ===== ড্রয়িং প্লাগইন ইমপোর্ট =====
+import * as DrawingLib from "https://esm.sh/lightweight-charts-drawing@0.1.1";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
   getAuth, 
@@ -71,7 +74,7 @@ let lastTradeTime = 0;
 let livePriceWS = null;
 let chart = null;
 let candleSeries = null;
-let priceLinesMap = {};  // trade.id -> priceLine
+let drawingManager = null;
 
 // ===== সাউন্ড =====
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -136,6 +139,7 @@ function animateBalanceChange(amount) {
     balanceChangeEl.className = "balance-change";
   }, 3000);
 }
+
 // ===== রেজিস্ট্রেশন =====
 signupBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
@@ -225,6 +229,8 @@ if (assetSelect) {
   assetSelect.addEventListener("change", async () => {
     selectedAsset = assetSelect.value;
     await loadCandles();
+    // WebSocket রিকানেক্ট
+    if (currentUser) startLivePrice();
   });
 }
 
@@ -276,7 +282,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ===== Lightweight Chart তৈরি =====
+// ===== Lightweight Chart তৈরি (ড্রয়িং সহ) =====
 function initChart() {
   const chartEl = document.getElementById("chart");
   if (!chartEl) return;
@@ -288,6 +294,7 @@ function initChart() {
     chart = null;
   }
 
+  // ===== বেস চার্ট =====
   chart = LightweightCharts.createChart(chartEl, {
     width: chartEl.clientWidth,
     height: 280,
@@ -346,11 +353,89 @@ function initChart() {
     wickDownColor: "#f85149"
   });
 
+  // ===== ড্রয়িং ম্যানেজার সেটআপ =====
+  initDrawingTools(chart, candleSeries, chartEl);
+
+  // ===== রিসাইজ হ্যান্ডলার =====
   window.addEventListener("resize", () => {
     if (chart && chartEl) {
       chart.applyOptions({ width: chartEl.clientWidth });
     }
   });
+}
+
+// ===== ড্রয়িং টুলস সেটআপ =====
+function initDrawingTools(chart, series, chartEl) {
+  if (typeof DrawingLib === "undefined" || !DrawingLib.DrawingManager) {
+    console.warn("DrawingLib লোড হয়নি — ড্রয়িং বন্ধ");
+    return;
+  }
+
+  try {
+    // DrawingManager তৈরি
+    drawingManager = new DrawingLib.DrawingManager({
+      chart: chart,
+      series: series,
+      container: chartEl
+    });
+
+    if (typeof drawingManager.attach === "function") {
+      drawingManager.attach(chart, series, chartEl);
+    }
+
+    // টুল ম্যাপ
+    const toolMap = {
+      TrendLine: DrawingLib.TrendLine,
+      HorizontalLine: DrawingLib.HorizontalLine,
+      VerticalLine: DrawingLib.VerticalLine,
+      CrossLine: DrawingLib.CrossLine,
+      Rectangle: DrawingLib.Rectangle,
+      FibRetracement: DrawingLib.FibRetracement,
+      Ray: DrawingLib.Ray,
+      ExtendedLine: DrawingLib.ExtendedLine,
+      ParallelChannel: DrawingLib.ParallelChannel,
+      TextAnnotation: DrawingLib.TextAnnotation
+    };
+
+    // টুলবারের বাটনগুলোতে ক্লিক ইভেন্ট
+    document.querySelectorAll(".drawing-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const toolName = btn.dataset.tool;
+        const ToolClass = toolMap[toolName];
+
+        if (!ToolClass) {
+          console.warn("Unknown tool:", toolName);
+          return;
+        }
+
+        // আগের অ্যাক্টিভ টুল সরানো
+        document.querySelectorAll(".drawing-btn").forEach(b => b.classList.remove("active"));
+
+        // ইতিমধ্যেই অ্যাক্টিভ থাকলে বন্ধ করে দাও
+        if (btn.classList.contains("active")) {
+          if (typeof drawingManager.setActiveTool === "function") {
+            drawingManager.setActiveTool(null);
+          }
+          return;
+        }
+
+        btn.classList.add("active");
+
+        if (typeof drawingManager.setActiveTool === "function") {
+          drawingManager.setActiveTool(new ToolClass());
+        } else if (typeof drawingManager.setTool === "function") {
+          drawingManager.setTool(new ToolClass());
+        } else {
+          console.warn("DrawingManager-এ setActiveTool/setTool মেথড নেই");
+        }
+      });
+    });
+
+    console.log("✅ Drawing Tools সেটআপ সম্পন্ন");
+
+  } catch (err) {
+    console.error("Drawing setup error:", err);
+  }
 }
 
 // ===== Binance থেকে ক্যান্ডেল লোড =====
@@ -449,6 +534,7 @@ function stopLivePrice() {
     livePriceWS = null;
   }
 }
+
 // ===== বড় টাইমার =====
 function updateBigTimer() {
   if (activeTradesLocal.length === 0) {
