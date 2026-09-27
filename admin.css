@@ -1044,3 +1044,47 @@ input, select {
   .bulk-form { grid-template-columns: 1fr; }
   .bulk-form button { grid-column: span 1; }
 }
+/* Playback Status + Speed */
+.playback-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+}
+
+.playback-status {
+  color: #ffb300;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 6px 12px;
+  background: rgba(255, 179, 0, 0.1);
+  border-radius: 6px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.playback-speed-select {
+  padding: 8px 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  color: #e6edf3;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.playback-speed-select:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+/* Active row highlight */
+#candle-table-body tr.active-row {
+  background: rgba(255, 179, 0, 0.25) !important;
+  border-left: 4px solid #ffb300 !important;
+}
