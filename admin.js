@@ -1581,3 +1581,135 @@ bindSpeedSelector();
 document.addEventListener('DOMContentLoaded', bindSpeedSelector);
 setTimeout(bindSpeedSelector, 800);
 setTimeout(bindSpeedSelector, 2500);
+
+// ============================================
+// PART 6C-2: Live Preview Chart (CSS-based)
+// ============================================
+
+window.previewMaxCandles = 20; // show last 20 candles max
+
+// ---------- Render Live Preview ----------
+function renderCandlePreview() {
+  const container = document.getElementById('candle-preview');
+  if (!container) return;
+
+  const list = window.candleList || [];
+
+  if (list.length === 0) {
+    container.innerHTML = '<span class="empty-text">No candles to preview</span>';
+    return;
+  }
+
+  // Take last N candles
+  const startIdx = Math.max(0, list.length - window.previewMaxCandles);
+  const slice = list.slice(startIdx);
+
+  // Find min/max across all highs/lows
+  let minPrice = Infinity;
+  let maxPrice = -Infinity;
+
+  slice.forEach(c => {
+    const h = Number(c.high || 0);
+    const l = Number(c.low || 0);
+    if (h > maxPrice) maxPrice = h;
+    if (l < minPrice) minPrice = l;
+  });
+
+  // Handle equal range
+  if (maxPrice === minPrice) {
+    maxPrice = minPrice + 1;
+  }
+
+  const range = maxPrice - minPrice;
+  const CHART_HEIGHT = 180; // px for the price area
+
+  // Build HTML for each candle
+  const barsHTML = slice.map((c, idx) => {
+    const open = Number(c.open || 0);
+    const close = Number(c.close || 0);
+    const high = Number(c.high || 0);
+    const low = Number(c.low || 0);
+
+    // Y positions (inverted: high price = top)
+    const yHigh = ((maxPrice - high) / range) * CHART_HEIGHT;
+    const yLow = ((maxPrice - low) / range) * CHART_HEIGHT;
+    const yOpen = ((maxPrice - open) / range) * CHART_HEIGHT;
+    const yClose = ((maxPrice - close) / range) * CHART_HEIGHT;
+
+    const bodyTop = Math.min(yOpen, yClose);
+    const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+
+    // Color
+    const isGreen = close >= open;
+    const color = isGreen ? '#00c853' : '#ff5252';
+
+    // Wick (vertical line)
+    const wickTop = yHigh;
+    const wickHeight = Math.max(1, yLow - yHigh);
+
+    // Real index in full list
+    const realIdx = startIdx + idx;
+
+    // Highlight active?
+    const isActive = (realIdx === window.playbackIndex);
+
+    return '<div class="pv-candle' + (isActive ? ' pv-active' : '') + '" data-idx="' + realIdx + '" style="height:' + CHART_HEIGHT + 'px;">' +
+      '<div class="pv-wick" style="top:' + wickTop + 'px; height:' + wickHeight + 'px; background:' + color + ';"></div>' +
+      '<div class="pv-body" style="top:' + bodyTop + 'px; height:' + bodyHeight + 'px; background:' + color + ';"></div>' +
+      '<div class="pv-label">' + (realIdx + 1) + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Price labels (max/min)
+  const maxLabel = '<div class="pv-price-label pv-price-top">$' + maxPrice.toFixed(2) + '</div>';
+  const minLabel = '<div class="pv-price-label pv-price-bottom">$' + minPrice.toFixed(2) + '</div>';
+
+  container.innerHTML =
+    '<div class="pv-chart-wrap">' +
+      maxLabel +
+      minLabel +
+      '<div class="pv-chart">' + barsHTML + '</div>' +
+    '</div>' +
+    '<div class="pv-info">' +
+      'Showing last ' + slice.length + ' of ' + list.length + ' candles' +
+    '</div>';
+
+  // Click to jump
+  container.querySelectorAll('.pv-candle').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.idx);
+      window.playbackIndex = idx;
+      if (window.highlightActiveRow) window.highlightActiveRow();
+      renderCandlePreview();
+    };
+  });
+}
+
+// ---------- Highlight Integration ----------
+// Override highlightActiveRow to also update preview
+const _origHighlight = window.highlightActiveRow;
+window.highlightActiveRow = function() {
+  if (_origHighlight) _origHighlight();
+  renderCandlePreview();
+};
+
+// ---------- Auto-Render on Data Change ----------
+// Override renderCandleTable to also render preview
+const _origRenderTable = window.renderCandleTable;
+window.renderCandleTable = function() {
+  if (_origRenderTable) _origRenderTable();
+  setTimeout(() => {
+    renderCandlePreview();
+  }, 60);
+};
+
+// ---------- Initial Render ----------
+renderCandlePreview();
+document.addEventListener('DOMContentLoaded', renderCandlePreview);
+setTimeout(renderCandlePreview, 1000);
+setTimeout(renderCandlePreview, 2500);
+
+// ---------- Global Expose ----------
+window.renderCandlePreview = renderCandlePreview;
+
+console.log('Part 6C-2 (Live Preview) loaded');
