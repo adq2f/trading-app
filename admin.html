@@ -184,6 +184,16 @@
           <button id="back-btn" class="pb-btn pb-back">⏮ Back</button>
           <button id="reset-btn" class="pb-btn pb-reset">🔄 Reset</button>
         </div>
+<!-- Playback Status + Speed -->
+        <div class="playback-info-row">
+          <div class="playback-status" id="playback-status">Candle 0 / 0</div>
+          <select id="playback-speed" class="playback-speed-select">
+            <option value="500">0.5s (Fast)</option>
+            <option value="1000" selected>1s (Normal)</option>
+            <option value="2000">2s (Slow)</option>
+            <option value="3000">3s (Very Slow)</option>
+          </select>
+        </div>
 
         <div class="save-export-row">
           <button id="save-candles-btn" class="btn-save">💾 Save All</button>
