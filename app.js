@@ -52,10 +52,9 @@ const message = document.getElementById("message");
 const balanceEl = document.getElementById("balance");
 const balanceChip = document.getElementById("balance-chip");
 const balancePopup = document.getElementById("balance-popup");
-const balancePopupEl = document.getElementById("balance-popup");
 const balancePopupClose = document.getElementById("balance-popup-close");
 const balancePopupOverlay = document.getElementById("balance-popup-overlay");
-const balancePopupValue = document.getElementById("balance-popup");
+const balancePopupValue = document.getElementById("balance-popup-value");
 
 // Account Popup
 const accountPopup = document.getElementById("account-popup");
@@ -366,7 +365,7 @@ function closePopup(popup) {
 // ব্যালেন্স পপআপ
 if (balanceChip) {
   balanceChip.addEventListener("click", () => {
-    balancePopupValue.textContent = userBalance.toFixed(2);
+    if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
     openPopup(balancePopup, balancePopupOverlay);
   });
 }
