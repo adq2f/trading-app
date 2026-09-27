@@ -1,6 +1,6 @@
 // ============================================
 // Admin Panel — admin.js
-// Part 3: Firebase + Auth + Market CRUD
+// Part 3-6B-3 Complete
 // ============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -289,7 +289,6 @@ function renderMarketItem(market) {
       <div class="market-item-name">${market.name || "no-name"}</div>
       ${enabledBadge}
     </div>
-
     <div class="market-item-info">
       <span>Symbol: <strong>${market.symbol || "-"}</strong></span>
       <span>Base: <strong>$${(market.basePrice || 0).toFixed(2)}</strong></span>
@@ -298,18 +297,13 @@ function renderMarketItem(market) {
       <span>Mode: <strong>${market.candleMode || "random"}</strong></span>
       <span>Candle: <strong>#${market.currentCandleIndex || 0}</strong></span>
     </div>
-
     <div class="market-item-actions">
-      <button class="btn-action btn-edit" data-action="edit-market" data-mid="${market.id}">
-        ✏️ Edit
-      </button>
+      <button class="btn-action btn-edit" data-action="edit-market" data-mid="${market.id}">✏️ Edit</button>
       <button class="btn-action ${market.enabled ? 'btn-reject' : 'btn-approve'}"
               data-action="toggle-market" data-mid="${market.id}" data-enabled="${market.enabled}">
         ${market.enabled ? "🔒 Disable" : "▶️ Enable"}
       </button>
-      <button class="btn-action btn-reject" data-action="delete-market" data-mid="${market.id}">
-        🗑 Delete
-      </button>
+      <button class="btn-action btn-reject" data-action="delete-market" data-mid="${market.id}">🗑 Delete</button>
     </div>
   `;
 
@@ -320,18 +314,13 @@ if (marketsList) {
   marketsList.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
-
     const action = btn.dataset.action;
     const mid = btn.dataset.mid;
     if (!mid) return;
 
-    if (action === "edit-market") {
-      await editMarket(mid);
-    } else if (action === "toggle-market") {
-      await toggleMarket(mid, btn.dataset.enabled === "true");
-    } else if (action === "delete-market") {
-      await deleteMarket(mid);
-    }
+    if (action === "edit-market") await editMarket(mid);
+    else if (action === "toggle-market") await toggleMarket(mid, btn.dataset.enabled === "true");
+    else if (action === "delete-market") await deleteMarket(mid);
   });
 }
 
@@ -341,25 +330,18 @@ async function editMarket(mid) {
     if (!marketDoc.exists()) { alert("❌ নেই"); return; }
 
     const m = marketDoc.data();
-
     const newName = prompt("নাম:", m.name || "");
     if (newName === null) return;
-
     const newPayout = prompt("Payout %:", m.payout || 85);
     if (newPayout === null) return;
-
     const newWinRate = prompt("Win Rate %:", m.winRate || 50);
     if (newWinRate === null) return;
 
     const payoutVal = parseInt(newPayout);
     const winVal = parseInt(newWinRate);
 
-    if (isNaN(payoutVal) || payoutVal < 0 || payoutVal > 200) {
-      alert("❌ Payout 0-200 এর মধ্যে"); return;
-    }
-    if (isNaN(winVal) || winVal < 0 || winVal > 100) {
-      alert("❌ Win Rate 0-100 এর মধ্যে"); return;
-    }
+    if (isNaN(payoutVal) || payoutVal < 0 || payoutVal > 200) { alert("❌ Payout 0-200"); return; }
+    if (isNaN(winVal) || winVal < 0 || winVal > 100) { alert("❌ Win Rate 0-100"); return; }
 
     await updateDoc(doc(db, "markets", mid), {
       name: newName,
@@ -369,64 +351,50 @@ async function editMarket(mid) {
     });
 
     alert("✅ আপডেট হয়েছে");
-
-  } catch (err) {
-    alert("❌ " + err.message);
-  }
+  } catch (err) { alert("❌ " + err.message); }
 }
 
 async function toggleMarket(mid, isEnabled) {
   const action = isEnabled ? "Disable" : "Enable";
   if (!confirm(`${action} করবেন?`)) return;
-
   try {
     await updateDoc(doc(db, "markets", mid), {
       enabled: !isEnabled,
       updatedAt: new Date().toISOString()
     });
     alert(`✅ ${action} সম্পন্ন`);
-  } catch (err) {
-    alert("❌ " + err.message);
-  }
+  } catch (err) { alert("❌ " + err.message); }
 }
 
 async function deleteMarket(mid) {
-  if (!confirm("⚠️ এই মার্কেট এবং এর সব ক্যান্ডেল ডিলিট হবে! নিশ্চিত?")) return;
-  if (!confirm("সত্যিই ডিলিট করবেন? এটা ফেরানো যাবে না।")) return;
-
+  if (!confirm("⚠️ এই মার্কেট এবং এর সব ক্যান্ডেল ডিলিট হবে!")) return;
+  if (!confirm("সত্যিই ডিলিট করবেন?")) return;
   try {
     const candlesSnap = await getDocs(collection(db, "markets", mid, "candles"));
     for (const c of candlesSnap.docs) {
       await deleteDoc(doc(db, "markets", mid, "candles", c.id));
     }
-
     await deleteDoc(doc(db, "markets", mid));
     alert("✅ ডিলিট সম্পন্ন");
-
-  } catch (err) {
-    alert("❌ " + err.message);
-  }
+  } catch (err) { alert("❌ " + err.message); }
 }
 
 function updateCandleMarketSelect(markets) {
   const sel = document.getElementById("candle-market-select");
   if (!sel) return;
-
   const current = sel.value;
   sel.innerHTML = '<option value="">— মার্কেট বেছে নিন —</option>';
-
   markets.forEach(m => {
     const opt = document.createElement("option");
     opt.value = m.id;
     opt.textContent = `${m.name} (${m.symbol})`;
     sel.appendChild(opt);
   });
-
   if (current) sel.value = current;
 }
 
 // ============================================
-// Part 4: Users + Trades + Deposits + Withdrawals + Settings
+// Part 4: Stats + Users + Trades + Deposits + Withdrawals + Settings
 // ============================================
 
 async function loadStats() {
@@ -448,15 +416,8 @@ async function loadStats() {
       query(collection(db, "withdrawals"), where("status", "==", "pending"))
     );
     if (statPendingWithdrawals) statPendingWithdrawals.textContent = withdrawalsSnap.size;
-
-  } catch (err) {
-    console.error("Stats error:", err);
-  }
+  } catch (err) { console.error("Stats error:", err); }
 }
-
-// ============================================
-// USERS
-// ============================================
 
 function loadUsers() {
   if (!usersList) return;
@@ -465,21 +426,17 @@ function loadUsers() {
 
   usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
     usersList.innerHTML = "";
-
     if (snap.empty) {
       usersList.innerHTML = '<p class="loading-text">কোনো ইউজার নেই</p>';
       return;
     }
-
     const users = [];
     snap.forEach(d => users.push({ id: d.id, ...d.data() }));
-
     users.sort((a, b) => {
       const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bT - aT;
     });
-
     users.forEach(u => renderUserItem(u));
     loadStats();
   });
@@ -495,9 +452,7 @@ function renderUserItem(user) {
 
   const demoBal = (user.demoBalance ?? 1000).toFixed(2);
   const realBal = (user.realBalance ?? 0).toFixed(2);
-  const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-GB")
-    : "-";
+  const joined = user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB") : "-";
 
   div.innerHTML = `
     <div class="admin-item-header">
@@ -526,7 +481,6 @@ if (usersList) {
     const action = btn.dataset.action;
     const uid = btn.dataset.uid;
     if (!uid) return;
-
     if (action === "edit-demo") await editBalance(uid, "demoBalance", btn.dataset.bal);
     else if (action === "edit-real") await editBalance(uid, "realBalance", btn.dataset.bal);
     else if (action === "ban") await toggleBan(uid, btn.dataset.banned === "true");
@@ -537,10 +491,8 @@ async function editBalance(uid, field, currentValue) {
   const label = field === "demoBalance" ? "ডেমো" : "রিয়েল";
   const input = prompt(`${label} ব্যালেন্স (বর্তমান: $${currentValue})`, currentValue);
   if (input === null) return;
-
   const newVal = parseFloat(input);
   if (isNaN(newVal) || newVal < 0) { alert("❌ ভুল মান"); return; }
-
   try {
     await updateDoc(doc(db, "users", uid), { [field]: newVal });
     alert(`✅ ${label}: $${newVal.toFixed(2)}`);
@@ -571,7 +523,6 @@ function loadTrades() {
       tradesList.innerHTML = '<p class="loading-text">কোনো ট্রেড নেই</p>';
       return;
     }
-
     const trades = [];
     snap.forEach(d => trades.push({ id: d.id, ...d.data() }));
     trades.sort((a, b) => {
@@ -579,7 +530,6 @@ function loadTrades() {
       const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bT - aT;
     });
-
     trades.slice(0, 100).forEach(t => renderTradeItem(t));
   });
 }
@@ -633,7 +583,6 @@ if (tradesList) {
     const action = btn.dataset.action;
     const tid = btn.dataset.tid;
     if (!tid) return;
-
     if (action === "force-win") await forceTradeResult(tid, "win");
     else if (action === "force-loss") await forceTradeResult(tid, "loss");
     else if (action === "force-pending") await forceTradeResult(tid, "pending");
@@ -696,7 +645,6 @@ function loadDeposits() {
       depositsList.innerHTML = '<p class="loading-text">কোনো ডিপোজিট নেই</p>';
       return;
     }
-
     const deposits = [];
     snap.forEach(d => deposits.push({ id: d.id, ...d.data() }));
     deposits.sort((a, b) => {
@@ -704,7 +652,6 @@ function loadDeposits() {
       const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bT - aT;
     });
-
     deposits.forEach(d => renderDepositItem(d));
     loadStats();
   });
@@ -752,20 +699,17 @@ if (depositsList) {
     const action = btn.dataset.action;
     const did = btn.dataset.did;
     if (!did) return;
-
     if (action === "approve-dep") await approveDeposit(did);
     else if (action === "reject-dep") await rejectDeposit(did);
   });
 }
 
 async function approveDeposit(depositId) {
-  if (!confirm("অ্যাপ্রুভ করবেন? ইউজারের রিয়েল ব্যালেন্স বাড়বে।")) return;
-
+  if (!confirm("অ্যাপ্রুভ করবেন?")) return;
   try {
     const depRef = doc(db, "deposits", depositId);
     const depDoc = await getDoc(depRef);
     if (!depDoc.exists()) { alert("❌ নেই"); return; }
-
     const dep = depDoc.data();
     if (dep.status === "approved") { alert("⚠️ আগেই অ্যাপ্রুভ"); return; }
 
@@ -775,12 +719,10 @@ async function approveDeposit(depositId) {
       const curReal = userDoc.data().realBalance ?? 0;
       await updateDoc(userRef, { realBalance: curReal + dep.amount });
     }
-
     await updateDoc(depRef, {
       status: "approved",
       approvedAt: new Date().toISOString()
     });
-
     alert("✅ অ্যাপ্রুভ হয়েছে");
     loadStats();
   } catch (err) { alert("❌ " + err.message); }
@@ -813,7 +755,6 @@ function loadWithdrawals() {
       withdrawalsList.innerHTML = '<p class="loading-text">কোনো উইথড্র নেই</p>';
       return;
     }
-
     const ws = [];
     snap.forEach(d => ws.push({ id: d.id, ...d.data() }));
     ws.sort((a, b) => {
@@ -821,7 +762,6 @@ function loadWithdrawals() {
       const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bT - aT;
     });
-
     ws.forEach(w => renderWithdrawItem(w));
     loadStats();
   });
@@ -869,20 +809,17 @@ if (withdrawalsList) {
     const action = btn.dataset.action;
     const wid = btn.dataset.wid;
     if (!wid) return;
-
     if (action === "approve-wd") await approveWithdrawal(wid);
     else if (action === "reject-wd") await rejectWithdrawal(wid);
   });
 }
 
 async function approveWithdrawal(wid) {
-  if (!confirm("অ্যাপ্রুভ করবেন? ইউজারের রিয়েল ব্যালেন্স কমবে।")) return;
-
+  if (!confirm("অ্যাপ্রুভ করবেন?")) return;
   try {
     const wRef = doc(db, "withdrawals", wid);
     const wDoc = await getDoc(wRef);
     if (!wDoc.exists()) { alert("❌ নেই"); return; }
-
     const w = wDoc.data();
     if (w.status === "approved") { alert("⚠️ আগেই অ্যাপ্রুভ"); return; }
 
@@ -890,15 +827,13 @@ async function approveWithdrawal(wid) {
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
       const curReal = userDoc.data().realBalance ?? 0;
-      if (curReal < w.amount) { alert("⚠️ ইউজারের পর্যাপ্ত ব্যালেন্স নেই"); return; }
+      if (curReal < w.amount) { alert("⚠️ পর্যাপ্ত ব্যালেন্স নেই"); return; }
       await updateDoc(userRef, { realBalance: curReal - w.amount });
     }
-
     await updateDoc(wRef, {
       status: "approved",
       approvedAt: new Date().toISOString()
     });
-
     alert("✅ অ্যাপ্রুভ");
     loadStats();
   } catch (err) { alert("❌ " + err.message); }
@@ -1000,15 +935,14 @@ function updateAutoModeButton() {
   }
 }
 
-/* ============================================================
-   PART 6 v3 (FINAL): CANDLE SCHEDULER
-   ============================================================ */
+// ============================================
+// PART 6 v3: CANDLE SCHEDULER
+// ============================================
 
 window.candleList = [];
 window.candleCounter = 0;
 window.currentMarketId = null;
 
-// ---------- Render Table ----------
 function renderCandleTable() {
   const tbody = document.getElementById('candle-table-body');
   if (!tbody) return;
@@ -1018,26 +952,30 @@ function renderCandleTable() {
     return;
   }
 
-  tbody.innerHTML = window.candleList.map((c, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${c.date || '-'}</td>
-      <td>${c.time || '-'}</td>
-      <td>${c.timeframe || '1m'}</td>
-      <td>${c.open}</td>
-      <td>${c.high}</td>
-      <td>${c.low}</td>
-      <td>${c.close}</td>
-      <td class="${c.color}">${c.color === 'green' ? '🟢' : '🔴'}</td>
-      <td>${c.up || 0}m</td>
-      <td>${c.down || 0}m</td>
-      <td>
-        <button class="act-btn edit" data-i="${i}">✏️</button>
-        <button class="act-btn del"  data-i="${i}">🗑</button>
-        <button class="act-btn copy" data-i="${i}">📋</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = window.candleList.map((c, i) => {
+    const color = c.color || 'green';
+    const colorEmoji = color === 'green' ? '🟢' : '🔴';
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${c.date || '-'}</td>
+        <td>${c.time || '-'}</td>
+        <td>${c.timeframe || '1m'}</td>
+        <td>${c.open}</td>
+        <td>${c.high}</td>
+        <td>${c.low}</td>
+        <td>${c.close}</td>
+        <td class="${color}">${colorEmoji} ${color}</td>
+        <td>${c.up || 0}m</td>
+        <td>${c.down || 0}m</td>
+        <td>
+          <button class="act-btn edit" data-i="${i}">✏️</button>
+          <button class="act-btn del"  data-i="${i}">🗑</button>
+          <button class="act-btn copy" data-i="${i}">📋</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   tbody.querySelectorAll('.act-btn.edit').forEach(b =>
     b.onclick = () => editCandle(Number(b.dataset.i)));
@@ -1050,21 +988,17 @@ function renderCandleTable() {
   if (typeof renderDirectionTimeline === 'function') renderDirectionTimeline();
 }
 
-// ---------- Add Candle ----------
 function addCandle() {
   try {
     window.candleCounter++;
-
     const baseEl = document.getElementById('bulk-base');
-    const base   = Number(baseEl?.value || 50000);
-
-    const open  = base + (Math.random() * 100 - 50);
+    const base = Number(baseEl?.value || 50000);
+    const open = base + (Math.random() * 100 - 50);
     const close = open + (Math.random() * 80 - 40);
-    const high  = Math.max(open, close) + Math.random() * 20;
-    const low   = Math.min(open, close) - Math.random() * 20;
+    const high = Math.max(open, close) + Math.random() * 20;
+    const low = Math.min(open, close) - Math.random() * 20;
     const color = close >= open ? 'green' : 'red';
-
-    const now  = new Date();
+    const now = new Date();
     const date = now.toISOString().split('T')[0];
     const time = now.toTimeString().slice(0, 8);
 
@@ -1072,12 +1006,14 @@ function addCandle() {
       number: window.candleCounter,
       date, time,
       timeframe: document.getElementById('candle-timeframe')?.value || '1m',
-      open:  open.toFixed(2),
-      high:  high.toFixed(2),
-      low:   low.toFixed(2),
+      open: open.toFixed(2),
+      high: high.toFixed(2),
+      low: low.toFixed(2),
       close: close.toFixed(2),
       color,
-      up:   Number(document.getElementById('bulk-up')?.value   || 5),
+      direction: close >= open ? 'up' : 'down',
+      size: 'medium',
+      up: Number(document.getElementById('bulk-up')?.value || 5),
       down: Number(document.getElementById('bulk-down')?.value || 5)
     });
 
@@ -1089,31 +1025,29 @@ function addCandle() {
   }
 }
 
-// ---------- Delete ----------
 function deleteCandle(index) {
   if (!confirm(`ক্যান্ডেল #${index + 1} ডিলিট?`)) return;
   window.candleList.splice(index, 1);
   renderCandleTable();
 }
 
-// ---------- Edit ----------
 function editCandle(index) {
   const c = window.candleList[index];
-  const newOpen  = prompt('Open:', c.open);  if (newOpen  === null) return;
+  const newOpen = prompt('Open:', c.open); if (newOpen === null) return;
   const newClose = prompt('Close:', c.close); if (newClose === null) return;
-  const newHigh  = prompt('High:', c.high);  if (newHigh  === null) return;
-  const newLow   = prompt('Low:', c.low);    if (newLow   === null) return;
+  const newHigh = prompt('High:', c.high); if (newHigh === null) return;
+  const newLow = prompt('Low:', c.low); if (newLow === null) return;
 
-  c.open  = Number(newOpen).toFixed(2);
+  c.open = Number(newOpen).toFixed(2);
   c.close = Number(newClose).toFixed(2);
-  c.high  = Number(newHigh).toFixed(2);
-  c.low   = Number(newLow).toFixed(2);
+  c.high = Number(newHigh).toFixed(2);
+  c.low = Number(newLow).toFixed(2);
   c.color = Number(newClose) >= Number(newOpen) ? 'green' : 'red';
+  c.direction = Number(newClose) >= Number(newOpen) ? 'up' : 'down';
 
   renderCandleTable();
 }
 
-// ---------- Copy ----------
 function copyCandle(index) {
   window.candleCounter++;
   const c = { ...window.candleList[index], number: window.candleCounter };
@@ -1121,7 +1055,6 @@ function copyCandle(index) {
   renderCandleTable();
 }
 
-// ---------- Clear ----------
 function clearCandles() {
   if (!confirm('সব ক্যান্ডেল মুছবেন?')) return;
   window.candleList = [];
@@ -1129,20 +1062,11 @@ function clearCandles() {
   renderCandleTable();
 }
 
-// ---------- Bind Buttons ----------
 function bindCandleButtons() {
   const add = document.getElementById('add-candle-btn');
-  if (add) {
-    add.onclick = addCandle;
-    console.log('✅ Add button bound');
-  }
-
+  if (add) { add.onclick = addCandle; }
   const clr = document.getElementById('clear-candles-btn');
-  if (clr) {
-    clr.onclick = clearCandles;
-    console.log('✅ Clear button bound');
-  }
-
+  if (clr) { clr.onclick = clearCandles; }
   renderCandleTable();
 }
 
@@ -1151,13 +1075,14 @@ document.addEventListener('DOMContentLoaded', bindCandleButtons);
 setTimeout(bindCandleButtons, 800);
 setTimeout(bindCandleButtons, 2500);
 
-// ---------- PART 6A: Save / Load / Refresh ----------
+// ============================================
+// PART 6A: Save / Load / Refresh
+// ============================================
 
 function bindMarketSelect() {
   const sel = document.getElementById('candle-market-select');
   if (!sel || sel.dataset.bound === '1') return;
   sel.dataset.bound = '1';
-
   sel.addEventListener('change', () => {
     window.currentMarketId = sel.value || null;
     console.log('📌 Market changed:', window.currentMarketId);
@@ -1175,20 +1100,14 @@ function bindMarketSelect() {
 async function loadCandlesFromFirestore(marketId) {
   if (!marketId) return;
   console.log('📥 Loading candles for market:', marketId);
-
   try {
-    const candlesSnap = await getDocs(
-      collection(db, "markets", marketId, "candles")
-    );
-
+    const candlesSnap = await getDocs(collection(db, "markets", marketId, "candles"));
     if (candlesSnap.empty) {
       window.candleList = [];
       window.candleCounter = 0;
       renderCandleTable();
-      console.log('⚠️ No candles in Firestore');
       return;
     }
-
     window.candleList = [];
     candlesSnap.forEach(d => {
       const data = d.data();
@@ -1197,47 +1116,41 @@ async function loadCandlesFromFirestore(marketId) {
         number: data.number || 0,
         date: data.date || '-',
         time: data.startTime || data.time || '-',
+        endTime: data.endTime || '',
         timeframe: data.timeframe || '1m',
-        open:  Number(data.open || 0).toFixed(2),
-        high:  Number(data.high || 0).toFixed(2),
-        low:   Number(data.low || 0).toFixed(2),
+        open: Number(data.open || 0).toFixed(2),
+        high: Number(data.high || 0).toFixed(2),
+        low: Number(data.low || 0).toFixed(2),
         close: Number(data.close || 0).toFixed(2),
         color: data.color || 'green',
-        up:    data.upDuration || data.up || 5,
-        down:  data.downDuration || data.down || 5
+        direction: data.direction || (Number(data.close) >= Number(data.open) ? 'up' : 'down'),
+        size: data.size || 'medium',
+        wick: data.wick || data.wickLength || 20,
+        body: data.body || data.bodySize || 60,
+        up: data.upDuration || data.up || 5,
+        down: data.downDuration || data.down || 5
       });
     });
-
     window.candleList.sort((a, b) => (a.number || 0) - (b.number || 0));
     window.candleCounter = window.candleList.length;
-
     renderCandleTable();
     console.log('✅ Loaded', window.candleList.length, 'candles');
   } catch (err) {
-    console.error('❌ Load candles error:', err);
+    console.error('❌ Load error:', err);
     alert('❌ Load error: ' + err.message);
   }
 }
 
 async function saveAllCandles() {
-  if (!window.currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return;
-  }
-  if (window.candleList.length === 0) {
-    alert('⚠️ কোনো ক্যান্ডেল নেই');
-    return;
-  }
+  if (!window.currentMarketId) { alert('⚠️ আগে মার্কেট সিলেক্ট করুন'); return; }
+  if (window.candleList.length === 0) { alert('⚠️ কোনো ক্যান্ডেল নেই'); return; }
 
   const confirmMsg = `মার্কেট: ${window.currentMarketId}\n${window.candleList.length}টা ক্যান্ডেল Save হবে?\n\n⚠️ পুরনো সব overwrite হবে।`;
   if (!confirm(confirmMsg)) return;
 
   console.log('💾 Saving', window.candleList.length, 'candles...');
-
   try {
-    const oldSnap = await getDocs(
-      collection(db, "markets", window.currentMarketId, "candles")
-    );
+    const oldSnap = await getDocs(collection(db, "markets", window.currentMarketId, "candles"));
     for (const d of oldSnap.docs) {
       await deleteDoc(doc(db, "markets", window.currentMarketId, "candles", d.id));
     }
@@ -1246,38 +1159,36 @@ async function saveAllCandles() {
     for (let i = 0; i < window.candleList.length; i++) {
       const c = window.candleList[i];
       const candleId = `c_${String(i + 1).padStart(4, '0')}`;
-
       await setDoc(
         doc(db, "markets", window.currentMarketId, "candles", candleId),
         {
           number: i + 1,
           date: c.date || '',
           startTime: c.time || '',
-          endTime: '',
+          endTime: c.endTime || '',
           duration: 60,
           timeframe: c.timeframe || '1m',
-          open:  Number(c.open),
-          high:  Number(c.high),
-          low:   Number(c.low),
+          open: Number(c.open),
+          high: Number(c.high),
+          low: Number(c.low),
           close: Number(c.close),
           color: c.color || 'green',
-          direction: Number(c.close) >= Number(c.open) ? 'up' : 'down',
+          direction: c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down'),
+          size: c.size || 'medium',
           upDuration: Number(c.up || 0),
           downDuration: Number(c.down || 0),
           neutralDuration: 0,
-          wickLength: 20,
-          bodySize: 60,
+          wickLength: Number(c.wick || 20),
+          bodySize: Number(c.body || 60),
           status: 'pending',
           createdAt: new Date().toISOString()
         }
       );
     }
-
     await updateDoc(doc(db, "markets", window.currentMarketId), {
       currentCandleIndex: 0,
       updatedAt: new Date().toISOString()
     });
-
     alert(`✅ ${window.candleList.length}টা ক্যান্ডেল Save হয়েছে!`);
     console.log('✅ All saved');
   } catch (err) {
@@ -1290,12 +1201,8 @@ function bindRefreshCandles() {
   const btn = document.getElementById('refresh-candles');
   if (!btn || btn.dataset.bound === '1') return;
   btn.dataset.bound = '1';
-
   btn.addEventListener('click', async () => {
-    if (!window.currentMarketId) {
-      alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-      return;
-    }
+    if (!window.currentMarketId) { alert('⚠️ আগে মার্কেট সিলেক্ট করুন'); return; }
     await loadCandlesFromFirestore(window.currentMarketId);
     alert('✅ Reloaded');
   });
@@ -1306,7 +1213,6 @@ function bindSaveButton() {
   const btn = document.getElementById('save-candles-btn');
   if (!btn || btn.dataset.bound === '1') return;
   btn.dataset.bound = '1';
-
   btn.addEventListener('click', saveAllCandles);
   console.log('✅ Save button bound');
 }
@@ -1322,34 +1228,15 @@ document.addEventListener('DOMContentLoaded', bindPart6A);
 setTimeout(bindPart6A, 800);
 setTimeout(bindPart6A, 2500);
 
-// ---------- Global Expose ----------
-window.addCandle = addCandle;
-window.clearCandles = clearCandles;
-window.renderCandleTable = renderCandleTable;
-window.saveAllCandles = saveAllCandles;
-window.loadCandlesFromFirestore = loadCandlesFromFirestore;
-window.bindPart6A = bindPart6A;
+// ============================================
+// PART 6B-1: Time Calculation
+// ============================================
 
-console.log('🎯 Part 6 v3 (FINAL) loaded');
-
-/* ============================================================
-   PART 6B-1: Bulk Generate — Time Calculation
-   ============================================================ */
-
-// ---------- Timeframe → Seconds ----------
 function timeframeToSeconds(tf) {
-  const map = {
-    '5s':  5,
-    '1m':  60,
-    '5m':  300,
-    '15m': 900,
-    '1h':  3600,
-    '4h':  14400
-  };
+  const map = { '5s': 5, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
   return map[tf] || 60;
 }
 
-// ---------- Seconds → HH:MM:SS ----------
 function secondsToTime(totalSec) {
   const h = Math.floor(totalSec / 3600) % 24;
   const m = Math.floor((totalSec % 3600) / 60);
@@ -1357,38 +1244,30 @@ function secondsToTime(totalSec) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ---------- Parse Time "HH:MM:SS" → seconds ----------
 function timeToSeconds(timeStr) {
   const parts = (timeStr || '00:00:00').split(':').map(Number);
-  const h = parts[0] || 0;
-  const m = parts[1] || 0;
-  const s = parts[2] || 0;
-  return h * 3600 + m * 60 + s;
+  return (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
 }
 
-// ---------- Add Days to Date (ISO format) ----------
 function addDaysToDate(dateStr, days) {
   const d = new Date(dateStr + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().split('T')[0];
 }
 
-// ---------- Calculate Time for Nth Candle ----------
 function calcCandleTime(startDate, startTime, index, tfSeconds) {
   const startSec = timeToSeconds(startTime);
   const totalSec = startSec + index * tfSeconds;
-  
-  const dayOffset = Math.floor(totalSec / 86400); // 24 * 3600
+  const dayOffset = Math.floor(totalSec / 86400);
   const daySec = totalSec % 86400;
-  
-  const date = addDaysToDate(startDate, dayOffset);
-  const startT = secondsToTime(daySec);
-  const endT = secondsToTime(daySec + tfSeconds);
-  
-  return { date, startTime: startT, endTime: endT, dayOffset };
+  return {
+    date: addDaysToDate(startDate, dayOffset),
+    startTime: secondsToTime(daySec),
+    endTime: secondsToTime(daySec + tfSeconds),
+    dayOffset
+  };
 }
 
-// ---------- Validate Bulk Form ----------
 function validateBulkForm() {
   const startDate = document.getElementById('bulk-date')?.value;
   const startTime = document.getElementById('bulk-time')?.value;
@@ -1401,103 +1280,50 @@ function validateBulkForm() {
   const wick = parseInt(document.getElementById('bulk-wick')?.value || 20);
   const body = parseInt(document.getElementById('bulk-body')?.value || 60);
 
-  // Validations
   if (!startDate) { alert('❌ Start Date দিন'); return null; }
   if (!startTime) { alert('❌ Start Time দিন'); return null; }
-  if (isNaN(count) || count < 1 || count > 500) {
-    alert('❌ Candle Count 1-500 এর মধ্যে দিন');
-    return null;
-  }
-  if (isNaN(base) || base <= 0) {
-    alert('❌ Base Price সঠিকভাবে দিন');
-    return null;
-  }
-  if (up + down + neutral <= 0) {
-    alert('❌ Up/Down/Neutral Duration কমপক্ষে ১টা দিন');
-    return null;
-  }
+  if (isNaN(count) || count < 1 || count > 500) { alert('❌ Count 1-500'); return null; }
+  if (isNaN(base) || base <= 0) { alert('❌ Base Price'); return null; }
+  if (up + down + neutral <= 0) { alert('❌ Duration দিন'); return null; }
 
   return { startDate, startTime, count, base, tf, up, down, neutral, wick, body };
 }
 
-// ---------- Confirm Overwrite (existing candles) ----------
 async function confirmOverwrite() {
-  if (!window.currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return false;
-  }
-
+  if (!window.currentMarketId) { alert('⚠️ আগে মার্কেট সিলেক্ট করুন'); return false; }
   try {
-    const snap = await getDocs(
-      collection(db, "markets", window.currentMarketId, "candles")
-    );
+    const snap = await getDocs(collection(db, "markets", window.currentMarketId, "candles"));
     if (snap.size === 0) return true;
-
-    const msg = `⚠️ এই মার্কেটে ${snap.size}টা ক্যান্ডেল আগে থেকেই আছে।\n\nBulk Generate করলে সব পুরনো overwrite হবে?\n(হ্যাঁ চাপলে সব মুছে নতুন হবে)`;
-    return confirm(msg);
-  } catch (err) {
-    console.error('❌ Overwrite check error:', err);
-    return true;
-  }
+    return confirm(`⚠️ এই মার্কেটে ${snap.size}টা ক্যান্ডেল আছে। Overwrite?`);
+  } catch (err) { return true; }
 }
 
-// ---------- Clear Current Candle List ----------
 function clearCurrentCandleList() {
   window.candleList = [];
   window.candleCounter = 0;
   renderCandleTable();
 }
 
-// ---------- Bulk Generate (Main Function) ----------
-
-
-// ---------- Bind Bulk Generate Button ----------
-function bindBulkGenerate() {
-  const btn = document.getElementById('bulk-generate-btn');
-  if (!btn || btn.dataset.bound === '1') return;
-  btn.dataset.bound = '1';
-
-  btn.addEventListener('click', bulkGenerateCandles);
-  console.log('✅ Bulk Generate button bound');
-}
-
-bindBulkGenerate();
-document.addEventListener('DOMContentLoaded', bindBulkGenerate);
-setTimeout(bindBulkGenerate, 800);
-setTimeout(bindBulkGenerate, 2500);
-
-// ---------- Global Expose ----------
-window.timeframeToSeconds = timeframeToSeconds;
-window.calcCandleTime = calcCandleTime;
-
-console.log('🎯 Part 6B-1 (Time Calc) loaded');
-/* ============================================================
-   PART 6B-2: Price Calculation + Direction + Color
-   ============================================================ */
+// ============================================
+// PART 6B-2: Price Calculation
+// ============================================
 
 function getPriceMovement(direction) {
   const baseMove = 30 + Math.random() * 90;
-  if (direction === 'up') {
-    return Math.abs(baseMove);
-  } else if (direction === 'down') {
-    return -Math.abs(baseMove);
-  } else {
-    return (Math.random() - 0.5) * 10;
-  }
+  if (direction === 'up') return Math.abs(baseMove);
+  if (direction === 'down') return -Math.abs(baseMove);
+  return (Math.random() - 0.5) * 10;
 }
 
 function getSizeMultiplier(sizeType) {
-  if (sizeType === 'small')  return 0.5;
-  if (sizeType === 'large')  return 1.8;
+  if (sizeType === 'small') return 0.5;
+  if (sizeType === 'large') return 1.8;
   return 1.0;
 }
 
 function buildCandleWithPrice(params) {
-  const {
-    number, date, time, endTime, timeframe,
-    prevClose, basePrice, direction,
-    wick, body, sizeType
-  } = params;
+  const { number, date, time, endTime, timeframe, prevClose, basePrice,
+          direction, wick, body, sizeType } = params;
 
   const sizeMul = getSizeMultiplier(sizeType);
   const wickScaled = wick * sizeMul;
@@ -1506,44 +1332,34 @@ function buildCandleWithPrice(params) {
   const open = prevClose !== null ? prevClose : basePrice;
   const movement = getPriceMovement(direction);
   const close = open + movement;
-
   const maxOC = Math.max(open, close);
   const minOC = Math.min(open, close);
   const high = maxOC + wickScaled;
-  const low  = minOC - wickScaled;
+  const low = minOC - wickScaled;
 
   let color;
-  if (direction === 'up')      color = 'green';
+  if (direction === 'up') color = 'green';
   else if (direction === 'down') color = 'red';
-  else                          color = close >= open ? 'green' : 'red';
+  else color = close >= open ? 'green' : 'red';
 
   return {
     number, date, time, endTime, timeframe,
-    open:  open.toFixed(2),
-    high:  high.toFixed(2),
-    low:   low.toFixed(2),
+    open: open.toFixed(2),
+    high: high.toFixed(2),
+    low: low.toFixed(2),
     close: close.toFixed(2),
-    color,
-    direction,
-    size: sizeType,
+    color, direction, size: sizeType,
     wick: wickScaled.toFixed(0),
     body: bodyScaled.toFixed(0),
-    up: 0,
-    down: 0
+    up: 0, down: 0
   };
 }
 
 async function bulkGenerateCandles() {
-  console.log('⚡ Bulk Generate (v2) clicked');
-
+  console.log('⚡ Bulk Generate clicked');
   const form = validateBulkForm();
   if (!form) return;
-
-  if (!window.currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return;
-  }
-
+  if (!window.currentMarketId) { alert('⚠️ আগে মার্কেট সিলেক্ট করুন'); return; }
   const ok = await confirmOverwrite();
   if (!ok) return;
 
@@ -1551,8 +1367,7 @@ async function bulkGenerateCandles() {
   const patternLength = form.up + form.down + form.neutral;
   const sizeType = 'medium';
 
-  console.log('⚡ Generating', form.count, 'candles | Size:', sizeType);
-
+  console.log('⚡ Generating', form.count, 'candles');
   clearCurrentCandleList();
 
   const tempList = [];
@@ -1561,7 +1376,6 @@ async function bulkGenerateCandles() {
 
   for (let i = 0; i < form.count; i++) {
     const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
-
     let direction = 'up';
     if (patternLength > 0) {
       const pos = i % patternLength;
@@ -1569,30 +1383,18 @@ async function bulkGenerateCandles() {
       else if (pos < form.up + form.down) direction = 'down';
       else direction = 'neutral';
     }
-
     const candle = buildCandleWithPrice({
-      number: i + 1,
-      date: timeInfo.date,
-      time: timeInfo.startTime,
-      endTime: timeInfo.endTime,
-      timeframe: form.tf,
-      prevClose: prevClose,
-      basePrice: form.base,
-      direction,
-      wick: form.wick,
-      body: form.body,
-      sizeType
+      number: i + 1, date: timeInfo.date,
+      time: timeInfo.startTime, endTime: timeInfo.endTime,
+      timeframe: form.tf, prevClose, basePrice: form.base,
+      direction, wick: form.wick, body: form.body, sizeType
     });
-
     candle.up = form.up;
     candle.down = form.down;
-
     prevClose = parseFloat(candle.close);
-
     if (direction === 'up') upCount++;
     else if (direction === 'down') downCount++;
     else neutralCount++;
-
     tempList.push(candle);
   }
 
@@ -1602,14 +1404,7 @@ async function bulkGenerateCandles() {
 
   console.log('✅ Generated', tempList.length, 'candles');
   console.log(`   UP: ${upCount} | DOWN: ${downCount} | NEUTRAL: ${neutralCount}`);
-  console.log('   First:', tempList[0].open, '→', tempList[0].close);
-  console.log('   Last:', tempList[tempList.length - 1].open, '→', tempList[tempList.length - 1].close);
-
-  alert(
-    `✅ ${tempList.length}টা ক্যান্ডেল তৈরি!\n\n` +
-    `🟢 UP: ${upCount} | 🔴 DOWN: ${downCount} | ⚪ NEUTRAL: ${neutralCount}\n` +
-    `📊 Price: $${tempList[0].open} → $${tempList[tempList.length - 1].close}`
-  );
+  alert(`✅ ${tempList.length}টা ক্যান্ডেল তৈরি!\n\n🟢 UP: ${upCount} | 🔴 DOWN: ${downCount} | ⚪ NEUTRAL: ${neutralCount}\n📊 Price: $${tempList[0].open} → $${tempList[tempList.length - 1].close}`);
 }
 
 function rebindBulkGenerate() {
@@ -1618,7 +1413,7 @@ function rebindBulkGenerate() {
   const newBtn = btn.cloneNode(true);
   btn.parentNode.replaceChild(newBtn, btn);
   newBtn.addEventListener('click', bulkGenerateCandles);
-  console.log('✅ Bulk Generate rebound (v2)');
+  console.log('✅ Bulk Generate rebound');
 }
 
 rebindBulkGenerate();
@@ -1626,7 +1421,14 @@ document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
 setTimeout(rebindBulkGenerate, 800);
 setTimeout(rebindBulkGenerate, 2500);
 
-window.buildCandleWithPrice = buildCandleWithPrice;
-window.getPriceMovement = getPriceMovement;
+// ============================================
+// Global Expose
+// ============================================
+window.addCandle = addCandle;
+window.clearCandles = clearCandles;
+window.renderCandleTable = renderCandleTable;
+window.saveAllCandles = saveAllCandles;
+window.loadCandlesFromFirestore = loadCandlesFromFirestore;
+window.bulkGenerateCandles = bulkGenerateCandles;
 
-console.log('🎯 Part 6B-2 (Price + Direction) loaded');
+console.log('🎯 admin.js FULLY loaded (Part 3 → 6B-3)');
