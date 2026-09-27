@@ -648,3 +648,49 @@ button:active {
     max-width: 150px;
   }
 }
+
+/* ===== ড্রয়িং টুলবার ===== */
+.drawing-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  background: #0a0e17;
+  border-radius: 8px;
+  border: 1px solid #21262d;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.drawing-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.drawing-btn {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin: 0;
+  background: #161b22;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #8b949e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.drawing-btn:active {
+  background: #30363d;
+}
+
+.drawing-btn.active {
+  background: #1f6feb;
+  border-color: #1f6feb;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(31, 111, 235, 0.5);
+}
