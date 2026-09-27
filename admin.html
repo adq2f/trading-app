@@ -162,11 +162,122 @@
       </div>
 
       <!-- ক্যান্ডেল শিডিউলার ট্যাব -->
-      <div id="tab-candles" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>🎯 ক্যান্ডেল শিডিউলার</h2>
-          <button class="btn-refresh" id="refresh-candles">🔄 রিফ্রেশ</button>
-        </div>
+      <!-- ক্যান্ডেল শিডিউলার ট্যাব -->
+<div id="tab-candles" class="admin-tab-pane">
+  <div class="pane-header">
+    <h2>🎯 ক্যান্ডেল শিডিউলার</h2>
+    <button class="btn-refresh" id="refresh-candles">🔄 রিফ্রেশ</button>
+  </div>
+
+  <!-- ========== ১. Quick Settings ========== -->
+  <div class="candle-market-select">
+    <label>মার্কেট</label>
+    <select id="candle-market-select">
+      <option value="">— মার্কেট বেছে নিন —</option>
+    </select>
+  </div>
+
+  <div class="candle-market-select">
+    <label>Timeframe</label>
+    <select id="candle-timeframe">
+      <option value="5s">5s</option>
+      <option value="1m" selected>1m</option>
+      <option value="5m">5m</option>
+      <option value="15m">15m</option>
+      <option value="1h">1h</option>
+      <option value="4h">4h</option>
+    </select>
+  </div>
+
+  <div class="candle-mode-row">
+    <button class="mode-btn active" data-mode="locked">🔒 Lock</button>
+    <button class="mode-btn" data-mode="random">🎲 Random</button>
+    <button class="mode-btn" data-mode="mixed">⏯ Mixed</button>
+    <button class="mode-btn" data-mode="schedule">📅 Schedule</button>
+  </div>
+
+  <!-- ========== ২. Bulk Generator ========== -->
+  <div class="candle-bulk-box">
+    <h3>⚡ Bulk Generate</h3>
+    <div class="bulk-form">
+      <input type="date" id="bulk-date" title="শুরুর তারিখ">
+      <input type="time" step="1" id="bulk-time" title="শুরুর সময়">
+      <input type="number" id="bulk-count" placeholder="কত ক্যান্ডেল" value="10" min="1" max="500">
+      <input type="number" id="bulk-base" placeholder="বেস প্রাইস" value="50000">
+      <input type="number" id="bulk-up" placeholder="Up min" value="5" min="0">
+      <input type="number" id="bulk-down" placeholder="Down min" value="5" min="0">
+      <input type="number" id="bulk-neutral" placeholder="Neutral min" value="1" min="0">
+      <input type="number" id="bulk-wick" placeholder="Wick" value="20">
+      <input type="number" id="bulk-body" placeholder="Body" value="60">
+      <button id="bulk-generate-btn" class="btn-save">জেনারেট করুন</button>
+    </div>
+  </div>
+
+  <!-- ========== ৩. Playback ========== -->
+  <div class="playback-row">
+    <button id="play-btn" class="pb-btn pb-play">▶️ Play</button>
+    <button id="pause-btn" class="pb-btn pb-pause">⏸ Pause</button>
+    <button id="skip-btn" class="pb-btn pb-skip">⏭ Skip</button>
+    <button id="back-btn" class="pb-btn pb-back">⏮ Back</button>
+    <button id="reset-btn" class="pb-btn pb-reset">🔄 Reset</button>
+  </div>
+
+  <!-- ========== ৪. Save / Export / Import ========== -->
+  <div class="save-export-row">
+    <button id="save-candles-btn" class="btn-save">💾 Save All</button>
+    <button id="clear-candles-btn" class="btn-reject">🗑 Clear</button>
+    <button id="export-candles-btn" class="btn-save">📤 Export</button>
+    <button id="import-candles-btn" class="btn-save">📥 Import</button>
+    <input type="file" id="import-candles-file" accept=".json" hidden>
+  </div>
+
+  <!-- ========== ৫. Candle Table ========== -->
+  <div class="candle-table-wrapper">
+    <table class="candle-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>TF</th>
+          <th>Open</th>
+          <th>High</th>
+          <th>Low</th>
+          <th>Close</th>
+          <th>Color</th>
+          <th>Up</th>
+          <th>Down</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="candle-table-body">
+        <tr>
+          <td colspan="12" class="empty-text">কোনো ক্যান্ডেল নেই</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button id="add-candle-btn" class="btn-save" style="margin-top:10px;">➕ নতুন ক্যান্ডেল</button>
+
+  <!-- ========== ৬. Live Preview ========== -->
+  <div class="candle-preview-box">
+    <h3>👁️ Live Preview</h3>
+    <div id="candle-preview" class="candle-preview">
+      <span class="empty-text">ক্যান্ডেল তৈরি হলে এখানে প্রিভিউ দেখা যাবে</span>
+    </div>
+  </div>
+
+  <!-- ========== ৭. Direction Timeline ========== -->
+  <div class="candle-preview-box">
+    <h3>📊 Direction Timeline</h3>
+    <div id="direction-timeline" class="direction-timeline">
+      <span class="empty-text">কোনো টাইমলাইন নেই</span>
+    </div>
+  </div>
+
+</div>
+<!-- /tab-candles -->
 
         <!-- মার্কেট সিলেক্ট -->
         <div class="candle-market-select">
