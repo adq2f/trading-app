@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="login-page" class="page">
+    <h1>লগইন</h1>
+    <input type="email" id="email" placeholder="ইমেইল">
+    <input type="password" id="password" placeholder="পাসওয়ার্ড">
+    <button id="login-btn">লগইন</button>
+    <button id="signup-btn">নতুন অ্যাকাউন্ট</button>
+    <p id="message"></p>
+  </div>
+
+  <div id="dashboard-page" class="page hidden">
+    <h1>ড্যাশবোর্ড</h1>
+    <p>ব্যালেন্স: $<span id="balance">0</span></p>
+    <button id="logout-btn">লগআউট</button>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
