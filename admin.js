@@ -1752,3 +1752,169 @@ console.log('Part 6C-2 (Live Preview) loaded');
 
   console.log('Preview auto-watcher started');
 })();
+
+// ============================================
+// PART 6C-3: Direction Timeline
+// ============================================
+
+// ---------- Render Direction Timeline ----------
+function renderDirectionTimeline() {
+  const container = document.getElementById('direction-timeline');
+  if (!container) return;
+
+  const list = window.candleList || [];
+
+  if (list.length === 0) {
+    container.innerHTML = '<span class="empty-text">No timeline data</span>';
+    return;
+  }
+
+  // Count Up / Down / Neutral
+  let upCount = 0, downCount = 0, neutralCount = 0;
+  list.forEach(c => {
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+    if (dir === 'up') upCount++;
+    else if (dir === 'down') downCount++;
+    else neutralCount++;
+  });
+
+  // Group consecutive same-direction candles into blocks
+  const blocks = [];
+  let currentBlock = null;
+
+  list.forEach((c, i) => {
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+
+    if (!currentBlock || currentBlock.dir !== dir) {
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = {
+        dir: dir,
+        candles: [i],
+        startIdx: i,
+        endIdx: i
+      };
+    } else {
+      currentBlock.candles.push(i);
+      currentBlock.endIdx = i;
+    }
+  });
+  if (currentBlock) blocks.push(currentBlock);
+
+  // Build blocks HTML
+  const blocksHTML = blocks.map((block, bIdx) => {
+    const colorClass = block.dir === 'up' ? 'tl-up' :
+                       block.dir === 'down' ? 'tl-down' : 'tl-neutral';
+
+    // Each candle inside block = colored square
+    const squaresHTML = block.candles.map(cIdx => {
+      const c = list[cIdx];
+      const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+      const sqClass = dir === 'up' ? 'tl-sq-up' :
+                      dir === 'down' ? 'tl-sq-down' : 'tl-sq-neutral';
+      const isActive = (cIdx === window.playbackIndex);
+
+      return '<div class="tl-square ' + sqClass + (isActive ? ' tl-sq-active' : '') + '" ' +
+             'data-idx="' + cIdx + '" ' +
+             'title="Candle ' + (cIdx + 1) + ' - ' + dir + '">' +
+             '<span class="tl-sq-num">' + (cIdx + 1) + '</span>' +
+             '</div>';
+    }).join('');
+
+    const blockLabel = block.dir === 'up' ? 'UP' :
+                       block.dir === 'down' ? 'DOWN' : 'NEUTRAL';
+    const blockCount = block.candles.length;
+
+    return '<div class="tl-block ' + colorClass + '">' +
+      '<div class="tl-block-label">' + blockLabel + ' x' + blockCount + '</div>' +
+      '<div class="tl-squares">' + squaresHTML + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Summary
+  const firstCandle = list[0];
+  const lastCandle = list[list.length - 1];
+  const timeRange = (firstCandle.time || '--:--') + ' to ' + (lastCandle.time || '--:--');
+
+  const summaryHTML =
+    '<div class="tl-summary">' +
+      '<span class="tl-summary-item tl-sum-up">UP: ' + upCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-down">DOWN: ' + downCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-neutral">NEUTRAL: ' + neutralCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-time">' + timeRange + '</span>' +
+    '</div>';
+
+  container.innerHTML =
+    summaryHTML +
+    '<div class="tl-blocks-wrap">' +
+      '<div class="tl-blocks">' + blocksHTML + '</div>' +
+    '</div>';
+
+  // Bind click to jump
+  container.querySelectorAll('.tl-square').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.idx);
+      window.playbackIndex = idx;
+      if (typeof highlightActiveRow === 'function') highlightActiveRow();
+      if (typeof renderCandlePreview === 'function') renderCandlePreview();
+      renderDirectionTimeline();
+    };
+  });
+}
+
+// ---------- Override highlightActiveRow ----------
+const _origHighlight2 = window.highlightActiveRow;
+window.highlightActiveRow = function() {
+  if (_origHighlight2) _origHighlight2();
+  renderDirectionTimeline();
+};
+
+// ---------- Override renderCandleTable ----------
+const _origRenderTable2 = window.renderCandleTable;
+window.renderCandleTable = function() {
+  if (_origRenderTable2) _origRenderTable2();
+  setTimeout(function() {
+    renderDirectionTimeline();
+  }, 60);
+};
+
+// ---------- Auto-Watcher for Timeline ----------
+(function startTimelineWatcher() {
+  let lastCount = -1;
+  let lastFirstClose = '';
+
+  setInterval(function() {
+    const container = document.getElementById('direction-timeline');
+    if (!container) return;
+
+    const list = window.candleList || [];
+    const count = list.length;
+    const firstClose = count > 0 ? (list[0].close || '') : '';
+
+    const isBlank = container.innerHTML.indexOf('No timeline') !== -1 ||
+                    container.innerHTML.indexOf('empty-text') !== -1;
+
+    const changed = (count !== lastCount) ||
+                    (firstClose !== lastFirstClose) ||
+                    (isBlank && count > 0);
+
+    if (changed) {
+      lastCount = count;
+      lastFirstClose = firstClose;
+      renderDirectionTimeline();
+      console.log('Timeline auto-updated:', count, 'candles');
+    }
+  }, 500);
+
+  console.log('Timeline auto-watcher started');
+})();
+
+// ---------- Initial Render ----------
+renderDirectionTimeline();
+document.addEventListener('DOMContentLoaded', renderDirectionTimeline);
+setTimeout(renderDirectionTimeline, 1000);
+setTimeout(renderDirectionTimeline, 2500);
+
+// ---------- Global Expose ----------
+window.renderDirectionTimeline = renderDirectionTimeline;
+
+console.log('Part 6C-3 (Direction Timeline) loaded');
