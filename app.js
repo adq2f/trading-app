@@ -54,6 +54,7 @@ const activeTradesList = document.getElementById("active-trades-list");
 const historyList = document.getElementById("history-list");
 const bigTimer = document.getElementById("big-timer");
 const activeCount = document.getElementById("active-count");
+const assetSelect = document.getElementById("asset-select");
 
 // ===== Globals =====
 let currentUser = null;
@@ -61,77 +62,62 @@ let userBalance = 0;
 let currentPrice = 50000;
 let prevPrice = 50000;
 let selectedTime = 60;
+let selectedTimeframe = "1m";
+let selectedAsset = "BTCUSDT";
 let priceInterval = null;
 let activeTradesUnsub = null;
 let historyUnsub = null;
 let activeTradesLocal = [];
-let priceHistory = [];
+let candles = [];          // { time, open, high, low, close }
+let currentCandle = null;
 let lastTradeTime = 0;
+let livePriceWS = null;
 
 // ===== সাউন্ড =====
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
   try {
-    if (audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
-    
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
     if (type === "click") {
-      // ট্রেড নেওয়ার সাউন্ড — সংক্ষিপ্ত বিট
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.frequency.value = 800;
-      osc.type = "sine";
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = 800; osc.type = "sine";
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    } 
-    else if (type === "win") {
-      // জেতার সাউন্ড — আরোহী কর্ড
+      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    } else if (type === "win") {
       const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = "sine";
-        const startTime = audioCtx.currentTime + i * 0.1;
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
-        osc.start(startTime);
-        osc.stop(startTime + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = "sine";
+        const t = audioCtx.currentTime + i * 0.1;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t); osc.stop(t + 0.3);
       });
-    } 
-    else if (type === "loss") {
-      // হারার সাউন্ড — অবরোহী
+    } else if (type === "loss") {
       const notes = [392, 329.63, 261.63];
       notes.forEach((freq, i) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = "sawtooth";
-        const startTime = audioCtx.currentTime + i * 0.12;
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
-        osc.start(startTime);
-        osc.stop(startTime + 0.35);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = "sawtooth";
+        const t = audioCtx.currentTime + i * 0.12;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.start(t); osc.stop(t + 0.35);
       });
     }
-  } catch (e) {
-    console.log("Sound error:", e);
-  }
+  } catch (e) { console.log("Sound error:", e); }
 }
 
-// ===== ফলাফল ফ্ল্যাশ =====
 function showResultFlash(result) {
   const flash = document.createElement("div");
   flash.className = `result-flash ${result}`;
@@ -139,7 +125,6 @@ function showResultFlash(result) {
   setTimeout(() => flash.remove(), 600);
 }
 
-// ===== ব্যালেন্স অ্যানিমেশন =====
 function animateBalanceChange(amount) {
   if (amount > 0) {
     balanceChangeEl.textContent = `+$${amount.toFixed(2)}`;
@@ -208,15 +193,12 @@ logoutBtn.addEventListener("click", async () => {
   await signOut(auth);
 });
 
-// ===== পরিমাণ +/− বাটন =====
+// ===== পরিমাণ +/− =====
 document.querySelectorAll(".amount-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     let val = parseFloat(tradeAmountInput.value) || 0;
-    if (btn.dataset.action === "plus") {
-      val += 5;
-    } else {
-      val = Math.max(1, val - 5);
-    }
+    if (btn.dataset.action === "plus") val += 5;
+    else val = Math.max(1, val - 5);
     tradeAmountInput.value = val;
   });
 });
@@ -230,12 +212,30 @@ document.querySelectorAll(".time-btn").forEach(btn => {
   });
 });
 
+// ===== টাইমফ্রেম সিলেকশন =====
+document.querySelectorAll(".tf-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedTimeframe = btn.dataset.tf;
+    await loadCandles();
+  });
+});
+
+// ===== অ্যাসেট পরিবর্তন =====
+if (assetSelect) {
+  assetSelect.addEventListener("change", async () => {
+    selectedAsset = assetSelect.value;
+    candles = [];
+    await loadCandles();
+  });
+}
+
 // ===== ট্যাব =====
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    
     document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
     if (btn.dataset.tab === "active") {
       document.getElementById("active-trades-list").classList.add("active");
@@ -254,22 +254,14 @@ onAuthStateChanged(auth, async (user) => {
     message.textContent = "";
     userEmailDisplay.textContent = user.email;
 
-    // ব্যালেন্স লোড
     const userDoc = await getDoc(doc(db, "users", user.uid));
     if (userDoc.exists()) {
       userBalance = userDoc.data().balance || 0;
       balanceEl.textContent = userBalance.toFixed(2);
     }
 
-    // চার্ট অ্যানিমেশন
-    priceHistory = [];
-    for (let i = 0; i < 50; i++) {
-      priceHistory.push(currentPrice + (Math.random() - 0.5) * 200);
-    }
-    renderChart();
-
-    // সিমুলেশন শুরু
-    startPriceSimulation();
+    await loadCandles();
+    startLivePrice();
     loadActiveTrades();
     loadHistory();
 
@@ -279,63 +271,137 @@ onAuthStateChanged(auth, async (user) => {
     dashboardPage.classList.add("hidden");
     emailInput.value = "";
     passwordInput.value = "";
-    stopPriceSimulation();
+    stopLivePrice();
     if (activeTradesUnsub) activeTradesUnsub();
     if (historyUnsub) historyUnsub();
     activeTradesLocal = [];
   }
 });
 
-// ===== প্রাইস সিমুলেশন =====
-function startPriceSimulation() {
-  if (priceInterval) clearInterval(priceInterval);
+// ===== Binance থেকে ক্যান্ডেল লোড =====
+async function loadCandles() {
+  const intervalMap = { "1m": "1m", "5m": "5m", "15m": "15m" };
+  const interval = intervalMap[selectedTimeframe] || "1m";
 
-  currentPrice = 50000 + Math.random() * 1000;
+  try {
+    const url = `https://api.binance.com/api/v3/klines?symbol=${selectedAsset}&interval=${interval}&limit=60`;
+    const res = await fetch(url);
+    const data = await res.json();
 
-  priceInterval = setInterval(() => {
-    prevPrice = currentPrice;
-    const change = (Math.random() - 0.5) * 60;
-    currentPrice = Math.max(1000, currentPrice + change);
+    candles = data.map(k => ({
+      time: k[0],
+      open: parseFloat(k[1]),
+      high: parseFloat(k[2]),
+      low: parseFloat(k[3]),
+      close: parseFloat(k[4])
+    }));
 
-    // প্রাইস ডিসপ্লে আপডেট
-    currentPriceEl.textContent = currentPrice.toFixed(2);
-
-    if (currentPrice >= prevPrice) {
-      currentPriceEl.style.color = "#3fb950";
-      priceArrowEl.textContent = "▲";
-      priceArrowEl.className = "price-arrow up";
-    } else {
-      currentPriceEl.style.color = "#f85149";
-      priceArrowEl.textContent = "▼";
-      priceArrowEl.className = "price-arrow down";
+    if (candles.length > 0) {
+      currentPrice = candles[candles.length - 1].close;
+      prevPrice = currentPrice;
+      currentPriceEl.textContent = currentPrice.toFixed(2);
     }
 
-    // চার্ট আপডেট
-    priceHistory.push(currentPrice);
-    if (priceHistory.length > 60) priceHistory.shift();
-    renderChart();
+    renderCandles();
 
-    // ট্রেড চেক
-    checkExpiredTrades();
-    // বড় টাইমার আপডেট
-    updateBigTimer();
-
-  }, 1000);
+  } catch (err) {
+    console.error("Candle load error:", err);
+  }
 }
 
-function stopPriceSimulation() {
+// ===== লাইভ প্রাইস (WebSocket) =====
+function startLivePrice() {
+  stopLivePrice();
+
+  const streamName = selectedAsset.toLowerCase() + "@trade";
+  const url = `wss://stream.binance.com:9443/ws/${streamName}`;
+
+  try {
+    livePriceWS = new WebSocket(url);
+
+    livePriceWS.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.p) {
+        prevPrice = currentPrice;
+        currentPrice = parseFloat(data.p);
+
+        currentPriceEl.textContent = currentPrice.toFixed(2);
+
+        if (currentPrice >= prevPrice) {
+          currentPriceEl.style.color = "#3fb950";
+          priceArrowEl.textContent = "▲";
+          priceArrowEl.className = "price-arrow up";
+        } else {
+          currentPriceEl.style.color = "#f85149";
+          priceArrowEl.textContent = "▼";
+          priceArrowEl.className = "price-arrow down";
+        }
+
+        updateCurrentCandle(currentPrice);
+        checkExpiredTrades();
+        updateBigTimer();
+      }
+    };
+
+    livePriceWS.onerror = (err) => {
+      console.log("WS error, falling back to polling", err);
+    };
+
+    livePriceWS.onclose = () => {
+      setTimeout(() => {
+        if (currentUser) startLivePrice();
+      }, 3000);
+    };
+
+  } catch (e) {
+    console.log("WS init error:", e);
+  }
+}
+
+function stopLivePrice() {
+  if (livePriceWS) {
+    try { livePriceWS.close(); } catch (e) {}
+    livePriceWS = null;
+  }
   if (priceInterval) {
     clearInterval(priceInterval);
     priceInterval = null;
   }
-  bigTimer.classList.add("hidden");
 }
-// ===== চার্ট রেন্ডার (কাস্টম ক্যানভাস) =====
-function renderChart() {
+
+// ===== বর্তমান ক্যান্ডেল আপডেট =====
+function updateCurrentCandle(price) {
+  if (candles.length === 0) return;
+
+  const last = candles[candles.length - 1];
+  const now = Date.now();
+  const intervalMs = selectedTimeframe === "1m" ? 60000
+                   : selectedTimeframe === "5m" ? 300000
+                   : 900000;
+
+  // নতুন ক্যান্ডেল শুরু করতে হবে?
+  if (now - last.time >= intervalMs) {
+    candles.push({
+      time: now,
+      open: price,
+      high: price,
+      low: price,
+      close: price
+    });
+    if (candles.length > 80) candles.shift();
+  } else {
+    last.close = price;
+    if (price > last.high) last.high = price;
+    if (price < last.low) last.low = price;
+  }
+
+  renderCandles();
+}
+// ===== ক্যান্ডেলস্টিক চার্ট রেন্ডার =====
+function renderCandles() {
   const chartEl = document.getElementById("chart");
   if (!chartEl) return;
 
-  // ক্যানভাস তৈরি (একবারই)
   if (!chartEl.querySelector("canvas")) {
     chartEl.innerHTML = '<canvas id="price-canvas"></canvas>';
   }
@@ -344,102 +410,137 @@ function renderChart() {
   const ctx = canvas.getContext("2d");
   const rect = chartEl.getBoundingClientRect();
 
-  canvas.width = rect.width * window.devicePixelRatio;
-  canvas.height = rect.height * window.devicePixelRatio;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
   canvas.style.width = rect.width + "px";
   canvas.style.height = rect.height + "px";
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const W = rect.width;
   const H = rect.height;
 
-  // ব্যাকগ্রাউন্ড
   ctx.fillStyle = "#0a0e17";
   ctx.fillRect(0, 0, W, H);
 
-  if (priceHistory.length < 2) return;
+  if (candles.length < 2) return;
 
-  const minP = Math.min(...priceHistory);
-  const maxP = Math.max(...priceHistory);
+  const paddingRight = 60;
+  const chartW = W - paddingRight;
+
+  const highs = candles.map(c => c.high);
+  const lows = candles.map(c => c.low);
+  const maxP = Math.max(...highs);
+  const minP = Math.min(...lows);
   const range = maxP - minP || 1;
-  const padding = range * 0.15;
+  const pad = range * 0.1;
+  const top = maxP + pad;
+  const bottom = minP - pad;
 
-  const min = minP - padding;
-  const max = maxP + padding;
+  const priceToY = (p) => H - ((p - bottom) / (top - bottom)) * H;
 
-  const stepX = W / (priceHistory.length - 1);
-
-  // গ্রিড লাইন
-  ctx.strokeStyle = "#1a2332";
+  // গ্রিড ও প্রাইস লেবেল
+  ctx.strokeStyle = "#131a26";
+  ctx.fillStyle = "#6e7681";
+  ctx.font = "11px Arial";
+  ctx.textAlign = "left";
   ctx.lineWidth = 1;
-  for (let i = 1; i < 4; i++) {
+
+  for (let i = 0; i <= 4; i++) {
     const y = (H / 4) * i;
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
+    ctx.lineTo(chartW, y);
     ctx.stroke();
+
+    const price = top - ((top - bottom) / 4) * i;
+    ctx.fillText(price.toFixed(2), chartW + 6, y + 4);
   }
 
-  // প্রাইস লাইন
-  const isUp = priceHistory[priceHistory.length - 1] >= priceHistory[0];
-  const lineColor = isUp ? "#3fb950" : "#f85149";
+  // ক্যান্ডেল আঁকা
+  const candleW = chartW / candles.length;
+  const bodyW = Math.max(2, candleW * 0.7);
 
-  // এরিয়া ফিল
-  const gradient = ctx.createLinearGradient(0, 0, 0, H);
-  gradient.addColorStop(0, isUp ? "rgba(63, 185, 80, 0.25)" : "rgba(248, 81, 73, 0.25)");
-  gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+  candles.forEach((c, i) => {
+    const x = i * candleW + candleW / 2;
+    const isUp = c.close >= c.open;
+    const color = isUp ? "#3fb950" : "#f85149";
 
-  ctx.beginPath();
-  priceHistory.forEach((p, i) => {
-    const x = i * stepX;
-    const y = H - ((p - min) / (max - min)) * H;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1;
+
+    // উইক (high-low)
+    ctx.beginPath();
+    ctx.moveTo(x, priceToY(c.high));
+    ctx.lineTo(x, priceToY(c.low));
+    ctx.stroke();
+
+    // বডি (open-close)
+    const yOpen = priceToY(c.open);
+    const yClose = priceToY(c.close);
+    const yTop = Math.min(yOpen, yClose);
+    const bodyH = Math.max(1, Math.abs(yClose - yOpen));
+
+    ctx.fillRect(x - bodyW / 2, yTop, bodyW, bodyH);
   });
-  ctx.lineTo(W, H);
-  ctx.lineTo(0, H);
-  ctx.closePath();
-  ctx.fillStyle = gradient;
-  ctx.fill();
 
-  // লাইন
+  // বর্তমান প্রাইস লাইন (ড্যাশড হলুদ)
+  const lastClose = candles[candles.length - 1].close;
+  const lastY = priceToY(lastClose);
+
+  ctx.strokeStyle = "#d29922";
+  ctx.setLineDash([4, 4]);
   ctx.beginPath();
-  priceHistory.forEach((p, i) => {
-    const x = i * stepX;
-    const y = H - ((p - min) / (max - min)) * H;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
-  ctx.lineJoin = "round";
+  ctx.moveTo(0, lastY);
+  ctx.lineTo(chartW, lastY);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  // শেষ পয়েন্টে ডট
-  const lastX = (priceHistory.length - 1) * stepX;
-  const lastY = H - ((priceHistory[priceHistory.length - 1] - min) / (max - min)) * H;
+  // ট্রেড মার্কার
+  activeTradesLocal.forEach((trade) => {
+    if (trade.chartIndex === undefined) return;
+    const idx = trade.chartIndex;
+    if (idx < 0 || idx >= candles.length) return;
 
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
-  ctx.fillStyle = lineColor;
-  ctx.globalAlpha = 0.3;
-  ctx.fill();
-  ctx.globalAlpha = 1;
+    const x = idx * candleW + candleW / 2;
+    const y = priceToY(trade.entryPrice);
 
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
-  ctx.fillStyle = lineColor;
-  ctx.fill();
+    ctx.beginPath();
+    if (trade.type === "call") {
+      ctx.fillStyle = "#3fb950";
+      ctx.moveTo(x, y + 12);
+      ctx.lineTo(x - 8, y + 24);
+      ctx.lineTo(x + 8, y + 24);
+      ctx.closePath();
+    } else {
+      ctx.fillStyle = "#f85149";
+      ctx.moveTo(x, y - 12);
+      ctx.lineTo(x - 8, y - 24);
+      ctx.lineTo(x + 8, y - 24);
+      ctx.closePath();
+    }
+    ctx.fill();
+
+    // এন্ট্রি প্রাইস লাইন
+    ctx.strokeStyle = trade.type === "call" ? "#3fb950" : "#f85149";
+    ctx.setLineDash([2, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(chartW, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
 }
 
-// ===== বড় টাইমার আপডেট =====
+// ===== বড় টাইমার =====
 function updateBigTimer() {
   if (activeTradesLocal.length === 0) {
     bigTimer.classList.add("hidden");
     return;
   }
 
-  // সবচেয়ে কম সময়ের ট্রেড খুঁজুন
   let soonest = activeTradesLocal[0].expiresAt;
   activeTradesLocal.forEach(t => {
     if (t.expiresAt < soonest) soonest = t.expiresAt;
@@ -465,7 +566,7 @@ async function placeTrade(type) {
   if (!currentUser) return;
 
   const now = Date.now();
-  if (now - lastTradeTime < 500) return; // ডাবল ক্লিক প্রতিরোধ
+  if (now - lastTradeTime < 500) return;
   lastTradeTime = now;
 
   const amount = parseFloat(tradeAmountInput.value);
@@ -485,7 +586,8 @@ async function placeTrade(type) {
   playSound("click");
 
   const entryPrice = currentPrice;
-  const expiresAt = Date.now() + (selectedTime * 1000);
+  const expiresAt = Date.now() + selectedTime * 1000;
+  const chartIndex = candles.length - 1;
 
   try {
     const newBalance = userBalance - amount;
@@ -503,6 +605,7 @@ async function placeTrade(type) {
       amount: amount,
       entryPrice: entryPrice,
       expiresAt: expiresAt,
+      chartIndex: chartIndex,
       status: "pending",
       result: null,
       profit: 0,
@@ -512,9 +615,7 @@ async function placeTrade(type) {
     tradeMessage.style.color = type === "call" ? "#3fb950" : "#f85149";
     tradeMessage.textContent = `${type.toUpperCase()} $${amount} প্লেস হয়েছে`;
 
-    setTimeout(() => {
-      tradeMessage.textContent = "";
-    }, 2000);
+    setTimeout(() => { tradeMessage.textContent = ""; }, 2000);
 
   } catch (error) {
     tradeMessage.style.color = "#f85149";
@@ -577,9 +678,7 @@ async function checkExpiredTrades() {
           tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
         }
 
-        setTimeout(() => {
-          tradeMessage.textContent = "";
-        }, 3500);
+        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
 
       } catch (error) {
         console.error("Trade expire error:", error);
@@ -588,7 +687,7 @@ async function checkExpiredTrades() {
   }
 }
 
-// ===== অ্যাক্টিভ ট্রেড লোড =====
+// ===== অ্যাক্টিভ ট্রেড =====
 function loadActiveTrades() {
   if (!currentUser) return;
 
@@ -606,6 +705,7 @@ function loadActiveTrades() {
       activeTradesList.innerHTML = '<p class="empty-text">কোনো চলমান ট্রেড নেই</p>';
       activeCount.textContent = "0";
       bigTimer.classList.add("hidden");
+      renderCandles();
       return;
     }
 
@@ -632,6 +732,7 @@ function loadActiveTrades() {
 
     activeCount.textContent = activeTradesLocal.length;
     updateBigTimer();
+    renderCandles();
   });
 }
 
@@ -663,10 +764,25 @@ function loadHistory() {
     trades.slice(0, 30).forEach((trade) => {
       const div = document.createElement("div");
       div.className = `trade-item ${trade.result}`;
+      const entryTime = new Date(trade.createdAt).toLocaleTimeString("en-US", {
+        hour: "2-digit", minute: "2-digit"
+      });
+      const exitTime = trade.completedAt
+        ? new Date(trade.completedAt).toLocaleTimeString("en-US", {
+            hour: "2-digit", minute: "2-digit"
+          })
+        : "-";
+
       div.innerHTML = `
         <div class="trade-info">
-          <span class="trade-type ${trade.type}">${trade.type.toUpperCase()}</span>
-          <span class="trade-time">$${trade.amount} @ ${trade.entryPrice.toFixed(2)}</span>
+          <span class="trade-type ${trade.type}">${trade.type.toUpperCase()} ${trade.result === "win" ? "✓" : "✗"}</span>
+          <span class="trade-time">
+            Entry: $${trade.entryPrice.toFixed(2)} (${entryTime})
+          </span>
+          <span class="trade-time">
+            Exit: $${(trade.exitPrice || 0).toFixed(2)} (${exitTime})
+          </span>
+          <span class="trade-time">Amount: $${trade.amount}</span>
         </div>
         <div class="trade-result ${trade.result}">
           ${trade.result === "win" ? "+$" + trade.profit.toFixed(2) : "-$" + trade.amount.toFixed(2)}
@@ -677,7 +793,7 @@ function loadHistory() {
   });
 }
 
-// ===== উইন্ডো রিসাইজে চার্ট আপডেট =====
+// ===== রিসাইজ =====
 window.addEventListener("resize", () => {
-  setTimeout(renderChart, 100);
+  setTimeout(renderCandles, 150);
 });
