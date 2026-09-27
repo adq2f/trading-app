@@ -1,0 +1,563 @@
+/* ============================================
+   Admin Panel — Stylesheet
+============================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0b1220;
+  color: #e6edf3;
+  padding: 8px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+}
+
+input, select {
+  font-family: inherit;
+  outline: none;
+  border: none;
+}
+
+/* ===== লগইন ===== */
+#admin-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 16px);
+  padding: 10px;
+}
+
+.login-card {
+  background: linear-gradient(160deg, #151d2e 0%, #0b1220 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 16px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.admin-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  border-radius: 18px;
+  font-size: 32px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(255, 82, 82, 0.35);
+}
+
+.login-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  color: #6b7a90;
+  font-size: 12px;
+}
+
+.input-group {
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 11px;
+  color: #8b98ab;
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  color: #e6edf3;
+  font-size: 15px;
+}
+
+.input-group input:focus {
+  border-color: #ff5252;
+}
+
+.input-group input::placeholder {
+  color: #4a5568;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 8px;
+  box-shadow: 0 4px 16px rgba(255, 82, 82, 0.35);
+}
+
+#admin-message {
+  color: #ff5252;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 12px;
+  min-height: 16px;
+  font-weight: 600;
+}
+
+.login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #1f2a3d;
+  font-size: 11px;
+  color: #4a5568;
+}
+
+/* ===== ড্যাশবোর্ড ===== */
+#admin-dashboard {
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: 30px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-logo-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  border-radius: 10px;
+  font-size: 18px;
+}
+
+.header-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: #6b7a90;
+}
+
+.btn-logout {
+  padding: 8px 14px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #ff5252;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ===== স্ট্যাটস ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, #ff5252 0%, #d32f2f 100%);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* ===== ট্যাব ===== */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 5px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tab {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  background: transparent;
+  color: #6b7a90;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.admin-tab.active {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(255, 82, 82, 0.35);
+}
+
+/* ===== কনটেন্ট ===== */
+.admin-content {
+  background: #0d1522;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 300px;
+}
+
+.admin-tab-pane {
+  display: none;
+}
+
+.admin-tab-pane.active {
+  display: block;
+}
+
+.pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #1a2436;
+}
+
+.pane-header h2 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.btn-refresh {
+  padding: 7px 12px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #c9d4e3;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.loading-text {
+  text-align: center;
+  color: #4a5568;
+  font-size: 13px;
+  padding: 40px 10px;
+}
+
+/* ===== আইটেম ===== */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-item {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1a2436;
+}
+
+.admin-item-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  word-break: break-all;
+}
+
+.admin-item-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badge-admin, .badge-loss, .badge-rejected {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.3);
+}
+
+.badge-user, .badge-pending {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.badge-win, .badge-completed {
+  background: rgba(0, 200, 83, 0.15);
+  color: #00c853;
+  border: 1px solid rgba(0, 200, 83, 0.3);
+}
+
+.admin-item-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.admin-item-info span {
+  color: #8b98ab;
+}
+
+.admin-item-info strong {
+  color: #e6edf3;
+  font-weight: 700;
+}
+
+.admin-item-info .full-width {
+  grid-column: 1 / -1;
+}
+
+.admin-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.btn-action {
+  flex: 1;
+  min-width: 70px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+}
+
+.btn-approve, .btn-force-win {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.btn-reject, .btn-force-loss {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+}
+
+.btn-force-pending {
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  color: #c9d4e3;
+}
+
+/* ===== সেটিংস ===== */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.setting-item {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-item label {
+  font-size: 11px;
+  color: #8b98ab;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.setting-item input {
+  width: 100%;
+  padding: 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.btn-save {
+  padding: 11px;
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.market-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-market-up, .btn-market-down, .btn-market-reset {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.btn-market-up {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.btn-market-down {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+}
+
+.btn-market-reset {
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  color: #c9d4e3;
+}
+
+.btn-auto {
+  width: 100%;
+  padding: 14px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  color: #6b7a90;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.btn-auto.active {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+  border-color: #00c853;
+}
+
+/* ===== মোবাইল ===== */
+@media (max-width: 500px) {
+  .stats-grid {
+    gap: 6px;
+  }
+  .stat-card {
+    padding: 12px 10px;
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .admin-item-info {
+    grid-template-columns: 1fr;
+  }
+  .admin-tab {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
