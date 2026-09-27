@@ -1918,3 +1918,242 @@ setTimeout(renderDirectionTimeline, 2500);
 window.renderDirectionTimeline = renderDirectionTimeline;
 
 console.log('Part 6C-3 (Direction Timeline) loaded');
+
+// ============================================
+// PART 6D: Auto Mode Toggle + Real-Time Generate
+// ============================================
+
+window.autoModeActive = false;
+window.autoModeTimer = null;
+window.autoModeInterval = 5000; // 5 seconds default
+window.autoModeMaxCandles = 500;
+
+// ---------- Generate One Candle (Auto) ----------
+function autoGenerateOneCandle() {
+  if (!window.currentMarketId) {
+    console.log('Auto: No market selected, stopping');
+    stopAutoMode();
+    return;
+  }
+
+  if (window.candleList.length >= window.autoModeMaxCandles) {
+    console.log('Auto: Max candles reached, stopping');
+    stopAutoMode();
+    return;
+  }
+
+  // Get last candle for continuity
+  let lastCandle = null;
+  if (window.candleList.length > 0) {
+    lastCandle = window.candleList[window.candleList.length - 1];
+  }
+
+  const baseEl = document.getElementById('bulk-base');
+  const basePrice = Number(baseEl?.value || 50000);
+  const tf = document.getElementById('candle-timeframe')?.value || '1m';
+  const tfSeconds = timeframeToSeconds(tf);
+  const wick = Number(document.getElementById('bulk-wick')?.value || 20);
+  const body = Number(document.getElementById('bulk-body')?.value || 60);
+  const upDuration = Number(document.getElementById('bulk-up')?.value || 5);
+  const downDuration = Number(document.getElementById('bulk-down')?.value || 5);
+  const patternLength = upDuration + downDuration;
+
+  // Determine direction from pattern
+  const idx = window.candleList.length;
+  let direction = 'up';
+  if (patternLength > 0) {
+    const pos = idx % patternLength;
+    if (pos < upDuration) direction = 'up';
+    else direction = 'down';
+  }
+
+  // Calculate time
+  const now = new Date();
+  const date = now.toISOString().split('T')[0];
+  const timeStr = now.toTimeString().slice(0, 8);
+  const endTimeSec = timeToSeconds(timeStr) + tfSeconds;
+  const endTimeStr = secondsToTime(endTimeSec);
+
+  // Build candle
+  const prevClose = lastCandle ? parseFloat(lastCandle.close) : null;
+  const candle = buildCandleWithPrice({
+    number: idx + 1,
+    date: date,
+    time: timeStr,
+    endTime: endTimeStr,
+    timeframe: tf,
+    prevClose: prevClose,
+    basePrice: basePrice,
+    direction: direction,
+    wick: wick,
+    body: body,
+    sizeType: 'medium'
+  });
+
+  candle.up = upDuration;
+  candle.down = downDuration;
+
+  // Append to list
+  window.candleList.push(candle);
+  window.candleCounter = window.candleList.length;
+
+  // Render
+  renderCandleTable();
+
+  console.log('Auto-generated candle #' + candle.number + ' (' + direction + ') price: ' + candle.close);
+}
+
+// ---------- Start Auto Mode ----------
+function startAutoMode() {
+  if (window.autoModeActive) {
+    console.log('Auto already running');
+    return;
+  }
+
+  if (!window.currentMarketId) {
+    alert('Select a market first');
+    return;
+  }
+
+  window.autoModeActive = true;
+  console.log('Auto Mode STARTED with interval', window.autoModeInterval, 'ms');
+
+  // Pause playback if running (conflict)
+  if (window.playbackTimer) {
+    playbackPause();
+  }
+
+  // Immediate first generate
+  autoGenerateOneCandle();
+
+  // Then loop
+  window.autoModeTimer = setInterval(function() {
+    autoGenerateOneCandle();
+  }, window.autoModeInterval);
+
+  updateAutoModeButton();
+}
+
+// ---------- Stop Auto Mode ----------
+function stopAutoMode() {
+  if (!window.autoModeActive) return;
+
+  if (window.autoModeTimer) {
+    clearInterval(window.autoModeTimer);
+    window.autoModeTimer = null;
+  }
+
+  window.autoModeActive = false;
+  console.log('Auto Mode STOPPED');
+  updateAutoModeButton();
+}
+
+// ---------- Toggle Auto Mode ----------
+function toggleAutoMode() {
+  if (window.autoModeActive) {
+    stopAutoMode();
+  } else {
+    startAutoMode();
+  }
+}
+
+// ---------- Set Auto Mode Interval ----------
+function setAutoModeInterval(ms) {
+  window.autoModeInterval = ms;
+  console.log('Auto interval set to', ms, 'ms');
+
+  // Restart if running
+  if (window.autoModeActive) {
+    stopAutoMode();
+    startAutoMode();
+  }
+}
+
+// ---------- Update Auto Mode Button UI ----------
+function updateAutoModeButton() {
+  const btn = document.getElementById('auto-mode-toggle');
+  if (!btn) return;
+
+  if (window.autoModeActive) {
+    btn.textContent = 'Auto Mode: ON';
+    btn.classList.add('active');
+    btn.style.background = '#00c853';
+    btn.style.color = '#04121a';
+  } else {
+    btn.textContent = 'Auto Mode: OFF';
+    btn.classList.remove('active');
+    btn.style.background = '';
+    btn.style.color = '';
+  }
+}
+
+// ---------- Bind Auto Mode Controls ----------
+function bindAutoMode() {
+  const btn = document.getElementById('auto-mode-toggle');
+  if (btn && btn.dataset.bound !== '1') {
+    btn.dataset.bound = '1';
+    btn.onclick = toggleAutoMode;
+    console.log('Auto Mode toggle bound');
+  }
+
+  // Create interval selector dynamically if not exists
+  let sel = document.getElementById('auto-mode-speed');
+  if (!sel && btn && btn.parentNode) {
+    sel = document.createElement('select');
+    sel.id = 'auto-mode-speed';
+    sel.className = 'playback-speed-select';
+    sel.style.marginLeft = '8px';
+    sel.innerHTML = 
+      '<option value="1000">1s</option>' +
+      '<option value="5000" selected>5s</option>' +
+      '<option value="10000">10s</option>' +
+      '<option value="30000">30s</option>' +
+      '<option value="60000">1m</option>';
+    btn.parentNode.appendChild(sel);
+  }
+
+  if (sel && sel.dataset.bound !== '1') {
+    sel.dataset.bound = '1';
+    sel.onchange = function() {
+      setAutoModeInterval(parseInt(sel.value));
+    };
+    console.log('Auto Mode speed selector bound');
+  }
+}
+
+bindAutoMode();
+document.addEventListener('DOMContentLoaded', bindAutoMode);
+setTimeout(bindAutoMode, 800);
+setTimeout(bindAutoMode, 2500);
+
+// ---------- Also Bind to Settings Auto Mode Toggle ----------
+function bindSettingsAutoMode() {
+  const settingBtn = document.getElementById('auto-mode-toggle');
+  const settingsBtn = document.getElementById('auto-mode-toggle');
+  // Use the same button - the existing one
+
+  // Also hook into existing Settings save
+  const autoIntervalInput = document.getElementById('auto-interval-input');
+  if (autoIntervalInput && autoIntervalInput.dataset.boundAuto !== '1') {
+    autoIntervalInput.dataset.boundAuto = '1';
+    // When Settings interval changes, update auto mode interval
+    autoIntervalInput.addEventListener('change', function() {
+      const min = parseInt(autoIntervalInput.value);
+      if (!isNaN(min) && min >= 1) {
+        setAutoModeInterval(min * 1000); // convert min to ms
+      }
+    });
+  }
+}
+
+bindSettingsAutoMode();
+setTimeout(bindSettingsAutoMode, 1500);
+
+// ---------- Global Expose ----------
+window.startAutoMode = startAutoMode;
+window.stopAutoMode = stopAutoMode;
+window.toggleAutoMode = toggleAutoMode;
+window.setAutoModeInterval = setAutoModeInterval;
+window.autoGenerateOneCandle = autoGenerateOneCandle;
+
+console.log('Part 6D (Auto Mode) loaded');
