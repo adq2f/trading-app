@@ -1369,3 +1369,30 @@ window.saveAllCandles = saveAllCandles;
 window.bindPart6A = bindPart6A;
 
 console.log('🎯 Part 6A (Save/Load/Refresh) loaded');
+/* ============================================================
+   FIX: Ensure addCandle updates the SAME candleList
+   ============================================================ */
+
+// Force addCandle to use the global list
+const _originalAddCandle = window.addCandle;
+
+window.addCandle = function() {
+  console.log('🔵 addCandle called');
+  console.log('🔵 Before push, length:', candleList.length);
+
+  // call original
+  _originalAddCandle();
+
+  console.log('🔵 After push, length:', candleList.length);
+};
+
+// Force saveAllCandles to read the same list
+const _originalSave = window.saveAllCandles;
+
+window.saveAllCandles = async function() {
+  console.log('🟢 saveAllCandles called');
+  console.log('🟢 candleList length:', candleList.length);
+  return await _originalSave();
+};
+
+console.log('✅ Debug wrappers installed');
