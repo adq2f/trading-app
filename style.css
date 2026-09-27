@@ -2,222 +2,536 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #0d1117;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #0a0e17;
   color: #fff;
   padding: 10px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .page {
   max-width: 500px;
-  margin: 20px auto;
-  background: #161b22;
-  padding: 20px;
-  border-radius: 12px;
+  margin: 10px auto;
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 h1 {
   font-size: 22px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
-h3 {
-  font-size: 16px;
-  margin-bottom: 10px;
+/* ===== লগইন পেজ ===== */
+#login-page {
+  background: linear-gradient(160deg, #161b22 0%, #0d1117 100%);
+  padding: 30px 25px;
+  border-radius: 16px;
+  margin-top: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.logo-box {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #3fb950 0%, #238636 100%);
+  border-radius: 16px;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 20px rgba(63, 185, 80, 0.3);
+}
+
+.tagline {
   color: #8b949e;
+  font-size: 13px;
+  margin-top: 4px;
 }
 
 input {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-bottom: 12px;
   background: #0d1117;
   border: 1px solid #30363d;
   color: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  border-color: #3fb950;
+}
+
+input::placeholder {
+  color: #6e7681;
 }
 
 button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-bottom: 10px;
   background: #238636;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
 }
 
 button:active {
+  transform: scale(0.98);
   background: #2ea043;
 }
 
-#logout-btn {
-  background: #da3633;
+.secondary-btn {
+  background: #21262d;
+  border: 1px solid #30363d;
+}
+
+.secondary-btn:active {
+  background: #30363d;
 }
 
 #message {
   color: #f85149;
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   margin-top: 10px;
+  min-height: 18px;
 }
 
-/* ===== ট্রেডিং পেজ ===== */
-
-.header {
+/* ===== টপ বার ===== */
+.top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #30363d;
+  padding: 8px 4px 15px;
+  margin-bottom: 10px;
 }
 
-.balance-text {
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  background: #21262d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: #c9d1d9;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin: 0;
+  background: #21262d;
+  border-radius: 50%;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:active {
+  background: #da3633;
+}
+
+/* ===== ব্যালেন্স কার্ড ===== */
+.balance-card {
+  background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%);
+  padding: 18px 20px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #21262d;
+  position: relative;
+  overflow: hidden;
+}
+
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3fb950 0%, #58a6ff 100%);
+}
+
+.balance-label {
+  font-size: 11px;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.balance-value {
+  font-size: 28px;
   font-weight: bold;
+  color: #3fb950;
+  letter-spacing: 0.5px;
+}
+
+.balance-change {
+  font-size: 12px;
+  margin-top: 4px;
+  min-height: 14px;
+}
+
+.balance-change.up {
   color: #3fb950;
 }
 
-.small-btn {
-  width: auto;
-  padding: 8px 15px;
-  font-size: 13px;
-  margin: 0;
+.balance-change.down {
+  color: #f85149;
 }
-
-/* চার্ট */
-.chart-container {
+/* ===== চার্ট সেকশন ===== */
+.chart-section {
   background: #0d1117;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 15px;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #21262d;
 }
 
-#price-display {
+.chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  padding: 0 5px;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.asset-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #161b22;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.asset-dot {
+  width: 8px;
+  height: 8px;
+  background: #f7931a;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #f7931a;
 }
 
 .asset-name {
-  font-size: 16px;
+  color: #fff;
+}
+
+.asset-arrow {
+  color: #8b949e;
+  font-size: 10px;
+}
+
+.price-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
   font-weight: bold;
-  color: #58a6ff;
 }
 
 #current-price {
-  font-size: 20px;
-  font-weight: bold;
   color: #3fb950;
+  transition: color 0.2s;
+}
+
+.price-arrow {
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.price-arrow.up {
+  color: #3fb950;
+}
+
+.price-arrow.down {
+  color: #f85149;
 }
 
 #chart {
   width: 100%;
-  height: 200px;
+  height: 220px;
   border-radius: 8px;
   overflow: hidden;
+  background: #0a0e17;
 }
 
-/* ট্রেড প্যানেল */
+/* ===== ট্রেড প্যানেল ===== */
 .trade-panel {
   background: #0d1117;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #21262d;
 }
 
-.trade-amount label,
-.trade-time label {
+.trade-amount-row,
+.trade-time-row {
+  margin-bottom: 14px;
+}
+
+.trade-amount-row label,
+.trade-time-row label {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: #8b949e;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.trade-amount input {
-  margin-bottom: 15px;
+.amount-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.amount-input-wrap input {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 12px;
+}
+
+.amount-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  background: #21262d;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.amount-btn:active {
+  background: #30363d;
 }
 
 .time-buttons {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 8px;
 }
 
 .time-btn {
   flex: 1;
-  background: #21262d;
-  border: 1px solid #30363d;
+  background: #161b22;
+  border: 1px solid #21262d;
   margin: 0;
   font-size: 13px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  font-weight: 600;
 }
 
 .time-btn.active {
-  background: #1f6feb;
+  background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
   border-color: #1f6feb;
+  box-shadow: 0 0 12px rgba(31, 111, 235, 0.3);
+}
+
+/* বড় টাইমার */
+.big-timer {
+  text-align: center;
+  font-size: 36px;
+  font-weight: bold;
+  color: #58a6ff;
+  padding: 15px;
+  margin: 10px 0;
+  background: #161b22;
+  border-radius: 12px;
+  border: 1px solid #1f6feb;
+  letter-spacing: 2px;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .trade-buttons {
   display: flex;
   gap: 10px;
+  margin-top: 8px;
 }
 
 .call-btn,
 .put-btn {
   flex: 1;
   margin: 0;
-  font-size: 16px;
+  padding: 18px 8px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   font-weight: bold;
-  padding: 15px;
+  transition: transform 0.1s;
 }
 
 .call-btn {
-  background: #238636;
+  background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+  box-shadow: 0 4px 16px rgba(35, 134, 54, 0.4);
 }
 
 .put-btn {
-  background: #da3633;
+  background: linear-gradient(135deg, #da3633 0%, #f85149 100%);
+  box-shadow: 0 4px 16px rgba(218, 54, 51, 0.4);
+}
+
+.call-btn:active,
+.put-btn:active {
+  transform: scale(0.96);
+}
+
+.call-btn .arrow,
+.put-btn .arrow {
+  font-size: 18px;
+}
+
+.call-btn .btn-label,
+.put-btn .btn-label {
+  font-size: 14px;
+  letter-spacing: 1px;
 }
 
 #trade-message {
   text-align: center;
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 14px;
+  font-weight: 600;
+  min-height: 20px;
 }
-/* অ্যাক্টিভ ট্রেড ও হিস্ট্রি */
-.active-trades,
-.trade-history {
+/* ===== ট্যাব ===== */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
   background: #0d1117;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #21262d;
 }
 
+.tab-btn {
+  flex: 1;
+  margin: 0;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #21262d;
+  color: #fff;
+}
+
+.tab-btn span {
+  display: inline-block;
+  background: #238636;
+  color: #fff;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 4px;
+  min-width: 18px;
+}
+
+.tab-content {
+  background: #0d1117;
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #21262d;
+  min-height: 120px;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.empty-text {
+  text-align: center;
+  color: #6e7681;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+/* ===== ট্রেড আইটেম ===== */
 .trade-item {
   background: #161b22;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
-  border-left: 4px solid #30363d;
+  border-left: 3px solid #30363d;
+  transition: all 0.3s;
+}
+
+.trade-item:last-child {
+  margin-bottom: 0;
 }
 
 .trade-item.call {
@@ -229,24 +543,25 @@ button:active {
 }
 
 .trade-item.win {
+  background: linear-gradient(90deg, #0d2818 0%, #161b22 100%);
   border-left-color: #3fb950;
-  background: #12261e;
 }
 
 .trade-item.loss {
+  background: linear-gradient(90deg, #2a1215 0%, #161b22 100%);
   border-left-color: #f85149;
-  background: #2a1215;
 }
 
 .trade-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .trade-type {
   font-weight: bold;
   font-size: 13px;
+  letter-spacing: 0.5px;
 }
 
 .trade-type.call {
@@ -265,6 +580,7 @@ button:active {
 .trade-result {
   text-align: right;
   font-weight: bold;
+  font-size: 14px;
 }
 
 .trade-result.win {
@@ -277,34 +593,58 @@ button:active {
 
 .trade-result.pending {
   color: #d29922;
-  font-size: 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* অ্যাডমিন বাটন */
-.admin-btn {
-  background: #8957e5;
+/* ===== সাউন্ড ভিজ্যুয়াল ===== */
+.result-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  animation: flash 0.6s ease-out;
+}
+
+.result-flash.win {
+  background: radial-gradient(circle, rgba(63, 185, 80, 0.3) 0%, transparent 70%);
+}
+
+.result-flash.loss {
+  background: radial-gradient(circle, rgba(248, 81, 73, 0.3) 0%, transparent 70%);
+}
+
+@keyframes flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ===== এরর মেসেজ ===== */
+.error-box {
+  background: #2a1215;
+  border: 1px solid #f85149;
+  color: #f85149;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
   margin-bottom: 10px;
 }
 
-.admin-btn:active {
-  background: #a371f7;
-}
-
-/* স্পিনার */
-.spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid #30363d;
-  border-top-color: #58a6ff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+/* ===== মোবাইল অপটিমাইজ ===== */
+@media (max-width: 400px) {
+  .balance-value {
+    font-size: 24px;
+  }
+  #chart {
+    height: 180px;
+  }
+  .big-timer {
+    font-size: 30px;
+  }
+  .user-email {
+    max-width: 150px;
   }
 }
