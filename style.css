@@ -648,3 +648,77 @@ button:active {
     max-width: 150px;
   }
 }
+
+/* ===== অ্যাসেট সিলেক্টর ===== */
+.asset-selector-select {
+  background: #161b22;
+  color: #fff;
+  border: 1px solid #21262d;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.asset-selector-select:focus {
+  border-color: #3fb950;
+}
+
+/* ===== টাইমফ্রেম ===== */
+.chart-timeframe {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.tf-btn {
+  flex: 1;
+  padding: 6px 8px;
+  margin: 0;
+  background: #161b22;
+  border: 1px solid #21262d;
+  color: #8b949e;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.tf-btn.active {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+}
+
+/* ===== চার্ট ক্যানভাস ===== */
+#chart {
+  width: 100%;
+  height: 260px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0a0e17;
+  position: relative;
+}
+
+#price-canvas {
+  display: block;
+}
+
+/* ট্রেড মার্কার */
+.trade-marker {
+  position: absolute;
+  font-size: 14px;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 10;
+  animation: markerPop 0.4s ease-out;
+}
+
+@keyframes markerPop {
+  0% { transform: scale(0); }
+  80% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
