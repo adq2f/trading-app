@@ -1,194 +1,265 @@
-/* ============================================================
-   PART 6B-2: Price Calculation + Direction + Color
-   ============================================================ */
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
+  <title>Admin Panel — Quotex Clone</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+</head>
+<body>
 
-// ---------- Price Movement per Direction ----------
-function getPriceMovement(direction) {
-  // Random movement between 30-120 points
-  const baseMove = 30 + Math.random() * 90;
-  
-  if (direction === 'up') {
-    return Math.abs(baseMove);       // +30 to +120
-  } else if (direction === 'down') {
-    return -Math.abs(baseMove);      // -30 to -120
-  } else {
-    // neutral: very small move
-    return (Math.random() - 0.5) * 10; // -5 to +5
-  }
-}
+  <!-- ========== অ্যাডমিন লগইন ========== -->
+  <div id="admin-login" class="admin-page">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="admin-logo">⚙️</div>
+        <h1>Admin Panel</h1>
+        <p class="login-subtitle">Quotex Clone — Control Center</p>
+      </div>
+      <div class="input-group">
+        <label>Admin Email</label>
+        <input type="email" id="admin-email" placeholder="admin@email.com" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="admin-password" placeholder="••••••••" autocomplete="off">
+      </div>
+      <button id="admin-login-btn" class="btn-primary">লগইন করুন</button>
+      <p id="admin-message"></p>
+      <div class="login-footer">
+        <span class="lock-icon">🔒</span>
+        <span>শুধু অ্যাডমিনের জন্য</span>
+      </div>
+    </div>
+  </div>
 
-// ---------- Candle Size Multiplier ----------
-function getSizeMultiplier(sizeType) {
-  if (sizeType === 'small')  return 0.5;
-  if (sizeType === 'large')  return 1.8;
-  return 1.0; // medium
-}
+  <!-- ========== অ্যাডমিন ড্যাশবোর্ড ========== -->
+  <div id="admin-dashboard" class="admin-page hidden">
 
-// ---------- Build One Candle with Price ----------
-function buildCandleWithPrice(params) {
-  const {
-    number, date, time, endTime, timeframe,
-    prevClose, basePrice, direction,
-    wick, body, sizeType
-  } = params;
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="admin-logo-sm">⚙️</div>
+        <div>
+          <div class="header-title">Admin Panel</div>
+          <div class="header-subtitle" id="admin-email-display">admin@email.com</div>
+        </div>
+      </div>
+      <button id="admin-logout" class="btn-logout">লগআউট</button>
+    </header>
 
-  const sizeMul = getSizeMultiplier(sizeType);
-  const wickScaled = wick * sizeMul;
-  const bodyScaled = body * sizeMul;
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">মোট ইউজার</div><div class="stat-value" id="stat-users">0</div></div>
+      <div class="stat-card"><div class="stat-label">চলমান ট্রেড</div><div class="stat-value" id="stat-active-trades">0</div></div>
+      <div class="stat-card"><div class="stat-label">পেন্ডিং ডিপোজিট</div><div class="stat-value" id="stat-pending-deposits">0</div></div>
+      <div class="stat-card"><div class="stat-label">পেন্ডিং উইথড্র</div><div class="stat-value" id="stat-pending-withdrawals">0</div></div>
+    </div>
 
-  // 1. Determine Open = previous close (or base for first)
-  const open = prevClose !== null ? prevClose : basePrice;
+    <nav class="admin-tabs">
+      <button class="admin-tab active" data-tab="users">ইউজার</button>
+      <button class="admin-tab" data-tab="trades">ট্রেড</button>
+      <button class="admin-tab" data-tab="deposits">ডিপোজিট</button>
+      <button class="admin-tab" data-tab="withdrawals">উইথড্র</button>
+      <button class="admin-tab" data-tab="markets">📊 মার্কেট</button>
+      <button class="admin-tab" data-tab="candles">🎯 ক্যান্ডেল</button>
+      <button class="admin-tab" data-tab="settings">সেটিংস</button>
+    </nav>
 
-  // 2. Determine Close based on direction
-  const movement = getPriceMovement(direction);
-  const close = open + movement;
+    <div class="admin-content">
 
-  // 3. High / Low
-  const maxOC = Math.max(open, close);
-  const minOC = Math.min(open, close);
-  const high = maxOC + wickScaled;
-  const low  = minOC - wickScaled;
+      <!-- ইউজার -->
+      <div id="tab-users" class="admin-tab-pane active">
+        <div class="pane-header">
+          <h2>ইউজার ম্যানেজমেন্ট</h2>
+          <button class="btn-refresh" id="refresh-users">🔄 রিফ্রেশ</button>
+        </div>
+        <div id="users-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+      </div>
 
-  // 4. Color
-  let color;
-  if (direction === 'up')      color = 'green';
-  else if (direction === 'down') color = 'red';
-  else                          color = close >= open ? 'green' : 'red';
+      <!-- ট্রেড -->
+      <div id="tab-trades" class="admin-tab-pane">
+        <div class="pane-header">
+          <h2>সব ট্রেড</h2>
+          <button class="btn-refresh" id="refresh-trades">🔄 রিফ্রেশ</button>
+        </div>
+        <div id="trades-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+      </div>
 
-  return {
-    number,
-    date,
-    time,
-    endTime,
-    timeframe,
-    open:  open.toFixed(2),
-    high:  high.toFixed(2),
-    low:   low.toFixed(2),
-    close: close.toFixed(2),
-    color,
-    direction,
-    size: sizeType,
-    wick: wickScaled.toFixed(0),
-    body: bodyScaled.toFixed(0),
-    up: 0,    // will be set from form
-    down: 0
-  };
-}
+      <!-- ডিপোজিট -->
+      <div id="tab-deposits" class="admin-tab-pane">
+        <div class="pane-header">
+          <h2>ডিপোজিট রিকোয়েস্ট</h2>
+          <button class="btn-refresh" id="refresh-deposits">🔄 রিফ্রেশ</button>
+        </div>
+        <div id="deposits-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+      </div>
 
-// ---------- Bulk Generate with Price ----------
-async function bulkGenerateCandles() {
-  console.log('⚡ Bulk Generate (v2) clicked');
+      <!-- উইথড্র -->
+      <div id="tab-withdrawals" class="admin-tab-pane">
+        <div class="pane-header">
+          <h2>উইথড্র রিকোয়েস্ট</h2>
+          <button class="btn-refresh" id="refresh-withdrawals">🔄 রিফ্রেশ</button>
+        </div>
+        <div id="withdrawals-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+      </div>
 
-  // 1. Validate
-  const form = validateBulkForm();
-  if (!form) return;
+      <!-- মার্কেট -->
+      <div id="tab-markets" class="admin-tab-pane">
+        <div class="pane-header">
+          <h2>মার্কেট ম্যানেজমেন্ট</h2>
+          <button class="btn-refresh" id="refresh-markets">🔄 রিফ্রেশ</button>
+        </div>
+        <div class="add-market-box">
+          <h3>➕ নতুন মার্কেট তৈরি</h3>
+          <div class="add-market-form">
+            <input type="text" id="new-market-name" placeholder="নাম (যেমন: BTC/USD OTC)">
+            <input type="text" id="new-market-symbol" placeholder="সিম্বল (যেমন: BTCOTC)">
+            <input type="number" id="new-market-base" placeholder="শুরুর প্রাইস" value="50000">
+            <button id="create-market-btn" class="btn-primary">তৈরি করুন</button>
+          </div>
+        </div>
+        <div id="markets-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+      </div>
 
-  // 2. Check market
-  if (!window.currentMarketId) {
-    alert('⚠️ আগে মার্কেট সিলেক্ট করুন');
-    return;
-  }
+      <!-- ক্যান্ডেল শিডিউলার -->
+      <div id="tab-candles" class="admin-tab-pane">
+        <div class="pane-header">
+          <h2>🎯 ক্যান্ডেল শিডিউলার</h2>
+          <button class="btn-refresh" id="refresh-candles">🔄 রিফ্রেশ</button>
+        </div>
 
-  // 3. Confirm overwrite
-  const ok = await confirmOverwrite();
-  if (!ok) return;
+        <div class="candle-market-select">
+          <label>মার্কেট</label>
+          <select id="candle-market-select">
+            <option value="">— মার্কেট বেছে নিন —</option>
+          </select>
+        </div>
 
-  // 4. Setup
-  const tfSeconds = timeframeToSeconds(form.tf);
-  const patternLength = form.up + form.down + form.neutral;
-  const sizeType = document.getElementById('bulk-size')?.value || 'medium';
+        <div class="candle-market-select">
+          <label>Timeframe</label>
+          <select id="candle-timeframe">
+            <option value="5s">5s</option>
+            <option value="1m" selected>1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+          </select>
+        </div>
 
-  console.log('⚡ Generating', form.count, 'candles | Size:', sizeType);
+        <div class="candle-mode-row">
+          <button class="mode-btn active" data-mode="locked">🔒 Lock</button>
+          <button class="mode-btn" data-mode="random">🎲 Random</button>
+          <button class="mode-btn" data-mode="mixed">⏯ Mixed</button>
+          <button class="mode-btn" data-mode="schedule">📅 Schedule</button>
+        </div>
 
-  // 5. Clear
-  clearCurrentCandleList();
+        <div class="candle-bulk-box">
+          <h3>⚡ Bulk Generate</h3>
+          <div class="bulk-form">
+            <input type="date" id="bulk-date" title="শুরুর তারিখ">
+            <input type="time" step="1" id="bulk-time" title="শুরুর সময়">
+            <input type="number" id="bulk-count" placeholder="কত ক্যান্ডেল" value="10" min="1" max="500">
+            <input type="number" id="bulk-base" placeholder="বেস প্রাইস" value="50000">
+            <input type="number" id="bulk-up" placeholder="Up min" value="5" min="0">
+            <input type="number" id="bulk-down" placeholder="Down min" value="5" min="0">
+            <input type="number" id="bulk-neutral" placeholder="Neutral min" value="1" min="0">
+            <input type="number" id="bulk-wick" placeholder="Wick" value="20">
+            <input type="number" id="bulk-body" placeholder="Body" value="60">
+            <select id="bulk-size" title="Candle Size">
+              <option value="small">Small Size</option>
+              <option value="medium" selected>Medium Size</option>
+              <option value="large">Large Size</option>
+            </select>
+            <button id="bulk-generate-btn" class="btn-save">জেনারেট করুন</button>
+          </div>
+        </div>
 
-  // 6. Generate
-  const tempList = [];
-  let prevClose = null;
-  let runningPrice = form.base;
-  let upCount = 0, downCount = 0, neutralCount = 0;
+        <div class="playback-row">
+          <button id="play-btn" class="pb-btn pb-play">▶️ Play</button>
+          <button id="pause-btn" class="pb-btn pb-pause">⏸ Pause</button>
+          <button id="skip-btn" class="pb-btn pb-skip">⏭ Skip</button>
+          <button id="back-btn" class="pb-btn pb-back">⏮ Back</button>
+          <button id="reset-btn" class="pb-btn pb-reset">🔄 Reset</button>
+        </div>
 
-  for (let i = 0; i < form.count; i++) {
-    const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
+        <div class="save-export-row">
+          <button id="save-candles-btn" class="btn-save">💾 Save All</button>
+          <button id="clear-candles-btn" class="btn-reject" onclick="window.clearCandles && window.clearCandles()">🗑 Clear</button>
+          <button id="export-candles-btn" class="btn-save">📤 Export</button>
+          <button id="import-candles-btn" class="btn-save">📥 Import</button>
+          <input type="file" id="import-candles-file" accept=".json" hidden>
+        </div>
 
-    // Pattern: Up N → Down N → Neutral N → repeat
-    let direction = 'up';
-    if (patternLength > 0) {
-      const pos = i % patternLength;
-      if (pos < form.up) direction = 'up';
-      else if (pos < form.up + form.down) direction = 'down';
-      else direction = 'neutral';
-    }
+        <div class="candle-table-wrapper">
+          <table class="candle-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Date</th><th>Time</th><th>TF</th>
+                <th>Open</th><th>High</th><th>Low</th><th>Close</th>
+                <th>Color</th><th>Up</th><th>Down</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="candle-table-body">
+              <tr><td colspan="12" class="empty-text">কোনো ক্যান্ডেল নেই</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-    const candle = buildCandleWithPrice({
-      number: i + 1,
-      date: timeInfo.date,
-      time: timeInfo.startTime,
-      endTime: timeInfo.endTime,
-      timeframe: form.tf,
-      prevClose: prevClose,
-      basePrice: form.base,
-      direction,
-      wick: form.wick,
-      body: form.body,
-      sizeType
-    });
+        <button id="add-candle-btn" class="btn-save" style="margin-top:10px;"
+                onclick="window.addCandle && window.addCandle()">➕ নতুন ক্যান্ডেল</button>
 
-    candle.up = form.up;
-    candle.down = form.down;
+        <div class="candle-preview-box">
+          <h3>👁️ Live Preview</h3>
+          <div id="candle-preview" class="candle-preview">
+            <span class="empty-text">ক্যান্ডেল তৈরি হলে এখানে প্রিভিউ দেখা যাবে</span>
+          </div>
+        </div>
 
-    // Update running state
-    prevClose = parseFloat(candle.close);
-    runningPrice = prevClose;
+        <div class="candle-preview-box">
+          <h3>📊 Direction Timeline</h3>
+          <div id="direction-timeline" class="direction-timeline">
+            <span class="empty-text">কোনো টাইমলাইন নেই</span>
+          </div>
+        </div>
 
-    if (direction === 'up') upCount++;
-    else if (direction === 'down') downCount++;
-    else neutralCount++;
+      </div>
+      <!-- /tab-candles -->
 
-    tempList.push(candle);
-  }
+      <!-- সেটিংস -->
+      <div id="tab-settings" class="admin-tab-pane">
+        <div class="pane-header"><h2>গ্লোবাল সেটিংস</h2></div>
+        <div class="settings-container">
+          <div class="setting-item">
+            <label>Win Rate (%)</label>
+            <input type="number" id="win-rate-input" value="50" min="0" max="100">
+            <button id="save-win-rate" class="btn-save">সেভ</button>
+          </div>
+          <div class="setting-item">
+            <label>Payout (%)</label>
+            <input type="number" id="payout-input" value="85" min="0" max="200">
+            <button id="save-payout" class="btn-save">সেভ</button>
+          </div>
+          <div class="setting-item">
+            <label>Auto Mode Interval (মিনিট)</label>
+            <input type="number" id="auto-interval-input" value="5" min="1" max="60">
+            <button id="save-auto-interval" class="btn-save">সেভ</button>
+          </div>
+          <div class="setting-item">
+            <label>Auto Mode</label>
+            <button id="auto-mode-toggle" class="btn-auto">Auto Mode: বন্ধ</button>
+          </div>
+        </div>
+      </div>
 
-  // 7. Save
-  window.candleList = tempList;
-  window.candleCounter = tempList.length;
-  renderCandleTable();
+    </div>
+    <!-- /admin-content -->
 
-  // 8. Log summary
-  console.log('✅ Generated', tempList.length, 'candles');
-  console.log(`   UP: ${upCount} | DOWN: ${downCount} | NEUTRAL: ${neutralCount}`);
-  console.log('   First price:', tempList[0].open, '→', tempList[0].close);
-  console.log('   Last price:', tempList[tempList.length - 1].open, '→', tempList[tempList.length - 1].close);
+  </div>
+  <!-- /admin-dashboard -->
 
-  alert(
-    `✅ ${tempList.length}টা ক্যান্ডেল তৈরি!\n\n` +
-    `🟢 UP: ${upCount} | 🔴 DOWN: ${downCount} | ⚪ NEUTRAL: ${neutralCount}\n` +
-    `📊 Price: $${tempList[0].open} → $${tempList[tempList.length - 1].close}`
-  );
-}
-
-// ---------- Update Bind (rebind Bulk Button) ----------
-function rebindBulkGenerate() {
-  const btn = document.getElementById('bulk-generate-btn');
-  if (!btn) return;
-
-  // Remove old listener
-  const newBtn = btn.cloneNode(true);
-  btn.parentNode.replaceChild(newBtn, btn);
-
-  // Add new listener
-  newBtn.addEventListener('click', bulkGenerateCandles);
-  console.log('✅ Bulk Generate rebound (v2)');
-}
-
-rebindBulkGenerate();
-document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
-setTimeout(rebindBulkGenerate, 800);
-setTimeout(rebindBulkGenerate, 2500);
-
-// ---------- Global Expose ----------
-window.bulkGenerateCandles = bulkGenerateCandles;
-window.buildCandleWithPrice = buildCandleWithPrice;
-window.getPriceMovement = getPriceMovement;
-
-console.log('🎯 Part 6B-2 (Price + Direction) loaded');
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
