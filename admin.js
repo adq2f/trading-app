@@ -1564,3 +1564,20 @@ window.playbackSetSpeed = playbackSetSpeed;
 window.highlightActiveRow = highlightActiveRow;
 
 console.log('Part 6C-1 (Playback) loaded');
+
+// ---------- Speed Selector Bind ----------
+function bindSpeedSelector() {
+  const sel = document.getElementById('playback-speed');
+  if (!sel || sel.dataset.bound === '1') return;
+  sel.dataset.bound = '1';
+  sel.addEventListener('change', () => {
+    const ms = parseInt(sel.value);
+    window.playbackSetSpeed(ms);
+  });
+  console.log('Speed selector bound');
+}
+
+bindSpeedSelector();
+document.addEventListener('DOMContentLoaded', bindSpeedSelector);
+setTimeout(bindSpeedSelector, 800);
+setTimeout(bindSpeedSelector, 2500);
