@@ -258,7 +258,7 @@
     </table>
   </div>
 
-  <button id="add-candle-btn" class="btn-save" style="margin-top:10px;">➕ নতুন ক্যান্ডেল</button>
+  <button id="add-candle-btn" class="btn-save" style="margin-top:10px;" onclick="window.addCandle && window.addCandle()">➕ নতুন ক্যান্ডেল</button>
 
   <!-- ========== ৬. Live Preview ========== -->
   <div class="candle-preview-box">
@@ -319,7 +319,7 @@
         <!-- Save/Export/Import -->
         <div class="save-export-row">
           <button id="save-candles-btn" class="btn-save">💾 Save All</button>
-          <button id="clear-candles-btn" class="btn-reject">🗑 Clear</button>
+          <button id="clear-candles-btn" class="btn-reject" onclick="window.clearCandles && window.clearCandles()">🗑 Clear</button>
         </div>
 
         <!-- ক্যান্ডেল টেবিল -->
