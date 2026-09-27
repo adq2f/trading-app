@@ -1,5 +1,5 @@
 /* ============================================
-   Admin Panel — Stylesheet
+   Admin Panel — Complete Stylesheet
 ============================================ */
 
 * {
@@ -7,6 +7,10 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overscroll-behavior: none;
 }
 
 body {
@@ -17,6 +21,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .hidden {
@@ -131,6 +136,10 @@ input, select {
   box-shadow: 0 4px 16px rgba(255, 82, 82, 0.35);
 }
 
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
 #admin-message {
   color: #ff5252;
   font-size: 12px;
@@ -150,6 +159,10 @@ input, select {
   border-top: 1px solid #1f2a3d;
   font-size: 11px;
   color: #4a5568;
+}
+
+.lock-icon {
+  font-size: 12px;
 }
 
 /* ===== ড্যাশবোর্ড ===== */
@@ -208,7 +221,7 @@ input, select {
   font-weight: 700;
 }
 
-/* ===== স্ট্যাটস ===== */
+/* স্ট্যাটস */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -250,7 +263,7 @@ input, select {
   color: #fff;
 }
 
-/* ===== ট্যাব ===== */
+/* ট্যাব */
 .admin-tabs {
   display: flex;
   gap: 4px;
@@ -284,7 +297,7 @@ input, select {
   box-shadow: 0 2px 10px rgba(255, 82, 82, 0.35);
 }
 
-/* ===== কনটেন্ট ===== */
+/* কনটেন্ট */
 .admin-content {
   background: #0d1522;
   border: 1px solid #1f2a3d;
@@ -333,7 +346,7 @@ input, select {
   padding: 40px 10px;
 }
 
-/* ===== আইটেম ===== */
+/* লিস্ট */
 .list-container {
   display: flex;
   flex-direction: column;
@@ -446,7 +459,7 @@ input, select {
   color: #c9d4e3;
 }
 
-/* ===== সেটিংস ===== */
+/* সেটিংস */
 .settings-container {
   display: flex;
   flex-direction: column;
@@ -483,6 +496,10 @@ input, select {
   text-align: center;
 }
 
+.setting-item input:focus {
+  border-color: #ff5252;
+}
+
 .btn-save {
   padding: 11px;
   background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
@@ -490,34 +507,6 @@ input, select {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 800;
-}
-
-.market-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.btn-market-up, .btn-market-down, .btn-market-reset {
-  flex: 1;
-  padding: 12px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-}
-
-.btn-market-up {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-}
-
-.btn-market-down {
-  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
-}
-
-.btn-market-reset {
-  background: #1a2333;
-  border: 1px solid #2a3648;
-  color: #c9d4e3;
 }
 
 .btn-auto {
@@ -535,6 +524,327 @@ input, select {
   background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
   color: #fff;
   border-color: #00c853;
+  box-shadow: 0 4px 16px rgba(0, 200, 83, 0.4);
+}
+
+/* ===== মার্কেট ===== */
+.add-market-box {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.add-market-box h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.add-market-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-market-form input {
+  padding: 11px 14px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 14px;
+}
+
+.add-market-form input:focus {
+  border-color: #ff5252;
+}
+
+.add-market-form .btn-primary {
+  margin-top: 4px;
+}
+
+/* মার্কেট আইটেম */
+.market-item {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.market-item.disabled {
+  opacity: 0.5;
+}
+
+.market-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1a2436;
+}
+
+.market-item-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.market-item-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.market-item-info span {
+  color: #8b98ab;
+}
+
+.market-item-info strong {
+  color: #e6edf3;
+  font-weight: 700;
+}
+
+.market-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ===== ক্যান্ডেল শিডিউলার ===== */
+.candle-market-select {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.candle-market-select label {
+  display: block;
+  font-size: 11px;
+  color: #8b98ab;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.candle-market-select select {
+  width: 100%;
+  padding: 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.candle-mode-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.candle-mode-row::-webkit-scrollbar {
+  display: none;
+}
+
+.mode-btn {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  color: #8b98ab;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.mode-btn.active {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border-color: #2196f3;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(33, 150, 243, 0.4);
+}
+
+.candle-bulk-box {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.candle-bulk-box h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.bulk-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bulk-form input {
+  padding: 10px 12px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 13px;
+}
+
+.bulk-form input:focus {
+  border-color: #2196f3;
+}
+
+.bulk-form .btn-save {
+  grid-column: 1 / -1;
+}
+
+.playback-row,
+.save-export-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.playback-row::-webkit-scrollbar,
+.save-export-row::-webkit-scrollbar {
+  display: none;
+}
+
+.pb-btn {
+  flex: 1;
+  min-width: 70px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+}
+
+.pb-play {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  border-color: #00c853;
+}
+
+.pb-pause {
+  background: linear-gradient(135deg, #ffb300 0%, #f57c00 100%);
+  border-color: #ffb300;
+}
+
+.pb-reset {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  border-color: #ff5252;
+}
+
+.save-export-row .btn-save,
+.save-export-row .btn-reject {
+  flex: 1;
+}
+
+/* ক্যান্ডেল টেবিল */
+.candle-table-wrapper {
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 8px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+  scrollbar-width: thin;
+}
+
+.candle-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  min-width: 700px;
+}
+
+.candle-table thead {
+  background: #0b1220;
+}
+
+.candle-table th {
+  padding: 8px 6px;
+  text-align: left;
+  color: #8b98ab;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #1f2a3d;
+  white-space: nowrap;
+}
+
+.candle-table td {
+  padding: 8px 6px;
+  color: #e6edf3;
+  border-bottom: 1px solid #1a2436;
+  font-variant-numeric: tabular-nums;
+}
+
+.candle-table tr:last-child td {
+  border-bottom: none;
+}
+
+.candle-table .green {
+  color: #00c853;
+  font-weight: 800;
+}
+
+.candle-table .red {
+  color: #ff5252;
+  font-weight: 800;
+}
+
+.candle-table .empty-text {
+  text-align: center;
+  color: #4a5568;
+  padding: 20px;
+}
+
+.candle-table .row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.candle-table .row-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  color: #c9d4e3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.candle-table .row-btn.del {
+  background: #3a1220;
+  border-color: #ff5252;
+  color: #ff5252;
 }
 
 /* ===== মোবাইল ===== */
@@ -548,16 +858,29 @@ input, select {
   .stat-value {
     font-size: 22px;
   }
-  .admin-item-info {
+  .admin-item-info,
+  .market-item-info {
     grid-template-columns: 1fr;
   }
   .admin-tab {
     padding: 9px 12px;
     font-size: 12px;
   }
+  .bulk-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f2a3d;
+  border-radius: 3px;
 }
