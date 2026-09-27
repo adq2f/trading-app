@@ -1713,3 +1713,42 @@ setTimeout(renderCandlePreview, 2500);
 window.renderCandlePreview = renderCandlePreview;
 
 console.log('Part 6C-2 (Live Preview) loaded');
+
+// ============================================
+// PART 6C-2 FIX: Auto-trigger Preview
+// ============================================
+
+// Watch candleList changes and auto-render preview
+(function startPreviewWatcher() {
+  let lastCount = -1;
+  let lastFirstClose = '';
+
+  setInterval(function() {
+    const container = document.getElementById('candle-preview');
+    if (!container) return;
+
+    const list = window.candleList || [];
+    const count = list.length;
+    const firstClose = count > 0 ? (list[0].close || '') : '';
+    const lastClose = count > 0 ? (list[count - 1].close || '') : '';
+
+    const isBlank = container.innerHTML.indexOf('No candles') !== -1 ||
+                    container.innerHTML.indexOf('empty-text') !== -1;
+
+    const changed = (count !== lastCount) ||
+                    (firstClose !== lastFirstClose) ||
+                    (isBlank && count > 0);
+
+    if (changed) {
+      lastCount = count;
+      lastFirstClose = firstClose;
+
+      if (typeof renderCandlePreview === 'function') {
+        renderCandlePreview();
+        console.log('Preview auto-updated:', count, 'candles');
+      }
+    }
+  }, 400);
+
+  console.log('Preview auto-watcher started');
+})();
