@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0a0e17">
+  <meta name="theme-color" content="#0b1220">
   <title>Quotex Clone</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
@@ -14,220 +14,366 @@
 
   <!-- ========== লগইন পেজ ========== -->
   <div id="login-page" class="page">
-
-    <!-- লোগো + নাম -->
     <div class="logo-box">
       <div class="logo-icon">Q</div>
       <h1>Quotex Clone</h1>
       <p class="tagline">ট্রেড করুন, জিতুন</p>
     </div>
 
-    <!-- ইনপুট ফিল্ড -->
     <div class="input-group">
       <label>ইমেইল</label>
-      <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+      <input type="email" id="email" placeholder="your@email.com">
     </div>
 
     <div class="input-group">
       <label>পাসওয়ার্ড</label>
-      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      <input type="password" id="password" placeholder="••••••••">
     </div>
 
-    <!-- বাটন -->
     <button id="login-btn" class="primary-btn">লগইন</button>
     <button id="signup-btn" class="secondary-btn">নতুন অ্যাকাউন্ট</button>
 
-    <!-- মেসেজ -->
     <p id="message"></p>
-
   </div>
 
-    <!-- ========== ট্রেডিং পেজ (Dashboard) ========== -->
+  <!-- ========== ট্রেডিং পেজ ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== উপরের হেডার (Quotex-এর মতো) ===== -->
-    <div class="top-header">
+    <!-- ===== বাম সাইডবার (Quotex-এর মতো) ===== -->
+    <aside class="left-sidebar">
 
-      <!-- বাম: প্রোফাইল -->
-      <div class="header-left">
-        <button id="profile-btn" class="icon-btn">👤</button>
-      </div>
+      <!-- প্রোফাইল -->
+      <button class="side-icon" id="profile-btn" title="Profile">👤</button>
 
-      <!-- মাঝে: লোগো -->
-      <div class="header-center">
-        <span class="header-logo">Q</span>
-        <span class="header-title">Quotex Clone</span>
-      </div>
+      <!-- ডেমো/রিয়েল টগল -->
+      <button class="side-icon acc-toggle" id="account-toggle" title="Account">💼</button>
 
-      <!-- ডান: লগআউট -->
-      <div class="header-right">
-        <button id="logout-btn" class="icon-btn">⏻</button>
-      </div>
-    </div>
+      <!-- মার্কেট -->
+      <button class="side-icon" id="market-btn" title="Market">📊</button>
 
-    <!-- ===== ব্যালেন্স কার্ড (Quotex-এর মতো) ===== -->
-    <div class="balance-card">
+      <!-- টুর্নামেন্ট -->
+      <button class="side-icon" id="tournament-btn" title="Tournament">🏆</button>
 
-      <!-- উপরে: ডেমো/রিয়েল টগল -->
-      <div class="account-toggle">
-        <button class="acc-btn active" data-acc="demo">ডেমো</button>
-        <button class="acc-btn" data-acc="real">রিয়েল</button>
-      </div>
+      <!-- সিগন্যাল -->
+      <button class="side-icon" id="signals-btn" title="Signals">📡</button>
 
-      <!-- ব্যালেন্স -->
-      <div class="balance-display">
-        <div class="balance-label">ব্যালেন্স</div>
-        <div class="balance-value">$<span id="balance">0.00</span></div>
-        <div class="balance-change" id="balance-change"></div>
-      </div>
+      <!-- নিচে: লগআউট -->
+      <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
 
-      <!-- ডিপোজিট + উইথড্র বাটন -->
-      <div class="balance-actions">
-        <button id="deposit-btn" class="action-btn deposit">＋ ডিপোজিট</button>
-        <button id="withdraw-btn" class="action-btn withdraw">↗ উইথড্র</button>
-      </div>
+    </aside>
 
-    </div>
+    <!-- ===== মূল কনটেন্ট ===== -->
+    <main class="main-content">
 
-    <!-- ===== ইউজার ইমেইল (ছোট করে) ===== -->
-    <div class="user-email-bar">
-      <span id="user-email-display">user@email.com</span>
-    </div>
-
-    <!-- ===== চার্ট সেকশন (Quotex-এর লেআউট) ===== -->
-    <div class="chart-section">
-
-      <!-- অ্যাসেট সিলেক্টর + প্রাইস -->
-      <div class="chart-header">
-        <div class="asset-picker">
-          <span class="asset-dot"></span>
-          <select id="asset-select" class="asset-select">
-            <option value="BTCUSDT">BTC/USDT</option>
-            <option value="ETHUSDT">ETH/USDT</option>
-            <option value="BNBUSDT">BNB/USDT</option>
-            <option value="SOLUSDT">SOL/USDT</option>
-            <option value="XRPUSDT">XRP/USDT</option>
-            <option value="ADAUSDT">ADA/USDT</option>
-            <option value="DOGEUSDT">DOGE/USDT</option>
-            <option value="MATICUSDT">MATIC/USDT</option>
-            <option value="DOTUSDT">DOT/USDT</option>
-            <option value="LINKUSDT">LINK/USDT</option>
-            <option value="AVAXUSDT">AVAX/USDT</option>
-            <option value="LTCUSDT">LTC/USDT</option>
-          </select>
-          <span class="asset-arrow">▾</span>
+      <!-- হেডার -->
+      <header class="top-bar">
+        <div class="top-left">
+          <span class="brand-logo">Q</span>
+          <span class="brand-name">Quotex Clone</span>
         </div>
-        <div class="price-box">
-          <span id="current-price">0.00</span>
-          <span id="price-arrow" class="price-arrow">▲</span>
+        <div class="top-right">
+          <button class="balance-chip" id="balance-chip">
+            <span class="balance-amount">$<span id="balance">0.00</span></span>
+            <span class="chip-arrow">▾</span>
+          </button>
         </div>
-      </div>
+      </header>
+      <!-- ===== চার্ট সেকশন ===== -->
+      <section class="chart-section">
 
-      <!-- চার্ট + ড্রয়িং টুলবার (বাম দিকে উল্লম্ব) -->
-      <div class="chart-main">
-
-        <!-- বাম দিকে ড্রয়িং টুলবার (Quotex-এর মতো) -->
-        <div class="drawing-toolbar" id="drawing-toolbar">
-          <button class="drawing-btn" data-tool="cursor" title="Cursor">✥</button>
-          <button class="drawing-btn" data-tool="TrendLine" title="Trend Line">╱</button>
-          <button class="drawing-btn" data-tool="HorizontalLine" title="Horizontal">━</button>
-          <button class="drawing-btn" data-tool="VerticalLine" title="Vertical">┃</button>
-          <button class="drawing-btn" data-tool="CrossLine" title="Cross">✚</button>
-          <button class="drawing-btn" data-tool="Rectangle" title="Rectangle">▭</button>
-          <button class="drawing-btn" data-tool="FibRetracement" title="Fibonacci">⌗</button>
-          <button class="drawing-btn" data-tool="Ray" title="Ray">↗</button>
-          <button class="drawing-btn" data-tool="TextAnnotation" title="Text">T</button>
-          <button class="drawing-btn" data-tool="Eraser" title="Clear All">🗑</button>
+        <!-- অ্যাসেট সিলেক্টর + প্রাইস -->
+        <div class="chart-header">
+          <div class="asset-picker">
+            <span class="asset-dot"></span>
+            <select id="asset-select" class="asset-select">
+              <option value="BTCUSDT">BTC/USDT</option>
+              <option value="ETHUSDT">ETH/USDT</option>
+              <option value="BNBUSDT">BNB/USDT</option>
+              <option value="SOLUSDT">SOL/USDT</option>
+              <option value="XRPUSDT">XRP/USDT</option>
+              <option value="ADAUSDT">ADA/USDT</option>
+              <option value="DOGEUSDT">DOGE/USDT</option>
+              <option value="MATICUSDT">MATIC/USDT</option>
+              <option value="DOTUSDT">DOT/USDT</option>
+              <option value="LINKUSDT">LINK/USDT</option>
+              <option value="AVAXUSDT">AVAX/USDT</option>
+              <option value="LTCUSDT">LTC/USDT</option>
+            </select>
+            <span class="asset-arrow">▾</span>
+          </div>
+          <div class="price-box">
+            <span id="current-price">0.00</span>
+            <span id="price-arrow" class="price-arrow">▲</span>
+          </div>
         </div>
 
-        <!-- চার্ট + Drawing Canvas (একসাথে) -->
-        <div id="chart-wrapper">
-          <div id="chart"></div>
-          <canvas id="drawing-canvas"></canvas>
+        <!-- চার্ট + বাম দিকে ড্রয়িং টুলবার -->
+        <div class="chart-main">
+
+          <!-- ড্রয়িং টুলবার (উল্লম্ব) -->
+          <div class="drawing-toolbar" id="drawing-toolbar">
+            <button class="drawing-btn active" data-tool="cursor" title="Cursor">✥</button>
+            <button class="drawing-btn" data-tool="TrendLine" title="Trend Line">╱</button>
+            <button class="drawing-btn" data-tool="HorizontalLine" title="Horizontal">━</button>
+            <button class="drawing-btn" data-tool="VerticalLine" title="Vertical">┃</button>
+            <button class="drawing-btn" data-tool="CrossLine" title="Cross">✚</button>
+            <button class="drawing-btn" data-tool="Rectangle" title="Rectangle">▭</button>
+            <button class="drawing-btn" data-tool="FibRetracement" title="Fibonacci">⌗</button>
+            <button class="drawing-btn" data-tool="Ray" title="Ray">↗</button>
+            <button class="drawing-btn" data-tool="TextAnnotation" title="Text">T</button>
+            <button class="drawing-btn" data-tool="Eraser" title="Clear All">🗑</button>
+          </div>
+
+          <!-- চার্ট + ওভারলে ক্যানভাস -->
+          <div id="chart-wrapper">
+            <div id="chart"></div>
+            <canvas id="drawing-canvas"></canvas>
+          </div>
+
         </div>
 
-      </div>
-
-      <!-- টাইমফ্রেম বাটন -->
-      <div class="chart-timeframe">
-        <button class="tf-btn active" data-tf="1m">1m</button>
-        <button class="tf-btn" data-tf="5m">5m</button>
-        <button class="tf-btn" data-tf="15m">15m</button>
-        <button class="tf-btn" data-tf="1h">1h</button>
-        <button class="tf-btn" data-tf="4h">4h</button>
-      </div>
-
-    </div>
-
-    <!-- ===== ট্রেড প্যানেল (Quotex-এর মতো) ===== -->
-    <div class="trade-panel">
-
-      <!-- পরিমাণ -->
-      <div class="trade-row">
-        <label class="trade-label">পরিমাণ</label>
-        <div class="amount-input-wrap">
-          <button class="amount-btn" data-action="minus">−</button>
-          <input type="number" id="trade-amount" value="10" min="1" step="1">
-          <button class="amount-btn" data-action="plus">+</button>
+        <!-- টাইমফ্রেম (৫ সেকেন্ড থেকে ৪ ঘণ্টা) -->
+        <div class="chart-timeframe">
+          <button class="tf-btn" data-tf="5s">5s</button>
+          <button class="tf-btn" data-tf="10s">10s</button>
+          <button class="tf-btn" data-tf="15s">15s</button>
+          <button class="tf-btn" data-tf="30s">30s</button>
+          <button class="tf-btn active" data-tf="1m">1m</button>
+          <button class="tf-btn" data-tf="5m">5m</button>
+          <button class="tf-btn" data-tf="15m">15m</button>
+          <button class="tf-btn" data-tf="1h">1h</button>
+          <button class="tf-btn" data-tf="4h">4h</button>
         </div>
-      </div>
 
-      <!-- সময় -->
-      <div class="trade-row">
-        <label class="trade-label">সময়</label>
-        <div class="time-buttons">
-          <button class="time-btn active" data-time="60">01:00</button>
-          <button class="time-btn" data-time="300">05:00</button>
-          <button class="time-btn" data-time="900">15:00</button>
+      </section>
+
+      <!-- ===== ট্রেড প্যানেল ===== -->
+      <section class="trade-panel">
+
+        <!-- পরিমাণ -->
+        <div class="trade-row">
+          <label class="trade-label">পরিমাণ ($)</label>
+          <div class="amount-input-wrap">
+            <button class="amount-btn" data-action="minus">−</button>
+            <input type="number" id="trade-amount" value="10" min="1" step="1">
+            <button class="amount-btn" data-action="plus">+</button>
+          </div>
         </div>
-      </div>
 
-      <!-- বড় টাইমার (ট্রেড অ্যাক্টিভ হলে দেখাবে) -->
-      <div id="big-timer" class="big-timer hidden">01:00</div>
+        <!-- এক্সপায়ারি টাইম (৫ সেকেন্ড থেকে ১ ঘণ্টা) -->
+        <div class="trade-row">
+          <label class="trade-label">সময়</label>
+          <div class="time-buttons">
+            <button class="time-btn" data-time="5">5s</button>
+            <button class="time-btn" data-time="10">10s</button>
+            <button class="time-btn" data-time="15">15s</button>
+            <button class="time-btn" data-time="30">30s</button>
+            <button class="time-btn active" data-time="60">1m</button>
+            <button class="time-btn" data-time="300">5m</button>
+            <button class="time-btn" data-time="900">15m</button>
+            <button class="time-btn" data-time="3600">1h</button>
+          </div>
+        </div>
 
-      <!-- CALL / PUT বাটন (Quotex-এর মতো) -->
-      <div class="trade-buttons">
-        <button id="call-btn" class="call-btn">
-          <span class="arrow">▲</span>
-          <span class="btn-label">CALL</span>
-          <span class="btn-payout">+85%</span>
-        </button>
-        <button id="put-btn" class="put-btn">
-          <span class="arrow">▼</span>
-          <span class="btn-label">PUT</span>
-          <span class="btn-payout">+85%</span>
-        </button>
-      </div>
+        <!-- বড় টাইমার -->
+        <div id="big-timer" class="big-timer hidden">01:00</div>
 
-      <!-- ট্রেড মেসেজ -->
-      <p id="trade-message"></p>
+        <!-- CALL / PUT বাটন -->
+        <div class="trade-buttons">
+          <button id="call-btn" class="call-btn">
+            <span class="arrow">▲</span>
+            <span class="btn-label">CALL</span>
+            <span class="btn-payout">+85%</span>
+          </button>
+          <button id="put-btn" class="put-btn">
+            <span class="arrow">▼</span>
+            <span class="btn-label">PUT</span>
+            <span class="btn-payout">+85%</span>
+          </button>
+        </div>
 
-    </div>
+        <p id="trade-message"></p>
 
-    <!-- ===== ট্যাব (চলমান / হিস্ট্রি) ===== -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="active">
-        চলমান <span id="active-count">0</span>
-      </button>
-      <button class="tab-btn" data-tab="history">হিস্ট্রি</button>
-    </div>
+      </section>
+      <!-- ===== ট্যাব + ট্রেড লিস্ট ===== -->
+      <section class="trades-section">
 
-    <div class="tab-content">
-      <!-- চলমান ট্রেড -->
-      <div id="active-trades-list" class="tab-pane active">
-        <p class="empty-text">কোনো চলমান ট্রেড নেই</p>
-      </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="active">
+            চলমান <span id="active-count">0</span>
+          </button>
+          <button class="tab-btn" data-tab="history">হিস্ট্রি</button>
+        </div>
 
-      <!-- ট্রেড হিস্ট্রি -->
-      <div id="history-list" class="tab-pane">
-        <p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>
-      </div>
-    </div>
+        <div class="tab-content">
+          <div id="active-trades-list" class="tab-pane active">
+            <p class="empty-text">কোনো চলমান ট্রেড নেই</p>
+          </div>
+          <div id="history-list" class="tab-pane">
+            <p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+    <!-- main-content শেষ -->
 
   </div>
   <!-- dashboard-page শেষ -->
 
+
+  <!-- ========== ব্যালেন্স পপআপ ========== -->
+  <div id="balance-popup" class="popup hidden">
+    <div class="popup-overlay" id="balance-popup-overlay"></div>
+
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>অ্যাকাউন্ট</h3>
+        <button id="balance-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <!-- ডেমো / রিয়েল টগল -->
+      <div class="account-toggle-popup">
+        <button class="acc-btn-popup active" data-acc="demo">ডেমো</button>
+        <button class="acc-btn-popup" data-acc="real">রিয়েল</button>
+      </div>
+
+      <!-- ব্যালেন্স ডিসপ্লে -->
+      <div class="popup-balance">
+        <div class="popup-balance-label">বর্তমান ব্যালেন্স</div>
+        <div class="popup-balance-value">$<span id="balance-popup">0.00</span></div>
+      </div>
+
+      <!-- অ্যাকশন বাটন -->
+      <div class="popup-actions">
+        <button id="deposit-btn" class="action-btn deposit">
+          ＋ ডিপোজিট
+        </button>
+        <button id="withdraw-btn" class="action-btn withdraw">
+          ↗ উইথড্র
+        </button>
+      </div>
+
+      <!-- ট্রানজেকশন হিস্ট্রি লিংক -->
+      <button class="popup-link" id="tx-history-btn">
+        📋 ট্রানজেকশন হিস্ট্রি
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ========== অ্যাকাউন্ট সুইচ পপআপ ========== -->
+  <div id="account-popup" class="popup hidden">
+    <div class="popup-overlay" id="account-popup-overlay"></div>
+
+    <div class="popup-content small">
+      <div class="popup-header">
+        <h3>অ্যাকাউন্ট সিলেক্ট করুন</h3>
+        <button id="account-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <button class="account-option active" data-acc="demo">
+        <span class="acc-icon">🎮</span>
+        <div class="acc-info">
+          <div class="acc-title">ডেমো অ্যাকাউন্ট</div>
+          <div class="acc-desc">ভার্চুয়াল মানি দিয়ে প্র্যাকটিস</div>
+        </div>
+        <span class="acc-check">✓</span>
+      </button>
+
+      <button class="account-option" data-acc="real">
+        <span class="acc-icon">💰</span>
+        <div class="acc-info">
+          <div class="acc-title">রিয়েল অ্যাকাউন্ট</div>
+          <div class="acc-desc">আসল টাকা দিয়ে ট্রেড</div>
+        </div>
+        <span class="acc-check">✓</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ========== ডিপোজিট পপআপ ========== -->
+  <div id="deposit-popup" class="popup hidden">
+    <div class="popup-overlay" id="deposit-popup-overlay"></div>
+
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>ডিপোজিট</h3>
+        <button id="deposit-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <p class="popup-note">
+        নিচের নাম্বারে পেমেন্ট করে স্লিপ আপলোড করুন। অ্যাডমিন অ্যাপ্রুভ করলে ব্যালেন্স যোগ হবে।
+      </p>
+
+      <div class="payment-info">
+        <div class="payment-row">
+          <span class="payment-label">বিকাশ</span>
+          <span class="payment-value">01700-000000</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">নগদ</span>
+          <span class="payment-value">01800-000000</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>পরিমাণ ($)</label>
+        <input type="number" id="deposit-amount" placeholder="10" min="1">
+      </div>
+
+      <div class="input-group">
+        <label>ট্রানজেকশন আইডি</label>
+        <input type="text" id="deposit-txid" placeholder="TrxID লিখুন">
+      </div>
+
+      <button id="deposit-submit" class="primary-btn">রিকোয়েস্ট পাঠান</button>
+      <p id="deposit-message"></p>
+    </div>
+  </div>
+
+
+  <!-- ========== উইথড্র পপআপ ========== -->
+  <div id="withdraw-popup" class="popup hidden">
+    <div class="popup-overlay" id="withdraw-popup-overlay"></div>
+
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>উইথড্র</h3>
+        <button id="withdraw-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <p class="popup-note">
+        উইথড্র রিকোয়েস্ট পাঠান। অ্যাডমিন ২৪ ঘণ্টার মধ্যে প্রসেস করবে।
+      </p>
+
+      <div class="input-group">
+        <label>পরিমাণ ($)</label>
+        <input type="number" id="withdraw-amount" placeholder="10" min="1">
+      </div>
+
+      <div class="input-group">
+        <label>পেমেন্ট মেথড</label>
+        <select id="withdraw-method">
+          <option value="bkash">বিকাশ</option>
+          <option value="nagad">নগদ</option>
+          <option value="rocket">রকেট</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>একাউন্ট নাম্বার</label>
+        <input type="text" id="withdraw-number" placeholder="01XXXXXXXXX">
+      </div>
+
+      <button id="withdraw-submit" class="primary-btn">রিকোয়েস্ট পাঠান</button>
+      <p id="withdraw-message"></p>
+    </div>
+  </div>
+
+
   <script type="module" src="app.js"></script>
 </body>
-</html>  
-
+</html>
