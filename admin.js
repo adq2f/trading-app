@@ -2769,4 +2769,4 @@ setTimeout(function() {
 }, 2500);
 
 console.log('Part Debug-2 (Test Menu) loaded');
-console.log('admin.js FULLY loaded - Part 3 to Debug-1');
+console.log('admin.js FULLY loaded - Part 3 to Debug-2');
