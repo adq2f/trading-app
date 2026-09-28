@@ -2490,6 +2490,43 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 console.log("Part 7B (Candle Render from Firestore) loaded");
+
+// ============================================================
+// EXPOSE FIREBASE + STATE TO WINDOW (FINAL FIX)
+// ============================================================
+
+window.db = db;
+window.auth = auth;
+window.getDocs = getDocs;
+window.collection = collection;
+window.doc = doc;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+window.query = query;
+window.where = where;
+window.onSnapshot = onSnapshot;
+window.addDoc = addDoc;
+window.getDoc = getDoc;
+
+console.log("✅ Firebase functions exposed to window");
+
+// Sync module state to window
+setTimeout(function() {
+  window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
+  window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
+  window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
+  window.listenAdminCandles = listenAdminCandles;
+  window.loadUserCandlesSmart = loadUserCandlesSmart;
+  console.log("✅ Functions exposed after 2s");
+}, 2000);
+
+setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser) window.currentUser = currentUser;
+  if (typeof chart !== 'undefined' && chart) window.chart = chart;
+  if (typeof candleSeries !== 'undefined' && candleSeries) window.candleSeries = candleSeries;
+}, 500);
+
+console.log("✅ State sync started");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
