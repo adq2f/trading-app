@@ -3929,3 +3929,74 @@ setInterval(function() {
 }, 500);
 
 console.log("✅ APP.JS FINAL EXPOSE COMPLETE");
+
+/* ============================================================
+   MSG 15: Chart Time Labels + Resize Helper
+   ============================================================ */
+
+// ===== 1. Time Label Strip Updater =====
+(function initMsg15TimeStrip() {
+  if (window.__msg15TimeInit) return;
+  window.__msg15TimeInit = true;
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function fmtHHMM(d) {
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function updateTimeStrip() {
+    var elL = document.getElementById('timeLeft');
+    var elC = document.getElementById('timeCenter');
+    var elR = document.getElementById('timeRight');
+    if (!elL && !elC && !elR) return;
+
+    var now = new Date();
+    var left = new Date(now.getTime() - 5 * 60 * 1000);
+    var right = new Date(now.getTime() + 5 * 60 * 1000);
+
+    if (elL) elL.textContent = fmtHHMM(left);
+    if (elR) elR.textContent = fmtHHMM(right);
+
+    if (elC) {
+      var remain = 59 - now.getSeconds();
+      elC.textContent = 'LIVE  ' + pad(remain) + 's';
+    }
+  }
+
+  updateTimeStrip();
+  setInterval(updateTimeStrip, 1000);
+  console.log('[MSG15] Time strip updater started');
+})();
+
+// ===== 2. Chart Resize Helper =====
+(function initMsg15Resize() {
+  if (window.__msg15Resize) return;
+  window.__msg15Resize = true;
+
+  function resizeChart() {
+    try {
+      if (window.chart && typeof window.chart.applyOptions === 'function') {
+        var wrap = document.getElementById('chart-wrapper');
+        if (wrap) {
+          window.chart.applyOptions({
+            width: wrap.clientWidth,
+            height: wrap.clientHeight
+          });
+        }
+      }
+    } catch (e) { /* silent */ }
+  }
+
+  window.addEventListener('resize', function () {
+    clearTimeout(window.__msg15RzT);
+    window.__msg15RzT = setTimeout(resizeChart, 200);
+  });
+
+  setTimeout(resizeChart, 500);
+  setTimeout(resizeChart, 1500);
+
+  console.log('[MSG15] Chart resize helper ready');
+})();
+
+console.log("===== MSG 15: Time Labels + Chart Resize loaded =====");
