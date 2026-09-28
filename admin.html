@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Admin Panel - Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css?v=6E3">
+  <link rel="stylesheet" href="admin.css?v=14">
 
   <!-- Eruda Mobile Console -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
@@ -55,11 +55,13 @@
       <button class="admin-tab" data-tab="trades" type="button">Trades</button>
       <button class="admin-tab" data-tab="deposits" type="button">Deposits</button>
       <button class="admin-tab" data-tab="withdrawals" type="button">Withdrawals</button>
+      <button class="admin-tab" data-tab="chat" type="button">Chat</button>
       <button class="admin-tab" data-tab="settings" type="button">Settings</button>
-            <button class="admin-tab" data-tab="chat" type="button">Chat</button>
     </nav>
 
-    <!-- TAB: MARKETS -->
+    <!-- ============================================================
+         TAB: MARKETS
+         ============================================================ -->
     <section id="tab-markets" class="admin-tab-content active">
       <h2 class="section-title">Markets</h2>
       <div class="market-form">
@@ -73,7 +75,9 @@
       <div id="market-list" class="market-list"></div>
     </section>
 
-    <!-- TAB: CANDLE SCHEDULER -->
+    <!-- ============================================================
+         TAB: CANDLE SCHEDULER
+         ============================================================ -->
     <section id="tab-candles" class="admin-tab-content">
 
       <!-- PART 6E-1: CANDLE MODE SWITCH -->
@@ -202,29 +206,38 @@
 
     </section>
 
-    <!-- TAB: USERS -->
+    <!-- ============================================================
+         TAB: USERS
+         ============================================================ -->
     <section id="tab-users" class="admin-tab-content">
       <h2 class="section-title">Users</h2>
       <div id="users-list" class="users-list"></div>
     </section>
 
-    <!-- TAB: TRADES -->
+    <!-- ============================================================
+         TAB: TRADES
+         ============================================================ -->
     <section id="tab-trades" class="admin-tab-content">
       <h2 class="section-title">Trades</h2>
       <div id="trades-list" class="trades-list"></div>
     </section>
 
-    <!-- TAB: DEPOSITS -->
+    <!-- ============================================================
+         TAB: DEPOSITS
+         ============================================================ -->
     <section id="tab-deposits" class="admin-tab-content">
       <h2 class="section-title">Deposits</h2>
       <div id="deposits-list" class="deposits-list"></div>
     </section>
 
-    <!-- TAB: WITHDRAWALS -->
+    <!-- ============================================================
+         TAB: WITHDRAWALS
+         ============================================================ -->
     <section id="tab-withdrawals" class="admin-tab-content">
       <h2 class="section-title">Withdrawals</h2>
       <div id="withdrawals-list" class="withdrawals-list"></div>
     </section>
+
     <!-- ============================================================
          TAB: CHAT
          ============================================================ -->
@@ -251,7 +264,9 @@
       </div>
     </section>
 
-    <!-- TAB: SETTINGS -->
+    <!-- ============================================================
+         TAB: SETTINGS
+         ============================================================ -->
     <section id="tab-settings" class="admin-tab-content">
       <h2 class="section-title">Settings</h2>
 
@@ -320,7 +335,7 @@
         <button id="auto-24h-toggle" class="admin-btn primary" type="button">Auto 24/7: OFF</button>
       </div>
 
-      <div class="settings-group">
+      <div class="settings-group" style="margin-top: 20px;">
         <label class="settings-label" style="color: #ffb300; font-size: 14px;">Future Candle Designer</label>
 
         <label class="settings-label">Market</label>
@@ -370,7 +385,7 @@
   </div>
 
   <!-- SCRIPTS -->
-  <script type="module" src="admin.js?v=6E3"></script>
+  <script type="module" src="admin.js?v=14"></script>
 
 </body>
 </html>
