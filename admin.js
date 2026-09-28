@@ -3321,7 +3321,7 @@ window.analyzerInterval = null;
 
 // Track current candle time
 window.currentCandleTime = Math.floor(Date.now() / 1000);
-window.currentCandleOpen = currentPrice;
+window.currentCandleOpen = (typeof currentPrice !== "undefined") ? currentPrice : 50000;
 
 // ============================================================
 // 2. LISTEN ADMIN SETTINGS FOR WIN/LOSS
@@ -3390,7 +3390,7 @@ function startLiveMovement() {
     if (candleTime > window.currentCandleTime) {
       // New minute started
       window.currentCandleTime = candleTime;
-      window.currentCandleOpen = currentPrice;
+      window.currentCandleOpen = (typeof currentPrice !== "undefined") ? currentPrice : 50000;
     }
 
     try {
