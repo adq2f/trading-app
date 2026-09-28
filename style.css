@@ -1261,6 +1261,140 @@ input, select {
   100% { opacity: 0; }
 }
 
+/* ============================================
+   MSG 10: TRUE TRADE MECHANIC STYLES
+   ============================================ */
+
+/* ===== Top-Left Countdown Timer (Quotex-style) ===== */
+.top-countdown-timer {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 21, 34, 0.9);
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e6edf3;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.top-countdown-timer.hidden {
+  display: none !important;
+}
+
+.top-countdown-timer #countdown-symbol {
+  color: #58a6ff;
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.top-countdown-timer #countdown-time {
+  color: #00c853;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.top-countdown-timer.warning #countdown-time {
+  color: #ffb300;
+  animation: timerPulse 0.5s ease-in-out infinite;
+}
+
+.top-countdown-timer.critical #countdown-time {
+  color: #ff5252;
+  animation: timerPulse 0.3s ease-in-out infinite;
+}
+
+/* ===== Trade Info Badge (current trade indicator) ===== */
+.trade-info-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(13, 21, 34, 0.9);
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.trade-info-badge.hidden {
+  display: none !important;
+}
+
+.trade-info-badge.call {
+  color: #00c853;
+  border-color: rgba(0, 200, 83, 0.5);
+}
+
+.trade-info-badge.put {
+  color: #ff5252;
+  border-color: rgba(255, 82, 82, 0.5);
+}
+
+.trade-info-badge #trade-info-arrow {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.trade-info-badge #trade-info-text {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Trade List — per-trade countdown ===== */
+.trade-item .trade-countdown {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 800;
+  color: #58a6ff;
+  text-align: right;
+  margin-left: 8px;
+}
+
+.trade-item .trade-countdown.warning {
+  color: #ffb300;
+}
+
+.trade-item .trade-countdown.critical {
+  color: #ff5252;
+  animation: timerPulse 0.3s ease-in-out infinite;
+}
+
+/* ===== Result flash (existing improved) ===== */
+.result-flash.win {
+  background: radial-gradient(circle at center,
+    rgba(0, 200, 83, 0.4) 0%,
+    rgba(0, 200, 83, 0.1) 40%,
+    transparent 70%);
+}
+
+.result-flash.loss {
+  background: radial-gradient(circle at center,
+    rgba(255, 82, 82, 0.4) 0%,
+    rgba(255, 82, 82, 0.1) 40%,
+    transparent 70%);
+}
 /* ===== মোবাইল অপটিমাইজ ===== */
 @media (max-width: 500px) {
   .left-sidebar {
