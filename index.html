@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#0b1220">
   <title>Quotex Clone</title>
 
-  <!-- Inter Font (MSG 15) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -47,28 +46,13 @@
 
     <!-- ===== বাম সাইডবার ===== -->
     <aside class="left-sidebar">
-
-      <!-- প্রোফাইল -->
       <button class="side-icon" id="profile-btn" title="Profile">👤</button>
-
-      <!-- ডেমো/রিয়েল টগল -->
       <button class="side-icon acc-toggle" id="account-toggle" title="Account">💼</button>
-
-      <!-- মার্কেট -->
       <button class="side-icon" id="market-btn" title="Market">📊</button>
-
-      <!-- টুর্নামেন্ট -->
       <button class="side-icon" id="tournament-btn" title="Tournament">🏆</button>
-
-      <!-- সিগন্যাল -->
       <button class="side-icon" id="signals-btn" title="Signals">📡</button>
-
-      <!-- Chat (MSG 14) -->
       <button class="side-icon" id="chat-btn" title="Chat">💬</button>
-
-      <!-- লগআউট -->
       <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
-
     </aside>
 
     <!-- ===== মূল কনটেন্ট ===== -->
@@ -91,7 +75,6 @@
       <!-- ===== চার্ট সেকশন ===== -->
       <section class="chart-section">
 
-        <!-- অ্যাসেট সিলেক্টর + প্রাইস -->
         <div class="chart-header">
           <div class="asset-picker">
             <span class="asset-dot"></span>
@@ -108,10 +91,8 @@
           </div>
         </div>
 
-        <!-- চার্ট + বাম দিকে ড্রয়িং টুলবার -->
         <div class="chart-main">
 
-          <!-- ড্রয়িং টুলবার -->
           <div class="drawing-toolbar" id="drawing-toolbar">
             <button class="drawing-btn active" data-tool="cursor" title="Cursor">✥</button>
             <button class="drawing-btn" data-tool="TrendLine" title="Trend Line">╱</button>
@@ -125,7 +106,6 @@
             <button class="drawing-btn" data-tool="Eraser" title="Clear All">🗑</button>
           </div>
 
-          <!-- চার্ট + ওভারলে ক্যানভাস -->
           <div id="chart-wrapper">
             <div id="chart"></div>
             <canvas id="drawing-canvas"></canvas>
@@ -148,11 +128,21 @@
               <span id="timeCenter">LIVE</span>
               <span id="timeRight">--:--</span>
             </div>
+
+            <!-- MSG 16: Entry/Exit Price Labels -->
+            <div id="entryLabel" class="entry-exit-label entry hidden">
+              <span class="label-arrow">▲</span>
+              <span class="label-price">ENTRY: --</span>
+            </div>
+
+            <div id="exitLabel" class="entry-exit-label exit hidden">
+              <span class="label-arrow">▼</span>
+              <span class="label-price">EXIT: --</span>
+            </div>
           </div>
 
         </div>
 
-        <!-- টাইমফ্রেম -->
         <div class="chart-timeframe">
           <button class="tf-btn" data-tf="5s">5s</button>
           <button class="tf-btn" data-tf="10s">10s</button>
@@ -170,7 +160,6 @@
       <!-- ===== ট্রেড প্যানেল ===== -->
       <section class="trade-panel">
 
-        <!-- পরিমাণ -->
         <div class="trade-row">
           <label class="trade-label">পরিমাণ ($)</label>
           <div class="amount-input-wrap">
@@ -180,7 +169,6 @@
           </div>
         </div>
 
-        <!-- এক্সপায়ারি টাইম -->
         <div class="trade-row">
           <label class="trade-label">সময়</label>
           <div class="time-buttons">
@@ -195,10 +183,8 @@
           </div>
         </div>
 
-        <!-- বড় টাইমার -->
         <div id="big-timer" class="big-timer hidden">01:00</div>
 
-        <!-- CALL / PUT বাটন -->
         <div class="trade-buttons">
           <button id="call-btn" class="call-btn">
             <span class="arrow">▲</span>
@@ -398,6 +384,35 @@
       </div>
     </div>
   </div>
+
+  <!-- ========== MSG 16: Bottom Navigation (Mobile) ========== -->
+  <nav class="bottom-nav hidden" id="bottomNav">
+    <button class="bottom-nav-btn active" data-nav="trade" type="button">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">Trade</span>
+    </button>
+
+    <button class="bottom-nav-btn" data-nav="active" type="button">
+      <span class="nav-icon">⏱</span>
+      <span class="nav-label">Active</span>
+      <span class="nav-badge hidden" id="navActiveBadge">0</span>
+    </button>
+
+    <button class="bottom-nav-btn" data-nav="history" type="button">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">History</span>
+    </button>
+
+    <button class="bottom-nav-btn" data-nav="chat" type="button">
+      <span class="nav-icon">💬</span>
+      <span class="nav-label">Chat</span>
+    </button>
+
+    <button class="bottom-nav-btn" data-nav="profile" type="button">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profile</span>
+    </button>
+  </nav>
 
   <!-- ============================================================
        SCRIPTS
