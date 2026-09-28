@@ -232,6 +232,8 @@ signupBtn.addEventListener("click", async () => {
 
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // Create user doc
     await setDoc(doc(db, "users", userCred.user.uid), {
       email: email,
       balance: 1000,
@@ -239,8 +241,15 @@ signupBtn.addEventListener("click", async () => {
       realBalance: 0,
       accountType: "demo",
       role: "user",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      referralEarned: 0
     });
+
+    // Apply referral from URL (if ?ref=CODE exists)
+    if (typeof applyReferralOnSignup === "function") {
+      await applyReferralOnSignup(userCred.user.uid, email);
+    }
+
     message.style.color = "#00c853";
     message.textContent = "রেজিস্ট্রেশন সফল! ব্যালেন্স $1000";
   } catch (error) {
