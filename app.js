@@ -3695,6 +3695,152 @@ window.startAuto24hGeneration = startAuto24hGeneration;
 window.listenDesignerForMarket = listenDesignerForMarket;
 
 console.log("===== MSG 13: Auto 24/7 Generation + Designer Apply loaded =====");
+
+/* ============================================================
+   MSG 14: User Chat System
+   ============================================================ */
+
+window.userChatUnsub = null;
+
+// ============================================================
+// 1. OPEN/CLOSE CHAT POPUP
+// ============================================================
+
+function openUserChat() {
+  var popup = document.getElementById("chat-popup");
+  var overlay = document.getElementById("chat-popup-overlay");
+  if (!popup) return;
+
+  popup.classList.remove("hidden");
+  if (overlay) overlay.onclick = function() { closeUserChat(); };
+
+  // Start listening to messages
+  startUserChatListener();
+}
+
+function closeUserChat() {
+  var popup = document.getElementById("chat-popup");
+  if (!popup) return;
+  popup.classList.add("hidden");
+}
+
+// ============================================================
+// 2. LISTEN TO USER'S MESSAGES
+// ============================================================
+
+function startUserChatListener() {
+  if (!currentUser) return;
+
+  if (window.userChatUnsub) {
+    try { window.userChatUnsub(); } catch(e) {}
+    window.userChatUnsub = null;
+  }
+
+  try {
+    var q = query(
+      collection(db, "chats", currentUser.uid, "messages"),
+      orderBy("timestamp", "asc")
+    );
+
+    window.userChatUnsub = onSnapshot(q, function(snap) {
+      var messagesEl = document.getElementById("user-chat-messages");
+      if (!messagesEl) return;
+
+      messagesEl.innerHTML = "";
+      if (snap.empty) {
+        messagesEl.innerHTML = '<p class="empty-text">Send a message to admin...</p>';
+        return;
+      }
+
+      snap.forEach(function(d) {
+        var m = d.data();
+        var div = document.createElement("div");
+        div.className = "user-chat-msg " + (m.from === "user" ? "from-user" : "from-admin");
+
+        var textNode = document.createTextNode(m.text || "");
+        div.appendChild(textNode);
+
+        var timeSpan = document.createElement("span");
+        timeSpan.className = "chat-msg-time";
+        var ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+        timeSpan.textContent = ts;
+        div.appendChild(timeSpan);
+
+        messagesEl.appendChild(div);
+      });
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  } catch (err) {
+    console.error("[MSG14] User chat error:", err.message);
+  }
+}
+
+// ============================================================
+// 3. SEND MESSAGE (USER SIDE)
+// ============================================================
+
+async function sendUserChatMessage() {
+  if (!currentUser) return;
+
+  var input = document.getElementById("user-chat-input");
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) return;
+
+  input.value = "";
+
+  try {
+    await addDoc(collection(db, "chats", currentUser.uid, "messages"), {
+      from: "user",
+      text: text,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log("[MSG14-User] Message sent to admin");
+  } catch (err) {
+    console.error("[MSG14-User] Send error:", err.message);
+  }
+}
+
+// ============================================================
+// 4. BIND BUTTONS
+// ============================================================
+
+setTimeout(function() {
+  var chatBtn = document.getElementById("chat-btn");
+  if (chatBtn && chatBtn.dataset.bound !== "1") {
+    chatBtn.dataset.bound = "1";
+    chatBtn.onclick = openUserChat;
+    console.log("[MSG14-User] Chat button bound");
+  }
+
+  var closeBtn = document.getElementById("chat-popup-close");
+  if (closeBtn && closeBtn.dataset.bound !== "1") {
+    closeBtn.dataset.bound = "1";
+    closeBtn.onclick = closeUserChat;
+  }
+
+  var sendBtn = document.getElementById("user-chat-send");
+  if (sendBtn && sendBtn.dataset.bound !== "1") {
+    sendBtn.dataset.bound = "1";
+    sendBtn.onclick = sendUserChatMessage;
+    console.log("[MSG14-User] Send button bound");
+  }
+
+  var input = document.getElementById("user-chat-input");
+  if (input && input.dataset.bound !== "1") {
+    input.dataset.bound = "1";
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendUserChatMessage();
+      }
+    });
+  }
+}, 3000);
+
+console.log("===== MSG 14: Admin Chat + User Chat loaded =====");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
