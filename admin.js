@@ -49,14 +49,14 @@ window.adminSettings = {
 
 console.log('[Settings] adminSettings initialized:', window.adminSettings);
 
-const adminLogin = document.getElementById("admin-login");
-const adminDashboard = document.getElementById("admin-dashboard");
-const adminEmailInput = document.getElementById("admin-email");
-const adminPasswordInput = document.getElementById("admin-password");
-const adminLoginBtn = document.getElementById("admin-login-btn");
-const adminMessage = document.getElementById("admin-message");
-const adminEmailDisplay = document.getElementById("admin-email-display");
-const adminLogoutBtn = document.getElementById("admin-logout");
+const adminLogin = document.getElementById("admin-login") || document.getElementById("login-screen");
+const adminDashboard = document.getElementById("admin-dashboard") || document.getElementById("admin-panel");
+const adminEmailInput = document.getElementById("admin-email") || document.getElementById("login-email");
+const adminPasswordInput = document.getElementById("admin-password") || document.getElementById("login-password");
+const adminLoginBtn = document.getElementById("admin-login-btn") || document.getElementById("login-btn");
+const adminMessage = document.getElementById("admin-message") || document.getElementById("login-error");
+const adminEmailDisplay = document.getElementById("admin-email-display") || document.getElementById("admin-user-email");
+const adminLogoutBtn = document.getElementById("admin-logout") || document.getElementById("admin-logout-btn");
 
 const statUsers = document.getElementById("stat-users");
 const statActiveTrades = document.getElementById("stat-active-trades");
