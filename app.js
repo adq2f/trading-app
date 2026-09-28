@@ -2528,6 +2528,309 @@ setInterval(function() {
 }, 500);
 
 console.log("✅ State sync started");
+
+/* ============================================================
+   MSG 10: TRUE TRADE MECHANIC + COUNTDOWN + ENTRY LINE
+   (Self-contained — no dependency on missing functions)
+   ============================================================ */
+
+// ============================================================
+// 1. TOP-LEFT COUNTDOWN TIMER
+// ============================================================
+
+window.countdownInterval = null;
+
+function updateTopCountdown() {
+  var timerEl = document.getElementById("top-countdown-timer");
+  var symbolEl = document.getElementById("countdown-symbol");
+  var timeEl = document.getElementById("countdown-time");
+  var badgeEl = document.getElementById("trade-info-badge");
+  var arrowEl = document.getElementById("trade-info-arrow");
+  var infoTextEl = document.getElementById("trade-info-text");
+
+  // Access activeTradesLocal via module scope (may be in different name)
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  if (trades.length === 0) {
+    if (timerEl) timerEl.classList.add("hidden");
+    if (badgeEl) badgeEl.classList.add("hidden");
+    return;
+  }
+
+  // Find soonest trade
+  var soonest = trades[0];
+  for (var i = 1; i < trades.length; i++) {
+    if (trades[i].expiresAt < soonest.expiresAt) soonest = trades[i];
+  }
+
+  var remaining = Math.max(0, Math.ceil((soonest.expiresAt - Date.now()) / 1000));
+  var mm = Math.floor(remaining / 60);
+  var ss = remaining % 60;
+  var timeStr = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
+
+  if (timerEl) {
+    timerEl.classList.remove("hidden", "warning", "critical");
+    if (remaining <= 5) timerEl.classList.add("critical");
+    else if (remaining <= 15) timerEl.classList.add("warning");
+
+    if (symbolEl) symbolEl.textContent = soonest.asset || "ASSET";
+    if (timeEl) timeEl.textContent = timeStr;
+  }
+
+  if (badgeEl) {
+    badgeEl.classList.remove("hidden", "call", "put");
+    badgeEl.classList.add(soonest.type || "call");
+    if (arrowEl) arrowEl.textContent = soonest.type === "call" ? "▲" : "▼";
+    if (infoTextEl) {
+      infoTextEl.textContent = String(soonest.type || "call").toUpperCase() + " $" + (soonest.amount || 0);
+    }
+  }
+}
+
+function startCountdownInterval() {
+  if (window.countdownInterval) return;
+  window.countdownInterval = setInterval(updateTopCountdown, 200);
+  console.log("[MSG10] Countdown interval started");
+}
+
+function stopCountdownInterval() {
+  if (window.countdownInterval) {
+    clearInterval(window.countdownInterval);
+    window.countdownInterval = null;
+    console.log("[MSG10] Countdown interval stopped");
+  }
+}
+
+// Auto-start
+startCountdownInterval();
+document.addEventListener("DOMContentLoaded", startCountdownInterval);
+
+// ============================================================
+// 2. TRUE TRADE MECHANIC — Entry vs Exit Compare
+// ============================================================
+
+function safeShowResultFlash(result) {
+  if (typeof showResultFlash === "function") {
+    try { showResultFlash(result); return; } catch(e) {}
+  }
+  // Fallback flash
+  var flash = document.createElement("div");
+  flash.className = "result-flash " + result;
+  document.body.appendChild(flash);
+  setTimeout(function() { flash.remove(); }, 700);
+}
+
+function safePlaySound(type) {
+  if (typeof playSound === "function") {
+    try { playSound(type); return; } catch(e) {}
+  }
+}
+
+function safeAnimateBalanceChange(amount) {
+  if (typeof animateBalanceChange === "function") {
+    try { animateBalanceChange(amount); return; } catch(e) {}
+  }
+  // Fallback: update balance display
+  if (typeof balanceEl !== "undefined" && balanceEl) {
+    balanceEl.textContent = Number(userBalance).toFixed(2);
+  }
+}
+
+async function processTradeResults() {
+  if (typeof currentUser === "undefined" || !currentUser) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  if (trades.length === 0) return;
+
+  var now = Date.now();
+
+  for (var i = 0; i < trades.length; i++) {
+    var trade = trades[i];
+    if (trade.expiresAt > now || trade.status !== "pending") continue;
+
+    var entryPrice = Number(trade.entryPrice) || Number(currentPrice) || 0;
+    var exitPrice = Number(currentPrice) || entryPrice;
+    var diff = exitPrice - entryPrice;
+
+    var realResult = "loss";
+    if (trade.type === "call" && diff > 0) realResult = "win";
+    else if (trade.type === "put" && diff < 0) realResult = "win";
+
+    console.log(
+      "[Trade Result] " + String(trade.type).toUpperCase() +
+      " | Entry: " + entryPrice.toFixed(2) +
+      " → Exit: " + exitPrice.toFixed(2) +
+      " | Diff: " + diff.toFixed(2) +
+      " | " + realResult.toUpperCase()
+    );
+
+    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 85) / 100) + 1;
+    var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
+    var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
+
+    try {
+      await updateDoc(doc(db, "trades", trade.id), {
+        status: "completed",
+        result: realResult,
+        exitPrice: exitPrice,
+        profit: returnAmount,
+        netProfit: netProfit,
+        completedAt: new Date().toISOString(),
+        adminProcessed: true
+      });
+
+      if (realResult === "win") {
+        var userRef = doc(db, "users", currentUser.uid);
+        var userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          var userData = userDoc.data();
+          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+          var curBal = userData[balanceField] || 0;
+          var newBal = curBal + returnAmount;
+
+          await updateDoc(userRef, {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          if (typeof userBalance !== "undefined") userBalance = newBal;
+          window.userBalance = newBal;
+
+          if (typeof balanceEl !== "undefined" && balanceEl) {
+            balanceEl.textContent = newBal.toFixed(2);
+          }
+          if (typeof balancePopupValue !== "undefined" && balancePopupValue) {
+            balancePopupValue.textContent = newBal.toFixed(2);
+          }
+
+          safeAnimateBalanceChange(returnAmount);
+          safeShowResultFlash("win");
+          safePlaySound("win");
+
+          if (typeof tradeMessage !== "undefined" && tradeMessage) {
+            tradeMessage.style.color = "#00c853";
+            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
+            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+          }
+        }
+      } else {
+        safeShowResultFlash("loss");
+        safePlaySound("loss");
+
+        if (typeof tradeMessage !== "undefined" && tradeMessage) {
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+        }
+      }
+    } catch (err) {
+      console.error("[Trade Process Error]", err.message);
+    }
+  }
+}
+
+// Start trade result processor (every 1.5 sec)
+setInterval(processTradeResults, 1500);
+
+// ============================================================
+// 3. CHART ENTRY LINE + TRADE MARKER
+// ============================================================
+
+function renderTradeMarkers() {
+  if (typeof candleSeries === "undefined" || !candleSeries) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  var markers = [];
+
+  for (var i = 0; i < trades.length; i++) {
+    var t = trades[i];
+    if (!t.entryTime) continue;
+    var entrySec = Math.floor(new Date(t.entryTime).getTime() / 1000);
+
+    markers.push({
+      time: entrySec,
+      position: t.type === "call" ? "belowBar" : "aboveBar",
+      color: t.type === "call" ? "#00c853" : "#ff5252",
+      shape: t.type === "call" ? "arrowUp" : "arrowDown",
+      text: String(t.type).toUpperCase() + " $" + t.amount
+    });
+  }
+
+  markers.sort(function(a, b) { return a.time - b.time; });
+
+  try {
+    candleSeries.setMarkers(markers);
+  } catch(e) {}
+}
+
+setInterval(renderTradeMarkers, 2000);
+
+// ============================================================
+// 4. FINAL EXPOSE (all-in-one, null-safe)
+// ============================================================
+
+(function exposeSafely() {
+  var toExpose = [
+    "placeTrade", "checkExpiredTrades", "checkExpiredTradesAdmin",
+    "loadActiveTrades", "loadHistory", "initChart", "loadCandles",
+    "startLivePrice", "stopLivePrice", "updateBigTimer",
+    "animateBalanceChange", "showResultFlash", "playSound"
+  ];
+
+  for (var i = 0; i < toExpose.length; i++) {
+    var name = toExpose[i];
+    try {
+      if (typeof eval(name) === "function") {
+        window[name] = eval(name);
+      }
+    } catch(e) {
+      // silently skip
+    }
+  }
+
+  // Expose new MSG 10 functions
+  window.updateTopCountdown = updateTopCountdown;
+  window.startCountdownInterval = startCountdownInterval;
+  window.stopCountdownInterval = stopCountdownInterval;
+  window.processTradeResults = processTradeResults;
+  window.renderTradeMarkers = renderTradeMarkers;
+
+  console.log("[MSG10] Functions exposed safely");
+})();
+
+// ============================================================
+// 5. STATE SYNC (every 500ms)
+// ============================================================
+
+setInterval(function() {
+  try {
+    if (typeof currentUser !== "undefined" && currentUser) {
+      window.currentUser = currentUser;
+    }
+    if (typeof userBalance !== "undefined") {
+      window.userBalance = userBalance;
+    }
+    if (typeof currentPrice !== "undefined") {
+      window.currentPrice = currentPrice;
+    }
+    if (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal)) {
+      window.activeTradesLocal = activeTradesLocal;
+    }
+    if (typeof chart !== "undefined" && chart) {
+      window.chart = chart;
+    }
+    if (typeof candleSeries !== "undefined" && candleSeries) {
+      window.candleSeries = candleSeries;
+    }
+  } catch(e) {}
+}, 500);
+
+console.log("===== MSG 10: True Trade Mechanic + Countdown + Entry Line loaded =====");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
