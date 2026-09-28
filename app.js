@@ -3508,6 +3508,193 @@ window.applyMidReversal = applyMidReversal;
 window.generateTrapCandle = generateTrapCandle;
 
 console.log("===== MSG 12: Candle Manipulator + Trap + Delay + Reversal loaded =====");
+
+/* ============================================================
+   MSG 13: AUTO 24/7 GENERATION + DESIGNER APPLY
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
+
+window.autoGenerate24h = false;
+window.designerCandle = null;
+window.applyNextAt = 0;
+window.auto24hInterval = null;
+window.designerListeners = {};
+
+// ============================================================
+// 2. LISTEN AUTO 24/7 + DESIGNER
+// ============================================================
+
+function listenAuto24hSettings() {
+  if (typeof db === "undefined") return;
+
+  try {
+    onSnapshot(doc(db, "settings", "global"), function(snap) {
+      if (!snap.exists()) return;
+      var d = snap.data();
+      window.autoGenerate24h = d.autoGenerate24h === true;
+      console.log("[MSG13] Auto 24/7:", window.autoGenerate24h ? "ON" : "OFF");
+    });
+  } catch(err) {
+    console.error("[MSG13] Auto 24/7 listen error:", err.message);
+  }
+}
+
+setTimeout(listenAuto24hSettings, 3500);
+
+// Listen designer for current market
+function listenDesignerForMarket(marketId) {
+  if (!marketId) return;
+  if (typeof db === "undefined") return;
+
+  // Unsubscribe previous
+  if (window.designerListeners[marketId]) {
+    try { window.designerListeners[marketId](); } catch(e) {}
+  }
+
+  try {
+    window.designerListeners[marketId] = onSnapshot(doc(db, "markets", marketId), function(snap) {
+      if (!snap.exists()) return;
+      var d = snap.data();
+
+      if (d.designerCandle) {
+        window.designerCandle = d.designerCandle;
+      }
+
+      if (d.applyNextAt && d.applyNextAt > (window.applyNextAt || 0)) {
+        window.applyNextAt = d.applyNextAt;
+        console.log("[MSG13] New designer to apply:", d.designerCandle);
+      }
+    });
+  } catch(err) {
+    console.error("[MSG13] Designer listen error:", err.message);
+  }
+}
+
+// ============================================================
+// 3. AUTO 24/7 GENERATION ENGINE
+// ============================================================
+
+function startAuto24hGeneration() {
+  if (window.auto24hInterval) clearInterval(window.auto24hInterval);
+
+  window.auto24hInterval = setInterval(async function() {
+    if (!window.autoGenerate24h) return;
+    if (typeof candleSeries === "undefined" || !candleSeries) return;
+    if (!window.selectedMarketId) return;
+
+    // Generate a new candle
+    var now = Math.floor(Date.now() / 1000);
+    var candleTime = Math.floor(now / 60) * 60;
+
+    // Only generate if new minute
+    if (window.currentCandleTime === candleTime) return;
+
+    // Check if designer applies
+    var designerData = window.designerCandle;
+    var useDesigner = designerData &&
+                      window.applyNextAt > 0 &&
+                      (Date.now() - window.applyNextAt < 70000); // within 70s
+
+    var openP, closeP, highP, lowP;
+
+    if (useDesigner) {
+      // Use designer values
+      openP = designerData.open;
+      closeP = designerData.close;
+      highP = designerData.high;
+      lowP = designerData.low;
+
+      console.log("[MSG13] Applying designer candle:", designerData);
+    } else {
+      // Natural generation
+      openP = currentPrice;
+      var move = (Math.random() - 0.5) * 120;
+      closeP = openP + move;
+      highP = Math.max(openP, closeP) + Math.random() * 40;
+      lowP = Math.min(openP, closeP) - Math.random() * 40;
+    }
+
+    try {
+      candleSeries.update({
+        time: candleTime,
+        open: openP,
+        high: highP,
+        low: lowP,
+        close: closeP
+      });
+
+      currentPrice = closeP;
+      window.currentPrice = closeP;
+      window.currentCandleTime = candleTime;
+      window.currentCandleOpen = closeP;
+
+      // Save to Firestore (persist)
+      if (window.selectedMarketId) {
+        var cid = 'auto_' + candleTime;
+        try {
+          await setDoc(doc(db, "markets", window.selectedMarketId, "candles", cid), {
+            number: candleTime,
+            date: new Date(candleTime * 1000).toISOString().split('T')[0],
+            startTime: new Date(candleTime * 1000).toTimeString().slice(0, 8),
+            timeframe: "1m",
+            open: Number(openP.toFixed(2)),
+            high: Number(highP.toFixed(2)),
+            low: Number(lowP.toFixed(2)),
+            close: Number(closeP.toFixed(2)),
+            color: closeP >= openP ? "green" : "red",
+            direction: closeP > openP ? "up" : (closeP < openP ? "down" : "neutral"),
+            size: "medium",
+            status: "auto",
+            createdAt: new Date().toISOString()
+          });
+        } catch(e) {}
+      }
+
+      console.log("[MSG13] Auto 24/7 candle generated: " + openP.toFixed(2) + " → " + closeP.toFixed(2) + (useDesigner ? " [DESIGNER]" : ""));
+
+      // Clear designer after apply
+      if (useDesigner) {
+        window.applyNextAt = 0;
+      }
+    } catch(err) {
+      console.error("[MSG13] Auto 24/7 error:", err.message);
+    }
+  }, 10000); // Check every 10s, generate on new minute
+
+  console.log("[MSG13] Auto 24/7 generation engine started");
+}
+
+// ============================================================
+// 4. AUTO-START
+// ============================================================
+
+setTimeout(function() {
+  startAuto24hGeneration();
+
+  // Also start designer listener for current market
+  if (window.selectedMarketId) {
+    listenDesignerForMarket(window.selectedMarketId);
+  }
+}, 5000);
+
+// Listen for market change → update designer listener
+setInterval(function() {
+  if (window.selectedMarketId && !window.designerListeners[window.selectedMarketId]) {
+    listenDesignerForMarket(window.selectedMarketId);
+  }
+}, 5000);
+
+// ============================================================
+// 5. EXPOSE FOR DEBUG
+// ============================================================
+
+window.startAuto24hGeneration = startAuto24hGeneration;
+window.listenDesignerForMarket = listenDesignerForMarket;
+
+console.log("===== MSG 13: Auto 24/7 Generation + Designer Apply loaded =====");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
