@@ -22,7 +22,8 @@ import {
   addDoc,
   query,
   where,
-  onSnapshot
+  onSnapshot,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ===== Firebase Config =====
