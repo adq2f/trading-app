@@ -249,6 +249,23 @@
 
       <div class="settings-group">
         <label class="settings-label">Win Rate Target (%)</label>
+              <div class="settings-group">
+        <label class="settings-label">Win Percent (%)</label>
+        <input id="win-percent-input" class="admin-input" type="number" placeholder="80" min="0" max="100" value="80">
+        <button id="save-win-percent" class="admin-btn primary" type="button">Save Win %</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Loss Percent (%)</label>
+        <input id="loss-percent-input" class="admin-input" type="number" placeholder="30" min="0" max="100" value="30">
+        <button id="save-loss-percent" class="admin-btn primary" type="button">Save Loss %</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Live Movement Speed (ms)</label>
+        <input id="live-speed-input" class="admin-input" type="number" placeholder="500" min="100" max="5000" value="500">
+        <button id="save-live-speed" class="admin-btn primary" type="button">Save Speed</button>
+      </div>
         <input id="win-rate-target" class="admin-input" type="number" placeholder="60">
         <button id="save-win-rate-target" class="admin-btn primary" type="button">Save</button>
       </div>
