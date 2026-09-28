@@ -1,5 +1,5 @@
 // Admin Panel - admin.js
-// Part 3 to 6D Complete (Clean)
+// Part 3 to 6E-2 Complete (Clean + MSG 2 Fix)
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -34,6 +34,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+/* ============================================================
+   PART 6E-2: SINGLE SOURCE OF TRUTH — adminSettings
+   ============================================================ */
+
+window.adminSettings = {
+  winRate: 50,
+  payout: 85,
+  candleMode: 'locked',
+  autoMode: false,
+  autoModeInterval: 5000
+};
+
+console.log('[Settings] adminSettings initialized:', window.adminSettings);
 
 const adminLogin = document.getElementById("admin-login");
 const adminDashboard = document.getElementById("admin-dashboard");
@@ -86,7 +100,7 @@ let marketsUnsub = null;
 let currentWinRate = 50;
 let currentPayout = 85;
 let currentAutoInterval = 5;
-let isAutoMode = false;
+
 if (adminLoginBtn) {
   adminLoginBtn.addEventListener("click", async () => {
     const email = adminEmailInput.value.trim();
@@ -136,6 +150,7 @@ onAuthStateChanged(auth, async (user) => {
         return;
       }
       currentAdmin = user;
+      window.currentAdmin = user;
       adminLogin.classList.add("hidden");
       adminDashboard.classList.remove("hidden");
       adminEmailDisplay.textContent = user.email;
@@ -152,6 +167,7 @@ onAuthStateChanged(auth, async (user) => {
     }
   } else {
     currentAdmin = null;
+    window.currentAdmin = null;
     adminLogin.classList.remove("hidden");
     adminDashboard.classList.add("hidden");
     adminEmailInput.value = "";
@@ -179,6 +195,7 @@ if (refreshTrades) refreshTrades.addEventListener("click", () => loadTrades());
 if (refreshDeposits) refreshDeposits.addEventListener("click", () => loadDeposits());
 if (refreshWithdrawals) refreshWithdrawals.addEventListener("click", () => loadWithdrawals());
 if (refreshMarkets) refreshMarkets.addEventListener("click", () => loadMarkets());
+
 if (createMarketBtn) {
   createMarketBtn.addEventListener("click", async () => {
     const name = newMarketName.value.trim();
@@ -323,6 +340,7 @@ function updateCandleMarketSelect(markets) {
   });
   if (current) sel.value = current;
 }
+
 async function loadStats() {
   try {
     const usersSnap = await getDocs(collection(db, "users"));
@@ -668,6 +686,7 @@ async function rejectWithdrawal(wid) {
     loadStats();
   } catch (err) { alert(err.message); }
 }
+
 async function loadSettings() {
   try {
     const sDoc = await getDoc(doc(db, "settings", "global"));
@@ -676,13 +695,16 @@ async function loadSettings() {
       currentWinRate = d.winRate ?? 50;
       currentPayout = d.payout ?? 85;
       currentAutoInterval = d.autoModeInterval ?? 5;
-      isAutoMode = d.autoMode ?? false;
+      window.adminSettings.winRate = currentWinRate;
+      window.adminSettings.payout = currentPayout;
+      window.adminSettings.autoMode = d.autoMode === true;
+      window.adminSettings.autoModeInterval = d.autoModeInterval || 5000;
       if (winRateInput) winRateInput.value = currentWinRate;
       if (payoutInput) payoutInput.value = currentPayout;
       if (autoIntervalInput) autoIntervalInput.value = currentAutoInterval;
-
+      console.log('[Settings] Loaded from Firestore:', window.adminSettings);
     }
-  } catch (err) { console.error(err); }
+  } catch (err) { console.error('[Settings] Load error:', err); }
 }
 
 if (saveWinRateBtn) {
@@ -692,6 +714,7 @@ if (saveWinRateBtn) {
     try {
       await setDoc(doc(db, "settings", "global"), { winRate: val }, { merge: true });
       currentWinRate = val;
+      window.adminSettings.winRate = val;
       alert("Win Rate: " + val + "%");
     } catch (err) { alert(err.message); }
   });
@@ -704,6 +727,7 @@ if (savePayoutBtn) {
     try {
       await setDoc(doc(db, "settings", "global"), { payout: val }, { merge: true });
       currentPayout = val;
+      window.adminSettings.payout = val;
       alert("Payout: " + val + "%");
     } catch (err) { alert(err.message); }
   });
@@ -716,22 +740,15 @@ if (saveAutoIntervalBtn) {
     try {
       await setDoc(doc(db, "settings", "global"), { autoModeInterval: val }, { merge: true });
       currentAutoInterval = val;
+      window.adminSettings.autoModeInterval = val * 1000;
       alert("Interval: " + val + " min");
     } catch (err) { alert(err.message); }
   });
 }
 
-// Renamed: updateAutoModeUI (was updateAutoModeButton - renamed to avoid conflict)
-function updateAutoModeUI() {
-  if (!autoModeToggle) return;
-  if (isAutoMode) {
-    autoModeToggle.classList.add("active");
-    autoModeToggle.textContent = "Auto Mode: ON";
-  } else {
-    autoModeToggle.classList.remove("active");
-    autoModeToggle.textContent = "Auto Mode: OFF";
-  }
-}
+/* ============================================================
+   CANDLE SCHEDULER (Part 6A-6D)
+   ============================================================ */
 
 window.candleList = [];
 window.candleCounter = 0;
@@ -994,6 +1011,7 @@ bindPart6A();
 document.addEventListener('DOMContentLoaded', bindPart6A);
 setTimeout(bindPart6A, 800);
 setTimeout(bindPart6A, 2500);
+
 function timeframeToSeconds(tf) {
   const map = { '5s': 5, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
   return map[tf] || 60;
@@ -1166,6 +1184,11 @@ rebindBulkGenerate();
 document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
 setTimeout(rebindBulkGenerate, 800);
 setTimeout(rebindBulkGenerate, 2500);
+
+/* ============================================================
+   PLAYBACK (Part 6C-1)
+   ============================================================ */
+
 window.playbackIndex = 0;
 window.playbackTimer = null;
 window.playbackSpeed = 1000;
@@ -1287,6 +1310,11 @@ bindSpeedSelector();
 document.addEventListener('DOMContentLoaded', bindSpeedSelector);
 setTimeout(bindSpeedSelector, 800);
 setTimeout(bindSpeedSelector, 2500);
+
+/* ============================================================
+   LIVE PREVIEW (Part 6C-2)
+   ============================================================ */
+
 window.previewMaxCandles = 20;
 
 function renderCandlePreview() {
@@ -1391,6 +1419,11 @@ console.log('Part 6C-2 (Live Preview) loaded');
   }, 400);
   console.log('Preview auto-watcher started');
 })();
+
+/* ============================================================
+   DIRECTION TIMELINE (Part 6C-3)
+   ============================================================ */
+
 function renderDirectionTimeline() {
   const container = document.getElementById('direction-timeline');
   if (!container) return;
@@ -1503,6 +1536,11 @@ console.log('Part 6C-3 (Direction Timeline) loaded');
   }, 500);
   console.log('Timeline auto-watcher started');
 })();
+
+/* ============================================================
+   AUTO MODE (Part 6D) + MODE BEHAVIOR (Part 6E-2)
+   ============================================================ */
+
 window.autoModeActive = false;
 window.autoModeTimer = null;
 window.autoModeInterval = 5000;
@@ -1519,6 +1557,16 @@ function autoGenerateOneCandle() {
     stopAutoMode();
     return;
   }
+
+  const mode = window.candleMode || 'locked';
+
+  // LOCKED mode disables auto generation
+  if (mode === 'locked') {
+    console.warn('Auto: LOCKED mode - auto generation stopped');
+    stopAutoMode();
+    return;
+  }
+
   let lastCandle = null;
   if (window.candleList.length > 0) {
     lastCandle = window.candleList[window.candleList.length - 1];
@@ -1534,11 +1582,30 @@ function autoGenerateOneCandle() {
   const patternLength = upDuration + downDuration;
   const idx = window.candleList.length;
   let direction = 'up';
-  if (patternLength > 0) {
-    const pos = idx % patternLength;
-    if (pos < upDuration) direction = 'up';
-    else direction = 'down';
+
+  // MODE BEHAVIOR
+  if (mode === 'random') {
+    const r = Math.random();
+    if (r < 0.45) direction = 'up';
+    else if (r < 0.90) direction = 'down';
+    else direction = 'neutral';
+    console.log('Auto: RANDOM mode - direction:', direction);
+  } else if (mode === 'mixed') {
+    if (patternLength > 0) {
+      const pos = idx % patternLength;
+      if (pos < upDuration) direction = 'up';
+      else direction = 'down';
+    }
+    console.log('Auto: MIXED mode - direction:', direction);
+  } else if (mode === 'schedule') {
+    if (patternLength > 0) {
+      const pos = idx % patternLength;
+      if (pos < upDuration) direction = 'up';
+      else direction = 'down';
+    }
+    console.log('Auto: SCHEDULE mode - direction:', direction);
   }
+
   const now = new Date();
   const date = now.toISOString().split('T')[0];
   const timeStr = now.toTimeString().slice(0, 8);
@@ -1600,11 +1667,13 @@ function updateAutoModeUI2() {
     btn.classList.add('active');
     btn.style.background = '#00c853';
     btn.style.color = '#04121a';
+    window.adminSettings.autoMode = true;
   } else {
     btn.textContent = 'Auto Mode: OFF';
     btn.classList.remove('active');
     btn.style.background = '';
     btn.style.color = '';
+    window.adminSettings.autoMode = false;
   }
 }
 
@@ -1613,7 +1682,6 @@ function bindAutoMode() {
   if (btn && btn.dataset.boundAuto !== '1') {
     btn.dataset.boundAuto = '1';
     btn.onclick = function(e) {
-      // if event has our custom flag, skip toggle (handled by settings)
       toggleAutoMode();
     };
     console.log('Auto Mode toggle bound');
@@ -1645,8 +1713,12 @@ setTimeout(bindAutoMode, 800);
 setTimeout(bindAutoMode, 2500);
 
 console.log('Part 6D (Auto Mode) loaded');
-
 console.log('Part 6C-1 (Playback) loaded');
+
+/* ============================================================
+   GLOBAL EXPOSE
+   ============================================================ */
+
 window.addCandle = addCandle;
 window.clearCandles = clearCandles;
 window.renderCandleTable = renderCandleTable;
@@ -1669,15 +1741,13 @@ window.stopAutoMode = stopAutoMode;
 window.toggleAutoMode = toggleAutoMode;
 window.setAutoModeInterval = setAutoModeInterval;
 window.autoGenerateOneCandle = autoGenerateOneCandle;
-console.log('admin.js FULLY loaded - Part 3 to 6D');
+
 /* ============================================================
-   PART 6E-1: CANDLE MODE SWITCH UI
+   PART 6E-1 + 6E-2: CANDLE MODE SWITCH + FIRESTORE + BEHAVIOR
    ============================================================ */
 
-// Global mode state
 window.candleMode = window.candleMode || 'locked';
 
-// Mode descriptions
 window.CANDLE_MODE_INFO = {
   locked:   '<strong>LOCKED:</strong> Admin-er save kora candle user-er kache exact jabe.',
   random:   '<strong>RANDOM:</strong> Prottek candle randomly generate hobe (up/down/neutral).',
@@ -1685,7 +1755,6 @@ window.CANDLE_MODE_INFO = {
   schedule: '<strong>SCHEDULE:</strong> Time-based candle generate hobe (schedule onujayi).'
 };
 
-// Update mode info text
 window.updateCandleModeInfo = function(mode) {
   const infoEl = document.getElementById('candle-mode-info');
   if (!infoEl) {
@@ -1695,7 +1764,6 @@ window.updateCandleModeInfo = function(mode) {
   infoEl.innerHTML = window.CANDLE_MODE_INFO[mode] || '';
 };
 
-// Update active button highlight
 window.updateCandleModeButtons = function(mode) {
   const buttons = document.querySelectorAll('.mode-btn[data-mode]');
   if (!buttons.length) {
@@ -1711,7 +1779,6 @@ window.updateCandleModeButtons = function(mode) {
   });
 };
 
-// Set candle mode (main function)
 window.setCandleMode = function(mode, skipSave) {
   const validModes = ['locked', 'random', 'mixed', 'schedule'];
   if (validModes.indexOf(mode) === -1) {
@@ -1721,60 +1788,48 @@ window.setCandleMode = function(mode, skipSave) {
 
   const oldMode = window.candleMode;
   window.candleMode = mode;
+  window.adminSettings.candleMode = mode;
 
-  // Update UI
   window.updateCandleModeButtons(mode);
   window.updateCandleModeInfo(mode);
 
-  // Log
   console.log('[Mode] Switched: ' + oldMode + ' -> ' + mode);
 
-  // Firestore save (MSG 2-te implement hobe)
-  if (!skipSave && typeof window.saveCandleModeToFirestore === 'function') {
+  if (!skipSave) {
     window.saveCandleModeToFirestore(mode);
   }
 };
 
-// Bind mode button clicks
-window.bindCandleModeButtons = function() {
-  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
-  if (!buttons.length) {
-    console.warn('[Mode] No mode buttons to bind');
-    return;
+window.saveCandleModeToFirestore = async function(mode) {
+  try {
+    if (typeof window.db === 'undefined') {
+      console.warn('[Mode] Firestore db not exposed - skipping save');
+      return;
+    }
+    const { doc: fbDoc, setDoc: fbSetDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    await fbSetDoc(
+      fbDoc(window.db, 'settings', 'global'),
+      { candleMode: mode, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+    console.log('[Mode] Saved to Firestore:', mode);
+  } catch (err) {
+    console.error('[Mode] Firestore save error:', err.message);
   }
-
-  buttons.forEach(function(btn) {
-    // Avoid duplicate listeners
-    if (btn.dataset.modeBound === '1') return;
-    btn.dataset.modeBound = '1';
-
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      const mode = btn.getAttribute('data-mode');
-      console.log('[Mode] Button clicked:', mode);
-      window.setCandleMode(mode);
-    });
-  });
-
-  console.log('[Mode] Bound ' + buttons.length + ' mode buttons');
 };
 
-// Load mode from Firestore (MSG 2-te full implement)
 window.loadCandleModeFromFirestore = async function() {
-  if (typeof firebase === 'undefined' || !firebase.firestore) {
-    console.warn('[Mode] Firebase not ready, using default: locked');
-    window.setCandleMode('locked', true);
-    return;
-  }
-
   try {
-    const doc = await firebase.firestore()
-      .collection('settings')
-      .doc('global')
-      .get();
+    if (typeof window.db === 'undefined') {
+      console.warn('[Mode] Firestore db not exposed - using default');
+      window.setCandleMode('locked', true);
+      return;
+    }
+    const { doc: fbDoc, getDoc: fbGetDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const docSnap = await fbGetDoc(fbDoc(window.db, 'settings', 'global'));
 
-    if (doc.exists) {
-      const data = doc.data();
+    if (docSnap.exists()) {
+      const data = docSnap.data();
       const savedMode = data.candleMode || 'locked';
       console.log('[Mode] Loaded from Firestore:', savedMode);
       window.setCandleMode(savedMode, true);
@@ -1788,16 +1843,49 @@ window.loadCandleModeFromFirestore = async function() {
   }
 };
 
-// Initialize on DOM ready
+window.bindCandleModeButtons = function() {
+  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
+  if (!buttons.length) {
+    console.warn('[Mode] No mode buttons to bind');
+    return;
+  }
+
+  buttons.forEach(function(btn) {
+    if (btn.dataset.modeBound === '1') return;
+    btn.dataset.modeBound = '1';
+
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const mode = btn.getAttribute('data-mode');
+      console.log('[Mode] Button clicked:', mode);
+
+      // CONFLICT RESOLUTION: Auto Mode running hole stop
+      if (window.autoModeActive === true && typeof window.stopAutoMode === 'function') {
+        console.log('[Mode] Auto Mode running - stopping before mode switch');
+        window.stopAutoMode();
+      }
+
+      window.setCandleMode(mode);
+    });
+  });
+
+  console.log('[Mode] Bound ' + buttons.length + ' mode buttons');
+};
+
 window.initCandleModeUI = function() {
   console.log('[Mode] Initializing Mode UI...');
   window.bindCandleModeButtons();
   window.updateCandleModeButtons(window.candleMode);
   window.updateCandleModeInfo(window.candleMode);
   console.log('[Mode] Init complete. Current mode:', window.candleMode);
+
+  setTimeout(function() {
+    if (window.currentAdmin) {
+      window.loadCandleModeFromFirestore();
+    }
+  }, 1500);
 };
 
-// 3-layer binding
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(window.initCandleModeUI, 800);
 });
@@ -1808,3 +1896,13 @@ setTimeout(function() {
     window.initCandleModeUI();
   }
 }, 2500);
+
+/* ============================================================
+   EXPOSE FIRESTORE DB TO WINDOW
+   ============================================================ */
+
+window.db = db;
+window.auth = auth;
+console.log('[Firebase] db + auth exposed to window');
+
+console.log('admin.js FULLY loaded - Part 3 to 6E-2');
