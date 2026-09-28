@@ -1,275 +1,284 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b1220">
-  <title>Admin Panel — Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Panel - Quotex Clone</title>
+  <link rel="stylesheet" href="admin.css?v=6E1">
+
+  <!-- Eruda Mobile Console -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
+  <script>
+    if (window.innerWidth < 900) {
+      eruda.init();
+    }
+  </script>
 </head>
 <body>
 
-  <!-- ========== অ্যাডমিন লগইন ========== -->
-  <div id="admin-login" class="admin-page">
-    <div class="login-card">
-      <div class="login-header">
-        <div class="admin-logo">⚙️</div>
-        <h1>Admin Panel</h1>
-        <p class="login-subtitle">Quotex Clone — Control Center</p>
-      </div>
-      <div class="input-group">
-        <label>Admin Email</label>
-        <input type="email" id="admin-email" placeholder="admin@email.com" autocomplete="off">
-      </div>
-      <div class="input-group">
-        <label>Password</label>
-        <input type="password" id="admin-password" placeholder="••••••••" autocomplete="off">
-      </div>
-      <button id="admin-login-btn" class="btn-primary">লগইন করুন</button>
-      <p id="admin-message"></p>
-      <div class="login-footer">
-        <span class="lock-icon">🔒</span>
-        <span>শুধু অ্যাডমিনের জন্য</span>
-      </div>
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header class="admin-header">
+    <div class="admin-header-left">
+      <h1 class="admin-logo">Quotex <span>Admin</span></h1>
+    </div>
+    <div class="admin-header-right">
+      <span id="admin-user-email" class="admin-user-email">-</span>
+      <button id="admin-logout-btn" class="admin-logout-btn" type="button">Logout</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-box">
+      <h2 class="login-title">Admin Login</h2>
+      <input id="login-email" class="login-input" type="email" placeholder="Email" autocomplete="email">
+      <input id="login-password" class="login-input" type="password" placeholder="Password" autocomplete="current-password">
+      <button id="login-btn" class="login-btn" type="button">Login</button>
+      <div id="login-error" class="login-error"></div>
     </div>
   </div>
 
-  <!-- ========== অ্যাডমিন ড্যাশবোর্ড ========== -->
-  <div id="admin-dashboard" class="admin-page hidden">
+  <!-- ============================================================
+       MAIN PANEL
+       ============================================================ -->
+  <div id="admin-panel" class="admin-panel" style="display:none;">
 
-    <header class="admin-header">
-      <div class="header-left">
-        <div class="admin-logo-sm">⚙️</div>
-        <div>
-          <div class="header-title">Admin Panel</div>
-          <div class="header-subtitle" id="admin-email-display">admin@email.com</div>
-        </div>
-      </div>
-      <button id="admin-logout" class="btn-logout">লগআউট</button>
-    </header>
-
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">মোট ইউজার</div><div class="stat-value" id="stat-users">0</div></div>
-      <div class="stat-card"><div class="stat-label">চলমান ট্রেড</div><div class="stat-value" id="stat-active-trades">0</div></div>
-      <div class="stat-card"><div class="stat-label">পেন্ডিং ডিপোজিট</div><div class="stat-value" id="stat-pending-deposits">0</div></div>
-      <div class="stat-card"><div class="stat-label">পেন্ডিং উইথড্র</div><div class="stat-value" id="stat-pending-withdrawals">0</div></div>
-    </div>
-
+    <!-- TABS -->
     <nav class="admin-tabs">
-      <button class="admin-tab active" data-tab="users">ইউজার</button>
-      <button class="admin-tab" data-tab="trades">ট্রেড</button>
-      <button class="admin-tab" data-tab="deposits">ডিপোজিট</button>
-      <button class="admin-tab" data-tab="withdrawals">উইথড্র</button>
-      <button class="admin-tab" data-tab="markets">📊 মার্কেট</button>
-      <button class="admin-tab" data-tab="candles">🎯 ক্যান্ডেল</button>
-      <button class="admin-tab" data-tab="settings">সেটিংস</button>
+      <button class="admin-tab active" data-tab="markets" type="button">Markets</button>
+      <button class="admin-tab" data-tab="candles" type="button">Candle Scheduler</button>
+      <button class="admin-tab" data-tab="users" type="button">Users</button>
+      <button class="admin-tab" data-tab="trades" type="button">Trades</button>
+      <button class="admin-tab" data-tab="deposits" type="button">Deposits</button>
+      <button class="admin-tab" data-tab="withdrawals" type="button">Withdrawals</button>
+      <button class="admin-tab" data-tab="settings" type="button">Settings</button>
     </nav>
 
-    <div class="admin-content">
-
-      <!-- ইউজার -->
-      <div id="tab-users" class="admin-tab-pane active">
-        <div class="pane-header">
-          <h2>ইউজার ম্যানেজমেন্ট</h2>
-          <button class="btn-refresh" id="refresh-users">🔄 রিফ্রেশ</button>
-        </div>
-        <div id="users-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
+    <!-- ============================================================
+         TAB: MARKETS
+         ============================================================ -->
+    <section id="tab-markets" class="admin-tab-content active">
+      <h2 class="section-title">Markets</h2>
+      <div class="market-form">
+        <input id="market-name" class="admin-input" type="text" placeholder="Market Name (e.g. EUR/USD)">
+        <input id="market-symbol" class="admin-input" type="text" placeholder="Symbol (e.g. EURUSD)">
+        <input id="market-base" class="admin-input" type="number" step="0.00001" placeholder="Base Price">
+        <input id="market-payout" class="admin-input" type="number" placeholder="Payout % (e.g. 85)">
+        <input id="market-winrate" class="admin-input" type="number" placeholder="Win Rate % (e.g. 60)">
+        <button id="market-add-btn" class="admin-btn primary" type="button">Add Market</button>
       </div>
+      <div id="market-list" class="market-list"></div>
+    </section>
 
-      <!-- ট্রেড -->
-      <div id="tab-trades" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>সব ট্রেড</h2>
-          <button class="btn-refresh" id="refresh-trades">🔄 রিফ্রেশ</button>
+    <!-- ============================================================
+         TAB: CANDLE SCHEDULER
+         ============================================================ -->
+    <section id="tab-candles" class="admin-tab-content">
+
+      <!-- ============================================================
+           PART 6E-1: CANDLE MODE SWITCH
+           ============================================================ -->
+      <div class="candle-mode-section">
+        <div class="candle-mode-title">Candle Mode</div>
+        <div class="candle-mode-buttons">
+          <button class="mode-btn" data-mode="locked" type="button">
+            <span class="mode-icon">[L]</span>
+            <span class="mode-label">LOCKED</span>
+          </button>
+          <button class="mode-btn" data-mode="random" type="button">
+            <span class="mode-icon">[R]</span>
+            <span class="mode-label">RANDOM</span>
+          </button>
+          <button class="mode-btn" data-mode="mixed" type="button">
+            <span class="mode-icon">[M]</span>
+            <span class="mode-label">MIXED</span>
+          </button>
+          <button class="mode-btn" data-mode="schedule" type="button">
+            <span class="mode-icon">[S]</span>
+            <span class="mode-label">SCHEDULE</span>
+          </button>
         </div>
-        <div id="trades-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
-      </div>
-
-      <!-- ডিপোজিট -->
-      <div id="tab-deposits" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>ডিপোজিট রিকোয়েস্ট</h2>
-          <button class="btn-refresh" id="refresh-deposits">🔄 রিফ্রেশ</button>
-        </div>
-        <div id="deposits-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
-      </div>
-
-      <!-- উইথড্র -->
-      <div id="tab-withdrawals" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>উইথড্র রিকোয়েস্ট</h2>
-          <button class="btn-refresh" id="refresh-withdrawals">🔄 রিফ্রেশ</button>
-        </div>
-        <div id="withdrawals-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
-      </div>
-
-      <!-- মার্কেট -->
-      <div id="tab-markets" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>মার্কেট ম্যানেজমেন্ট</h2>
-          <button class="btn-refresh" id="refresh-markets">🔄 রিফ্রেশ</button>
-        </div>
-        <div class="add-market-box">
-          <h3>➕ নতুন মার্কেট তৈরি</h3>
-          <div class="add-market-form">
-            <input type="text" id="new-market-name" placeholder="নাম (যেমন: BTC/USD OTC)">
-            <input type="text" id="new-market-symbol" placeholder="সিম্বল (যেমন: BTCOTC)">
-            <input type="number" id="new-market-base" placeholder="শুরুর প্রাইস" value="50000">
-            <button id="create-market-btn" class="btn-primary">তৈরি করুন</button>
-          </div>
-        </div>
-        <div id="markets-list" class="list-container"><p class="loading-text">লোড হচ্ছে...</p></div>
-      </div>
-
-      <!-- ক্যান্ডেল শিডিউলার -->
-      <div id="tab-candles" class="admin-tab-pane">
-        <div class="pane-header">
-          <h2>🎯 ক্যান্ডেল শিডিউলার</h2>
-          <button class="btn-refresh" id="refresh-candles">🔄 রিফ্রেশ</button>
-        </div>
-
-        <div class="candle-market-select">
-          <label>মার্কেট</label>
-          <select id="candle-market-select">
-            <option value="">— মার্কেট বেছে নিন —</option>
-          </select>
-        </div>
-
-        <div class="candle-market-select">
-          <label>Timeframe</label>
-          <select id="candle-timeframe">
-            <option value="5s">5s</option>
-            <option value="1m" selected>1m</option>
-            <option value="5m">5m</option>
-            <option value="15m">15m</option>
-            <option value="1h">1h</option>
-            <option value="4h">4h</option>
-          </select>
-        </div>
-
-        <div class="candle-mode-row">
-          <button class="mode-btn active" data-mode="locked">🔒 Lock</button>
-          <button class="mode-btn" data-mode="random">🎲 Random</button>
-          <button class="mode-btn" data-mode="mixed">⏯ Mixed</button>
-          <button class="mode-btn" data-mode="schedule">📅 Schedule</button>
-        </div>
-
-        <div class="candle-bulk-box">
-          <h3>⚡ Bulk Generate</h3>
-          <div class="bulk-form">
-            <input type="date" id="bulk-date" title="শুরুর তারিখ">
-            <input type="time" step="1" id="bulk-time" title="শুরুর সময়">
-            <input type="number" id="bulk-count" placeholder="কত ক্যান্ডেল" value="10" min="1" max="500">
-            <input type="number" id="bulk-base" placeholder="বেস প্রাইস" value="50000">
-            <input type="number" id="bulk-up" placeholder="Up min" value="5" min="0">
-            <input type="number" id="bulk-down" placeholder="Down min" value="5" min="0">
-            <input type="number" id="bulk-neutral" placeholder="Neutral min" value="1" min="0">
-            <input type="number" id="bulk-wick" placeholder="Wick" value="20">
-            <input type="number" id="bulk-body" placeholder="Body" value="60">
-            <select id="bulk-size" title="Candle Size">
-              <option value="small">Small Size</option>
-              <option value="medium" selected>Medium Size</option>
-              <option value="large">Large Size</option>
-            </select>
-            <button id="bulk-generate-btn" class="btn-save">জেনারেট করুন</button>
-          </div>
-        </div>
-
-        <div class="playback-row">
-          <button id="play-btn" class="pb-btn pb-play">▶️ Play</button>
-          <button id="pause-btn" class="pb-btn pb-pause">⏸ Pause</button>
-          <button id="skip-btn" class="pb-btn pb-skip">⏭ Skip</button>
-          <button id="back-btn" class="pb-btn pb-back">⏮ Back</button>
-          <button id="reset-btn" class="pb-btn pb-reset">🔄 Reset</button>
-        </div>
-<!-- Playback Status + Speed -->
-        <div class="playback-info-row">
-          <div class="playback-status" id="playback-status">Candle 0 / 0</div>
-          <select id="playback-speed" class="playback-speed-select">
-            <option value="500">0.5s (Fast)</option>
-            <option value="1000" selected>1s (Normal)</option>
-            <option value="2000">2s (Slow)</option>
-            <option value="3000">3s (Very Slow)</option>
-          </select>
-        </div>
-
-        <div class="save-export-row">
-          <button id="save-candles-btn" class="btn-save">💾 Save All</button>
-          <button id="clear-candles-btn" class="btn-reject" onclick="window.clearCandles && window.clearCandles()">🗑 Clear</button>
-          <button id="export-candles-btn" class="btn-save">📤 Export</button>
-          <button id="import-candles-btn" class="btn-save">📥 Import</button>
-          <input type="file" id="import-candles-file" accept=".json" hidden>
-        </div>
-
-        <div class="candle-table-wrapper">
-          <table class="candle-table">
-            <thead>
-              <tr>
-                <th>#</th><th>Date</th><th>Time</th><th>TF</th>
-                <th>Open</th><th>High</th><th>Low</th><th>Close</th>
-                <th>Color</th><th>Up</th><th>Down</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="candle-table-body">
-              <tr><td colspan="12" class="empty-text">কোনো ক্যান্ডেল নেই</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <button id="add-candle-btn" class="btn-save" style="margin-top:10px;"
-                onclick="window.addCandle && window.addCandle()">➕ নতুন ক্যান্ডেল</button>
-
-        <div class="candle-preview-box">
-          <h3>👁️ Live Preview</h3>
-          <div id="candle-preview" class="candle-preview">
-            <span class="empty-text">ক্যান্ডেল তৈরি হলে এখানে প্রিভিউ দেখা যাবে</span>
-          </div>
-        </div>
-
-        <div class="candle-preview-box">
-          <h3>📊 Direction Timeline</h3>
-          <div id="direction-timeline" class="direction-timeline">
-            <span class="empty-text">কোনো টাইমলাইন নেই</span>
-          </div>
-        </div>
-
-      </div>
-      <!-- /tab-candles -->
-
-      <!-- সেটিংস -->
-      <div id="tab-settings" class="admin-tab-pane">
-        <div class="pane-header"><h2>গ্লোবাল সেটিংস</h2></div>
-        <div class="settings-container">
-          <div class="setting-item">
-            <label>Win Rate (%)</label>
-            <input type="number" id="win-rate-input" value="50" min="0" max="100">
-            <button id="save-win-rate" class="btn-save">সেভ</button>
-          </div>
-          <div class="setting-item">
-            <label>Payout (%)</label>
-            <input type="number" id="payout-input" value="85" min="0" max="200">
-            <button id="save-payout" class="btn-save">সেভ</button>
-          </div>
-          <div class="setting-item">
-            <label>Auto Mode Interval (মিনিট)</label>
-            <input type="number" id="auto-interval-input" value="5" min="1" max="60">
-            <button id="save-auto-interval" class="btn-save">সেভ</button>
-          </div>
-          <div class="setting-item">
-            <label>Auto Mode</label>
-            <button id="auto-mode-toggle" class="btn-auto">Auto Mode: বন্ধ</button>
-          </div>
+        <div class="candle-mode-info" id="candle-mode-info">
+          <strong>LOCKED:</strong> Admin-er save kora candle user-er kache exact jabe.
         </div>
       </div>
 
-    </div>
-    <!-- /admin-content -->
+      <!-- Market + Timeframe Select -->
+      <div class="candle-controls">
+        <select id="candle-market-select" class="admin-input">
+          <option value="">Select Market</option>
+        </select>
+        <select id="candle-timeframe" class="admin-input">
+          <option value="1m">1 Minute</option>
+          <option value="5m">5 Minutes</option>
+          <option value="15m">15 Minutes</option>
+          <option value="1h">1 Hour</option>
+          <option value="1d">1 Day</option>
+        </select>
+      </div>
+
+      <!-- Bulk Generate -->
+      <div class="bulk-generate">
+        <h3 class="subsection-title">Bulk Generate</h3>
+        <input id="bulk-date" class="admin-input" type="date">
+        <input id="bulk-time" class="admin-input" type="time">
+        <input id="bulk-count" class="admin-input" type="number" placeholder="Count (e.g. 20)">
+        <input id="bulk-base" class="admin-input" type="number" step="0.00001" placeholder="Base Price">
+        <input id="bulk-up" class="admin-input" type="number" placeholder="Up %">
+        <input id="bulk-down" class="admin-input" type="number" placeholder="Down %">
+        <input id="bulk-neutral" class="admin-input" type="number" placeholder="Neutral %">
+        <input id="bulk-wick" class="admin-input" type="number" placeholder="Wick Length">
+        <input id="bulk-body" class="admin-input" type="number" placeholder="Body Size">
+        <input id="bulk-size" class="admin-input" type="number" placeholder="Size (pips)">
+        <button id="bulk-generate-btn" class="admin-btn primary" type="button">Generate</button>
+      </div>
+
+      <!-- Candle Action Buttons -->
+      <div class="candle-actions">
+        <button id="add-candle-btn" class="admin-btn" type="button">+ Add Candle</button>
+        <button id="save-candles-btn" class="admin-btn primary" type="button">Save to Firestore</button>
+        <button id="clear-candles-btn" class="admin-btn danger" type="button">Clear All</button>
+        <button id="refresh-candles" class="admin-btn" type="button">Refresh</button>
+      </div>
+
+      <!-- Export / Import (Part 6F) -->
+      <div class="candle-io">
+        <button id="export-candles-btn" class="admin-btn" type="button">Export JSON</button>
+        <button id="import-candles-btn" class="admin-btn" type="button">Import JSON</button>
+        <input id="import-candles-file" type="file" accept=".json" style="display:none;">
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="playback-controls">
+        <h3 class="subsection-title">Playback</h3>
+        <button id="play-btn" class="admin-btn primary" type="button">Play</button>
+        <button id="pause-btn" class="admin-btn" type="button">Pause</button>
+        <button id="skip-btn" class="admin-btn" type="button">Skip</button>
+        <button id="back-btn" class="admin-btn" type="button">Back</button>
+        <button id="reset-btn" class="admin-btn danger" type="button">Reset</button>
+        <input id="playback-speed" class="admin-input" type="number" placeholder="Speed (ms)" value="1000">
+        <span id="playback-status" class="playback-status">Idle</span>
+      </div>
+
+      <!-- Auto Mode Toggle -->
+      <div class="auto-mode-section">
+        <h3 class="subsection-title">Auto Mode</h3>
+        <label class="switch-label">
+          <input id="auto-mode-toggle" type="checkbox">
+          <span>Auto Generate (Real-Time)</span>
+        </label>
+        <input id="auto-interval-input" class="admin-input" type="number" placeholder="Interval (ms)" value="5000">
+        <button id="save-auto-interval" class="admin-btn" type="button">Save Interval</button>
+      </div>
+
+      <!-- Candle Table -->
+      <div class="candle-table-wrap">
+        <h3 class="subsection-title">Candle List</h3>
+        <table class="candle-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Time</th>
+              <th>O</th>
+              <th>H</th>
+              <th>L</th>
+              <th>C</th>
+              <th>Dir</th>
+              <th>Size</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="candle-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Preview Chart -->
+      <div class="candle-preview-wrap">
+        <h3 class="subsection-title">Preview</h3>
+        <canvas id="candle-preview" width="600" height="200"></canvas>
+      </div>
+
+      <!-- Direction Timeline -->
+      <div class="direction-timeline-wrap">
+        <h3 class="subsection-title">Direction Timeline</h3>
+        <div id="direction-timeline" class="direction-timeline"></div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB: USERS
+         ============================================================ -->
+    <section id="tab-users" class="admin-tab-content">
+      <h2 class="section-title">Users</h2>
+      <div id="users-list" class="users-list"></div>
+    </section>
+
+    <!-- ============================================================
+         TAB: TRADES
+         ============================================================ -->
+    <section id="tab-trades" class="admin-tab-content">
+      <h2 class="section-title">Trades</h2>
+      <div id="trades-list" class="trades-list"></div>
+    </section>
+
+    <!-- ============================================================
+         TAB: DEPOSITS
+         ============================================================ -->
+    <section id="tab-deposits" class="admin-tab-content">
+      <h2 class="section-title">Deposits</h2>
+      <div id="deposits-list" class="deposits-list"></div>
+    </section>
+
+    <!-- ============================================================
+         TAB: WITHDRAWALS
+         ============================================================ -->
+    <section id="tab-withdrawals" class="admin-tab-content">
+      <h2 class="section-title">Withdrawals</h2>
+      <div id="withdrawals-list" class="withdrawals-list"></div>
+    </section>
+
+    <!-- ============================================================
+         TAB: SETTINGS
+         ============================================================ -->
+    <section id="tab-settings" class="admin-tab-content">
+      <h2 class="section-title">Settings</h2>
+
+      <div class="settings-group">
+        <label class="settings-label">Win Rate (%)</label>
+        <input id="win-rate-input" class="admin-input" type="number" placeholder="60">
+        <button id="save-win-rate" class="admin-btn primary" type="button">Save</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Payout (%)</label>
+        <input id="payout-input" class="admin-input" type="number" placeholder="85">
+        <button id="save-payout" class="admin-btn primary" type="button">Save</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Auto Interval (ms)</label>
+        <input id="auto-interval-input-settings" class="admin-input" type="number" placeholder="5000">
+        <button id="save-auto-interval-settings" class="admin-btn primary" type="button">Save</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Win Rate Target (%)</label>
+        <input id="win-rate-target" class="admin-input" type="number" placeholder="60">
+        <button id="save-win-rate-target" class="admin-btn primary" type="button">Save</button>
+      </div>
+    </section>
 
   </div>
-  <!-- /admin-dashboard -->
 
-  <script type="module" src="admin.js"></script>
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <script type="module" src="admin.js?v=6E1"></script>
+
 </body>
 </html>
