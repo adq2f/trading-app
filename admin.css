@@ -2138,3 +2138,116 @@ div#candle-preview .empty-text {
     height: 400px;
   }
 }
+/* ============================================
+   MSG 18: Admin Tournament Styles
+   ============================================ */
+
+.tour-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tour-admin-item {
+  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tour-admin-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f0b90b, #ff9800);
+}
+
+.tour-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #1a2436;
+}
+
+.tour-admin-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.tour-admin-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tour-admin-badge.live {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.4);
+}
+
+.tour-admin-badge.upcoming {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+  border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.tour-admin-badge.finished {
+  background: rgba(107, 122, 144, 0.15);
+  color: #8b98ab;
+  border: 1px solid rgba(107, 122, 144, 0.3);
+}
+
+.tour-admin-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.tour-admin-info span {
+  color: #8b98ab;
+}
+
+.tour-admin-info strong {
+  color: #e6edf3;
+  font-weight: 700;
+}
+
+.tour-admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tour-admin-actions .btn-action {
+  flex: 1;
+  min-width: 70px;
+}
+
+/* ===== Admin Tour Delete ===== */
+.tour-admin-del {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  color: #fff;
+}
+
+.tour-admin-tog {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: #fff;
+}
+
+.tour-admin-fin {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+}
