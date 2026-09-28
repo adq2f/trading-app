@@ -1,5 +1,5 @@
 // Admin Panel - admin.js
-// Part 3 to 6E-3 Fix Complete
+// Part 3 to 6E-3-Fix3 Complete
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -49,6 +49,10 @@ window.adminSettings = {
 
 console.log('[Settings] adminSettings initialized:', window.adminSettings);
 
+/* ============================================================
+   ELEMENT REFERENCES (with ID fallbacks for both conventions)
+   ============================================================ */
+
 const adminLogin = document.getElementById("admin-login") || document.getElementById("login-screen");
 const adminDashboard = document.getElementById("admin-dashboard") || document.getElementById("admin-panel");
 const adminEmailInput = document.getElementById("admin-email") || document.getElementById("login-email");
@@ -70,7 +74,7 @@ const usersList = document.getElementById("users-list");
 const tradesList = document.getElementById("trades-list");
 const depositsList = document.getElementById("deposits-list");
 const withdrawalsList = document.getElementById("withdrawals-list");
-const marketsList = document.getElementById("markets-list");
+const marketsList = document.getElementById("markets-list") || document.getElementById("market-list");
 
 const refreshUsers = document.getElementById("refresh-users");
 const refreshTrades = document.getElementById("refresh-trades");
@@ -78,10 +82,13 @@ const refreshDeposits = document.getElementById("refresh-deposits");
 const refreshWithdrawals = document.getElementById("refresh-withdrawals");
 const refreshMarkets = document.getElementById("refresh-markets");
 
-const newMarketName = document.getElementById("new-market-name");
-const newMarketSymbol = document.getElementById("new-market-symbol");
-const newMarketBase = document.getElementById("new-market-base");
-const createMarketBtn = document.getElementById("create-market-btn");
+// Market form — dual ID support
+const newMarketName = document.getElementById("new-market-name") || document.getElementById("market-name");
+const newMarketSymbol = document.getElementById("new-market-symbol") || document.getElementById("market-symbol");
+const newMarketBase = document.getElementById("new-market-base") || document.getElementById("market-base");
+const newMarketPayout = document.getElementById("market-payout");
+const newMarketWinrate = document.getElementById("market-winrate");
+const createMarketBtn = document.getElementById("create-market-btn") || document.getElementById("market-add-btn");
 
 const winRateInput = document.getElementById("win-rate-input");
 const saveWinRateBtn = document.getElementById("save-win-rate");
@@ -100,6 +107,10 @@ let marketsUnsub = null;
 let currentWinRate = 50;
 let currentPayout = 85;
 let currentAutoInterval = 5;
+
+/* ============================================================
+   LOGIN BUTTON
+   ============================================================ */
 
 if (adminLoginBtn) {
   adminLoginBtn.addEventListener("click", async () => {
@@ -138,17 +149,15 @@ if (adminLogoutBtn) {
 }
 
 /* ============================================================
-   AUTH STATE LISTENER (NULL-SAFE) - Fix for classList error
+   AUTH STATE LISTENER (NULL-SAFE)
    ============================================================ */
 
 onAuthStateChanged(auth, async (user) => {
-  // Safe element references (supports both naming conventions)
   const loginEl = document.getElementById("login-screen") || document.getElementById("admin-login");
   const panelEl = document.getElementById("admin-panel") || document.getElementById("admin-dashboard");
   const emailInputEl = document.getElementById("login-email") || document.getElementById("admin-email");
   const passInputEl = document.getElementById("login-password") || document.getElementById("admin-password");
   const emailDisplayEl = document.getElementById("admin-user-email") || document.getElementById("admin-email-display");
-  const logoutBtnEl = document.getElementById("admin-logout-btn") || document.getElementById("admin-logout");
 
   function showLogin() {
     if (loginEl) {
@@ -214,6 +223,10 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+/* ============================================================
+   TABS
+   ============================================================ */
+
 adminTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     adminTabs.forEach(t => t.classList.remove("active"));
@@ -230,11 +243,17 @@ if (refreshDeposits) refreshDeposits.addEventListener("click", () => loadDeposit
 if (refreshWithdrawals) refreshWithdrawals.addEventListener("click", () => loadWithdrawals());
 if (refreshMarkets) refreshMarkets.addEventListener("click", () => loadMarkets());
 
+/* ============================================================
+   MARKET CREATE
+   ============================================================ */
+
 if (createMarketBtn) {
   createMarketBtn.addEventListener("click", async () => {
     const name = newMarketName.value.trim();
     const symbol = newMarketSymbol.value.trim().toUpperCase();
     const base = parseFloat(newMarketBase.value) || 50000;
+    const payout = newMarketPayout ? (parseInt(newMarketPayout.value) || currentPayout) : currentPayout;
+    const winRate = newMarketWinrate ? (parseInt(newMarketWinrate.value) || currentWinRate) : currentWinRate;
     if (!name || !symbol) {
       alert("Name and symbol required");
       return;
@@ -244,22 +263,32 @@ if (createMarketBtn) {
       await setDoc(doc(db, "markets", marketId), {
         id: marketId, name: name, symbol: symbol,
         basePrice: base, currentPrice: base,
-        enabled: true, payout: currentPayout, winRate: currentWinRate,
-        candleMode: "random", currentCandleIndex: 0,
+        enabled: true, payout: payout, winRate: winRate,
+        candleMode: window.candleMode || "locked",
+        currentCandleIndex: 0,
         autoModeInterval: currentAutoInterval,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
       newMarketName.value = "";
       newMarketSymbol.value = "";
-      newMarketBase.value = "50000";
+      newMarketBase.value = "";
+      if (newMarketPayout) newMarketPayout.value = "";
+      if (newMarketWinrate) newMarketWinrate.value = "";
       alert(name + " created!");
     } catch (err) { alert(err.message); }
   });
 }
 
+/* ============================================================
+   MARKETS LIST
+   ============================================================ */
+
 function loadMarkets() {
-  if (!marketsList) return;
+  if (!marketsList) {
+    console.warn('[Markets] marketsList element not found');
+    return;
+  }
   marketsList.innerHTML = '<p class="loading-text">Loading...</p>';
   if (marketsUnsub) marketsUnsub();
   marketsUnsub = onSnapshot(collection(db, "markets"), (snap) => {
@@ -274,6 +303,7 @@ function loadMarkets() {
     markets.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     markets.forEach(m => renderMarketItem(m));
     updateCandleMarketSelect(markets);
+    console.log('[Markets] Loaded', markets.length, 'markets');
   });
 }
 
@@ -375,6 +405,10 @@ function updateCandleMarketSelect(markets) {
   if (current) sel.value = current;
 }
 
+/* ============================================================
+   STATS
+   ============================================================ */
+
 async function loadStats() {
   try {
     const usersSnap = await getDocs(collection(db, "users"));
@@ -387,6 +421,10 @@ async function loadStats() {
     if (statPendingWithdrawals) statPendingWithdrawals.textContent = withdrawalsSnap.size;
   } catch (err) { console.error("Stats error:", err); }
 }
+
+/* ============================================================
+   USERS
+   ============================================================ */
 
 function loadUsers() {
   if (!usersList) return;
@@ -464,6 +502,10 @@ async function toggleBan(uid, isBanned) {
     alert(action + " done");
   } catch (err) { alert(err.message); }
 }
+
+/* ============================================================
+   TRADES
+   ============================================================ */
 
 function loadTrades() {
   if (!tradesList) return;
@@ -556,6 +598,10 @@ async function forceTradeResult(tradeId, result) {
   } catch (err) { alert(err.message); }
 }
 
+/* ============================================================
+   DEPOSITS
+   ============================================================ */
+
 function loadDeposits() {
   if (!depositsList) return;
   depositsList.innerHTML = '<p class="loading-text">Loading...</p>';
@@ -637,6 +683,10 @@ async function rejectDeposit(depositId) {
     loadStats();
   } catch (err) { alert(err.message); }
 }
+
+/* ============================================================
+   WITHDRAWALS
+   ============================================================ */
 
 function loadWithdrawals() {
   if (!withdrawalsList) return;
@@ -720,6 +770,10 @@ async function rejectWithdrawal(wid) {
     loadStats();
   } catch (err) { alert(err.message); }
 }
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
 
 async function loadSettings() {
   try {
@@ -1594,7 +1648,6 @@ function autoGenerateOneCandle() {
 
   const mode = window.candleMode || 'locked';
 
-  // LOCKED mode disables auto generation
   if (mode === 'locked') {
     console.warn('Auto: LOCKED mode - auto generation stopped');
     stopAutoMode();
@@ -1617,7 +1670,6 @@ function autoGenerateOneCandle() {
   const idx = window.candleList.length;
   let direction = 'up';
 
-  // MODE BEHAVIOR
   if (mode === 'random') {
     const r = Math.random();
     if (r < 0.45) direction = 'up';
@@ -1894,7 +1946,6 @@ window.bindCandleModeButtons = function() {
       const mode = btn.getAttribute('data-mode');
       console.log('[Mode] Button clicked:', mode);
 
-      // CONFLICT RESOLUTION: Auto Mode running hole stop
       if (window.autoModeActive === true && typeof window.stopAutoMode === 'function') {
         console.log('[Mode] Auto Mode running - stopping before mode switch');
         window.stopAutoMode();
@@ -1939,4 +1990,4 @@ setTimeout(function() {
 window.db = db;
 window.auth = auth;
 console.log('[Firebase] db + auth exposed to window');
-console.log('admin.js FULLY loaded - Part 3 to 6E-3-Fix');
+console.log('admin.js FULLY loaded - Part 3 to 6E-3-Fix3');
