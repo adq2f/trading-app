@@ -1,12 +1,9 @@
-// ============================================
-// Quotex Clone — app.js
-// Part 1: Imports + Firebase + DOM + Globals + Sounds
-// ============================================
+// Admin Panel - admin.js
+// Part 3 to 6E-3-Fix3 Complete
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
+import {
+  getAuth,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut
@@ -14,19 +11,18 @@ import {
 import {
   getFirestore,
   doc,
-  setDoc,
   getDoc,
-  getDocs,
+  setDoc,
   updateDoc,
+  deleteDoc,
   collection,
-  addDoc,
+  getDocs,
   query,
-  where,
+    where,
   onSnapshot,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ===== Firebase Config =====
 const firebaseConfig = {
   apiKey: "AIzaSyDSHI9UELxtQe0jrApkjg_F46LwKuG-vns",
   authDomain: "trading-app-b2b27.firebaseapp.com",
@@ -40,3887 +36,2738 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ===== DOM Elements =====
-const loginPage = document.getElementById("login-page");
-const dashboardPage = document.getElementById("dashboard-page");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const loginBtn = document.getElementById("login-btn");
-const signupBtn = document.getElementById("signup-btn");
-const logoutBtn = document.getElementById("logout-btn");
-const message = document.getElementById("message");
+/* ============================================================
+   PART 6E-2: SINGLE SOURCE OF TRUTH — adminSettings
+   ============================================================ */
 
-// Balance
-const balanceEl = document.getElementById("balance");
-const balanceChip = document.getElementById("balance-chip");
-const balancePopup = document.getElementById("balance-popup");
-const balancePopupClose = document.getElementById("balance-popup-close");
-const balancePopupOverlay = document.getElementById("balance-popup-overlay");
-const balancePopupValue = document.getElementById("balance-popup-value");
+window.adminSettings = {
+  winRate: 50,
+  payout: 85,
+  candleMode: 'locked',
+  autoMode: false,
+  autoModeInterval: 5000
+};
 
-// Account Popup
-const accountPopup = document.getElementById("account-popup");
-const accountPopupOverlay = document.getElementById("account-popup-overlay");
-const accountPopupClose = document.getElementById("account-popup-close");
-const accountToggleBtn = document.getElementById("account-toggle");
-const accountOptions = document.querySelectorAll(".account-option");
-const accBtnsPopup = document.querySelectorAll(".acc-btn-popup");
+console.log('[Settings] adminSettings initialized:', window.adminSettings);
 
-// Deposit Popup
-const depositPopup = document.getElementById("deposit-popup");
-const depositPopupOverlay = document.getElementById("deposit-popup-overlay");
-const depositPopupClose = document.getElementById("deposit-popup-close");
-const depositBtn = document.getElementById("deposit-btn");
-const depositAmount = document.getElementById("deposit-amount");
-const depositTxid = document.getElementById("deposit-txid");
-const depositSubmit = document.getElementById("deposit-submit");
-const depositMessage = document.getElementById("deposit-message");
+/* ============================================================
+   ELEMENT REFERENCES (with ID fallbacks for both conventions)
+   ============================================================ */
 
-// Withdraw Popup
-const withdrawPopup = document.getElementById("withdraw-popup");
-const withdrawPopupOverlay = document.getElementById("withdraw-popup-overlay");
-const withdrawPopupClose = document.getElementById("withdraw-popup-close");
-const withdrawBtn = document.getElementById("withdraw-btn");
-const withdrawAmount = document.getElementById("withdraw-amount");
-const withdrawMethod = document.getElementById("withdraw-method");
-const withdrawNumber = document.getElementById("withdraw-number");
-const withdrawSubmit = document.getElementById("withdraw-submit");
-const withdrawMessage = document.getElementById("withdraw-message");
+const adminLogin = document.getElementById("admin-login") || document.getElementById("login-screen");
+const adminDashboard = document.getElementById("admin-dashboard") || document.getElementById("admin-panel");
+const adminEmailInput = document.getElementById("admin-email") || document.getElementById("login-email");
+const adminPasswordInput = document.getElementById("admin-password") || document.getElementById("login-password");
+const adminLoginBtn = document.getElementById("admin-login-btn") || document.getElementById("login-btn");
+const adminMessage = document.getElementById("admin-message") || document.getElementById("login-error");
+const adminEmailDisplay = document.getElementById("admin-email-display") || document.getElementById("admin-user-email");
+const adminLogoutBtn = document.getElementById("admin-logout") || document.getElementById("admin-logout-btn");
 
-// Chart
-const assetSelect = document.getElementById("asset-select");
-const currentPriceEl = document.getElementById("current-price");
-const priceArrowEl = document.getElementById("price-arrow");
-const chartEl = document.getElementById("chart");
-const chartWrapper = document.getElementById("chart-wrapper");
-const drawingCanvas = document.getElementById("drawing-canvas");
+const statUsers = document.getElementById("stat-users");
+const statActiveTrades = document.getElementById("stat-active-trades");
+const statPendingDeposits = document.getElementById("stat-pending-deposits");
+const statPendingWithdrawals = document.getElementById("stat-pending-withdrawals");
 
-// Trade Panel
-const tradeAmountInput = document.getElementById("trade-amount");
-const callBtn = document.getElementById("call-btn");
-const putBtn = document.getElementById("put-btn");
-const tradeMessage = document.getElementById("trade-message");
-const bigTimer = document.getElementById("big-timer");
+const adminTabs = document.querySelectorAll(".admin-tab");
+const tabPanes = document.querySelectorAll(".admin-tab-pane");
 
-// Trades
-const activeTradesList = document.getElementById("active-trades-list");
-const historyList = document.getElementById("history-list");
-const activeCount = document.getElementById("active-count");
+const usersList = document.getElementById("users-list");
+const tradesList = document.getElementById("trades-list");
+const depositsList = document.getElementById("deposits-list");
+const withdrawalsList = document.getElementById("withdrawals-list");
+const marketsList = document.getElementById("markets-list") || document.getElementById("market-list");
 
-// ===== Globals =====
-let currentUser = null;
-let userBalance = 0;
-let currentPrice = 50000;
-let prevPrice = 50000;
-let selectedTime = 60;
-let selectedTimeframe = "1m";
-let selectedAsset = "BTCUSDT";
-let accountType = "demo";
-let activeTradesUnsub = null;
-let historyUnsub = null;
-let activeTradesLocal = [];
-let lastTradeTime = 0;
-let livePriceWS = null;
-let chart = null;
-let candleSeries = null;
-let currentDrawingTool = "cursor";
-let drawings = [];
-let isDrawing = false;
-let drawStartPoint = null;
+const refreshUsers = document.getElementById("refresh-users");
+const refreshTrades = document.getElementById("refresh-trades");
+const refreshDeposits = document.getElementById("refresh-deposits");
+const refreshWithdrawals = document.getElementById("refresh-withdrawals");
+const refreshMarkets = document.getElementById("refresh-markets");
 
-// ===== Sounds (Web Audio API) =====
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// Market form — dual ID support
+const newMarketName = document.getElementById("new-market-name") || document.getElementById("market-name");
+const newMarketSymbol = document.getElementById("new-market-symbol") || document.getElementById("market-symbol");
+const newMarketBase = document.getElementById("new-market-base") || document.getElementById("market-base");
+const newMarketPayout = document.getElementById("market-payout");
+const newMarketWinrate = document.getElementById("market-winrate");
+const createMarketBtn = document.getElementById("create-market-btn") || document.getElementById("market-add-btn");
 
-function playSound(type) {
-  try {
-    if (audioCtx.state === "suspended") audioCtx.resume();
+const winRateInput = document.getElementById("win-rate-input");
+const saveWinRateBtn = document.getElementById("save-win-rate");
+const payoutInput = document.getElementById("payout-input");
+const savePayoutBtn = document.getElementById("save-payout");
+const autoIntervalInput = document.getElementById("auto-interval-input");
+const saveAutoIntervalBtn = document.getElementById("save-auto-interval");
+const autoModeToggle = document.getElementById("auto-mode-toggle");
 
-    if (type === "click") {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.frequency.value = 800;
-      osc.type = "sine";
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
+let currentAdmin = null;
+let usersUnsub = null;
+let tradesUnsub = null;
+let depositsUnsub = null;
+let withdrawalsUnsub = null;
+let marketsUnsub = null;
+let currentWinRate = 50;
+let currentPayout = 85;
+let currentAutoInterval = 5;
 
-    } else if (type === "win") {
-      [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = "sine";
-        const t = audioCtx.currentTime + i * 0.1;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.3);
-      });
+/* ============================================================
+   LOGIN BUTTON
+   ============================================================ */
 
-    } else if (type === "loss") {
-      [392, 329.63, 261.63].forEach((freq, i) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = "sawtooth";
-        const t = audioCtx.currentTime + i * 0.12;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-        osc.start(t);
-        osc.stop(t + 0.35);
-      });
-    }
-  } catch (e) {
-    console.log("Sound error:", e);
-  }
-}
-
-// ===== Result Flash =====
-function showResultFlash(result) {
-  const flash = document.createElement("div");
-  flash.className = `result-flash ${result}`;
-  document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 700);
-}
-
-// ===== Balance Change Animation =====
-function animateBalanceChange(amount) {
-  const chip = balanceChip;
-  if (!chip) return;
-
-  const originalText = chip.querySelector(".balance-amount").textContent;
-
-  if (amount > 0) {
-    chip.style.color = "#00c853";
-    chip.querySelector(".balance-amount").textContent = `+$${amount.toFixed(2)}`;
-  } else {
-    chip.style.color = "#ff5252";
-    chip.querySelector(".balance-amount").textContent = `-$${Math.abs(amount).toFixed(2)}`;
-  }
-
-  setTimeout(() => {
-    chip.style.color = "#00c853";
-    chip.querySelector(".balance-amount").textContent = `$${userBalance.toFixed(2)}`;
-  }, 2000);
-}
-// ============================================
-// Part 2: Auth + Popups + Account + Deposit/Withdraw
-// ============================================
-
-// ===== রেজিস্ট্রেশন =====
-signupBtn.addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
-    return;
-  }
-  if (password.length < 6) {
-    message.textContent = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর";
-    return;
-  }
-
-  try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      email: email,
-      balance: 1000,
-      demoBalance: 1000,
-      realBalance: 0,
-      accountType: "demo",
-      role: "user",
-      createdAt: new Date().toISOString()
-    });
-    message.style.color = "#00c853";
-    message.textContent = "রেজিস্ট্রেশন সফল! ব্যালেন্স $1000";
-  } catch (error) {
-    message.style.color = "#ff5252";
-    message.textContent = error.message;
-  }
-});
-
-// ===== লগইন =====
-loginBtn.addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    message.textContent = "ইমেইল ও পাসওয়ার্ড দিন";
-    return;
-  }
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    message.style.color = "#00c853";
-    message.textContent = "লগইন সফল!";
-  } catch (error) {
-    message.style.color = "#ff5252";
-    message.textContent = error.message;
-  }
-});
-
-// ===== লগআউট =====
-logoutBtn.addEventListener("click", async () => {
-  await signOut(auth);
-});
-
-// ===== পরিমাণ +/− =====
-document.querySelectorAll(".amount-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    let val = parseFloat(tradeAmountInput.value) || 0;
-    if (btn.dataset.action === "plus") val += 5;
-    else val = Math.max(1, val - 5);
-    tradeAmountInput.value = val;
-  });
-});
-
-// ===== এক্সপায়ারি টাইম সিলেকশন =====
-document.querySelectorAll(".time-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedTime = parseInt(btn.dataset.time);
-  });
-});
-
-// ===== টাইমফ্রেম সিলেকশন =====
-document.querySelectorAll(".tf-btn").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedTimeframe = btn.dataset.tf;
-    await loadCandles();
-    if (currentUser) startLivePrice();
-  });
-});
-
-// ===== অ্যাসেট পরিবর্তন =====
-if (assetSelect) {
-  assetSelect.addEventListener("change", async () => {
-    selectedAsset = assetSelect.value;
-    await loadCandles();
-    if (currentUser) startLivePrice();
-  });
-}
-
-// ===== ট্যাব স্যুইচ =====
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-    if (btn.dataset.tab === "active") {
-      document.getElementById("active-trades-list").classList.add("active");
-    } else {
-      document.getElementById("history-list").classList.add("active");
-    }
-  });
-});
-
-// ===== ড্রয়িং টুল সিলেকশন =====
-document.querySelectorAll(".drawing-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const tool = btn.dataset.tool;
-
-    if (tool === "Eraser") {
-      clearAllDrawings();
+if (adminLoginBtn) {
+  adminLoginBtn.addEventListener("click", async () => {
+    const email = adminEmailInput.value.trim();
+    const password = adminPasswordInput.value;
+    if (!email || !password) {
+      adminMessage.textContent = "Email and password required";
       return;
     }
-
-    document.querySelectorAll(".drawing-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentDrawingTool = tool;
-
-    if (tool === "cursor") {
-      drawingCanvas.classList.remove("active");
-    } else {
-      drawingCanvas.classList.add("active");
-    }
-  });
-});
-
-// ============================================
-// POPUP CONTROL
-// ============================================
-
-function openPopup(popup, overlay) {
-  if (!popup) return;
-  popup.classList.remove("hidden");
-  if (overlay) overlay.onclick = () => closePopup(popup);
-}
-
-function closePopup(popup) {
-  if (!popup) return;
-  popup.classList.add("hidden");
-}
-
-// ব্যালেন্স পপআপ
-if (balanceChip) {
-  balanceChip.addEventListener("click", () => {
-    if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-    openPopup(balancePopup, balancePopupOverlay);
-  });
-}
-if (balancePopupClose) balancePopupClose.addEventListener("click", () => closePopup(balancePopup));
-
-// অ্যাকাউন্ট টগল পপআপ
-if (accountToggleBtn) {
-  accountToggleBtn.addEventListener("click", () => {
-    openPopup(accountPopup, accountPopupOverlay);
-  });
-}
-if (accountPopupClose) accountPopupClose.addEventListener("click", () => closePopup(accountPopup));
-
-// ডিপোজিট পপআপ
-if (depositBtn) {
-  depositBtn.addEventListener("click", () => {
-    closePopup(balancePopup);
-    openPopup(depositPopup, depositPopupOverlay);
-  });
-}
-if (depositPopupClose) depositPopupClose.addEventListener("click", () => closePopup(depositPopup));
-
-// উইথড্র পপআপ
-if (withdrawBtn) {
-  withdrawBtn.addEventListener("click", () => {
-    closePopup(balancePopup);
-    openPopup(withdrawPopup, withdrawPopupOverlay);
-  });
-}
-if (withdrawPopupClose) withdrawPopupClose.addEventListener("click", () => closePopup(withdrawPopup));
-
-// ===== অ্যাকাউন্ট টাইপ পরিবর্তন =====
-async function switchAccount(type) {
-  accountType = type;
-
-  document.querySelectorAll(".acc-btn-popup").forEach(b => {
-    b.classList.toggle("active", b.dataset.acc === type);
-  });
-  document.querySelectorAll(".account-option").forEach(b => {
-    b.classList.toggle("active", b.dataset.acc === type);
-  });
-
-  if (!currentUser) return;
-
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
-    const userDoc = await getDoc(userRef);
-
-    if (userDoc.exists()) {
-      const data = userDoc.data();
-      if (type === "demo") {
-        userBalance = data.demoBalance ?? 1000;
-      } else {
-        userBalance = data.realBalance ?? 0;
+    try {
+      adminMessage.style.color = "#2196f3";
+      adminMessage.textContent = "Logging in...";
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+        await signOut(auth);
+        adminMessage.style.color = "#ff5252";
+        adminMessage.textContent = "Not an admin";
+        return;
       }
-      balanceEl.textContent = userBalance.toFixed(2);
-      if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+      adminMessage.style.color = "#00c853";
+      adminMessage.textContent = "Login successful!";
+    } catch (error) {
+      adminMessage.style.color = "#ff5252";
+      adminMessage.textContent = error.message;
     }
+  });
+}
 
-    await updateDoc(userRef, { accountType: type });
-  } catch (err) {
-    console.error("Switch account error:", err);
+if (adminLogoutBtn) {
+  adminLogoutBtn.addEventListener("click", async () => {
+    if (confirm("Logout?")) {
+      await signOut(auth);
+    }
+  });
+}
+
+/* ============================================================
+   AUTH STATE LISTENER (NULL-SAFE)
+   ============================================================ */
+
+onAuthStateChanged(auth, async (user) => {
+  const loginEl = document.getElementById("login-screen") || document.getElementById("admin-login");
+  const panelEl = document.getElementById("admin-panel") || document.getElementById("admin-dashboard");
+  const emailInputEl = document.getElementById("login-email") || document.getElementById("admin-email");
+  const passInputEl = document.getElementById("login-password") || document.getElementById("admin-password");
+  const emailDisplayEl = document.getElementById("admin-user-email") || document.getElementById("admin-email-display");
+
+  function showLogin() {
+    if (loginEl) {
+      loginEl.classList.remove("hidden");
+      loginEl.style.display = "";
+    }
+    if (panelEl) {
+      panelEl.classList.add("hidden");
+      panelEl.style.display = "none";
+    }
+    if (emailInputEl) emailInputEl.value = "";
+    if (passInputEl) passInputEl.value = "";
   }
 
-  closePopup(accountPopup);
-}
-
-if (accBtnsPopup) {
-  accBtnsPopup.forEach(btn => {
-    btn.addEventListener("click", () => switchAccount(btn.dataset.acc));
-  });
-}
-if (accountOptions) {
-  accountOptions.forEach(btn => {
-    btn.addEventListener("click", () => switchAccount(btn.dataset.acc));
-  });
-}
-
-// ===== ডিপোজিট সাবমিট =====
-if (depositSubmit) {
-  depositSubmit.addEventListener("click", async () => {
-    if (!currentUser) return;
-
-    const amount = parseFloat(depositAmount.value);
-    const txid = depositTxid.value.trim();
-
-    if (!amount || amount < 1) {
-      depositMessage.style.color = "#ff5252";
-      depositMessage.textContent = "সর্বনিম্ন $1 দিন";
-      return;
+  function showPanel() {
+    if (loginEl) {
+      loginEl.classList.add("hidden");
+      loginEl.style.display = "none";
     }
-    if (!txid) {
-      depositMessage.style.color = "#ff5252";
-      depositMessage.textContent = "TrxID দিন";
-      return;
+    if (panelEl) {
+      panelEl.classList.remove("hidden");
+      panelEl.style.display = "";
     }
+  }
 
-    try {
-      await addDoc(collection(db, "deposits"), {
-        userId: currentUser.uid,
-        email: currentUser.email,
-        amount: amount,
-        txid: txid,
-        method: "manual",
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-
-      depositMessage.style.color = "#00c853";
-      depositMessage.textContent = "রিকোয়েস্ট পাঠানো হয়েছে!";
-      depositAmount.value = "";
-      depositTxid.value = "";
-
-      setTimeout(() => {
-        closePopup(depositPopup);
-        depositMessage.textContent = "";
-      }, 1500);
-    } catch (err) {
-      depositMessage.style.color = "#ff5252";
-      depositMessage.textContent = err.message;
-    }
-  });
-}
-
-// ===== উইথড্র সাবমিট =====
-if (withdrawSubmit) {
-  withdrawSubmit.addEventListener("click", async () => {
-    if (!currentUser) return;
-
-    const amount = parseFloat(withdrawAmount.value);
-    const method = withdrawMethod.value;
-    const number = withdrawNumber.value.trim();
-
-    if (!amount || amount < 1) {
-      withdrawMessage.style.color = "#ff5252";
-      withdrawMessage.textContent = "সর্বনিম্ন $1 দিন";
-      return;
-    }
-    if (amount > userBalance) {
-      withdrawMessage.style.color = "#ff5252";
-      withdrawMessage.textContent = "পর্যাপ্ত ব্যালেন্স নেই";
-      return;
-    }
-    if (!number) {
-      withdrawMessage.style.color = "#ff5252";
-      withdrawMessage.textContent = "একাউন্ট নাম্বার দিন";
-      return;
-    }
-
-    try {
-      await addDoc(collection(db, "withdrawals"), {
-        userId: currentUser.uid,
-        email: currentUser.email,
-        amount: amount,
-        method: method,
-        number: number,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-
-      withdrawMessage.style.color = "#00c853";
-      withdrawMessage.textContent = "রিকোয়েস্ট পাঠানো হয়েছে!";
-      withdrawAmount.value = "";
-      withdrawNumber.value = "";
-
-      setTimeout(() => {
-        closePopup(withdrawPopup);
-        withdrawMessage.textContent = "";
-      }, 1500);
-    } catch (err) {
-      withdrawMessage.style.color = "#ff5252";
-      withdrawMessage.textContent = err.message;
-    }
-  });
-}
-
-// ===== Auth State পরিবর্তন =====
-onAuthStateChanged(auth, async (user) => {
   if (user) {
-    currentUser = user;
-    loginPage.classList.add("hidden");
-    dashboardPage.classList.remove("hidden");
-    message.textContent = "";
-
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        accountType = data.accountType || "demo";
-        userBalance = accountType === "demo"
-          ? (data.demoBalance ?? data.balance ?? 1000)
-          : (data.realBalance ?? 0);
-        balanceEl.textContent = userBalance.toFixed(2);
-        if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+        showLogin();
+        if (adminMessage) {
+          adminMessage.style.color = "#ff5252";
+          adminMessage.textContent = "Not an admin";
+        }
+        await signOut(auth);
+        return;
       }
+      currentAdmin = user;
+      window.currentAdmin = user;
+      showPanel();
+      if (emailDisplayEl) emailDisplayEl.textContent = user.email;
+
+      loadStats();
+      loadUsers();
+      loadTrades();
+      loadDeposits();
+      loadWithdrawals();
+      loadMarkets();
+      loadSettings();
     } catch (err) {
-      console.error(err);
+      console.error("[Auth] Error:", err);
+      await signOut(auth);
     }
-
-    initChart();
-    await loadCandles();
-    startLivePrice();
-    loadActiveTrades();
-    loadHistory();
-
   } else {
-    currentUser = null;
-    loginPage.classList.remove("hidden");
-    dashboardPage.classList.add("hidden");
-    emailInput.value = "";
-    passwordInput.value = "";
-    stopLivePrice();
-    if (activeTradesUnsub) activeTradesUnsub();
-    if (historyUnsub) historyUnsub();
-    activeTradesLocal = [];
+    currentAdmin = null;
+    window.currentAdmin = null;
+    showLogin();
+    if (usersUnsub) usersUnsub();
+    if (tradesUnsub) tradesUnsub();
+    if (depositsUnsub) depositsUnsub();
+    if (withdrawalsUnsub) withdrawalsUnsub();
+    if (marketsUnsub) marketsUnsub();
   }
 });
-// ============================================
-// Part 3: Chart Init + Candles + WebSocket
-// ============================================
 
-// ===== Lightweight Chart তৈরি =====
-function initChart() {
-  if (!chartEl) return;
-
-  chartEl.innerHTML = "";
-
-  if (chart) {
-    try { chart.remove(); } catch (e) {}
-    chart = null;
-  }
-
-  const wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 290;
-
-  chart = LightweightCharts.createChart(chartEl, {
-    width: chartEl.clientWidth,
-    height: wrapperHeight,
-    layout: {
-      background: { color: "#0a0f1a" },
-      textColor: "#8b98ab",
-      fontSize: 11
-    },
-    grid: {
-      vertLines: { color: "#131a26" },
-      horzLines: { color: "#131a26" }
-    },
-    crosshair: {
-      mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: {
-        color: "#58a6ff",
-        width: 1,
-        style: 2,
-        labelBackgroundColor: "#1f6feb"
-      },
-      horzLine: {
-        color: "#58a6ff",
-        width: 1,
-        style: 2,
-        labelBackgroundColor: "#1f6feb"
-      }
-    },
-    rightPriceScale: {
-      borderColor: "#1f2a3d",
-      scaleMargins: { top: 0.1, bottom: 0.1 }
-    },
-    timeScale: {
-      borderColor: "#1f2a3d",
-      timeVisible: true,
-      secondsVisible: true
-    },
-    handleScroll: {
-      mouseWheel: true,
-      pressedMouseMove: true,
-      horzTouchDrag: true,
-      vertTouchDrag: false
-    },
-    handleScale: {
-      axisPressedMouseMove: true,
-      mouseWheel: true,
-      pinch: true
-    }
-  });
-
-  candleSeries = chart.addCandlestickSeries({
-    upColor: "#00c853",
-    downColor: "#ff5252",
-    borderUpColor: "#00c853",
-    borderDownColor: "#ff5252",
-    wickUpColor: "#00c853",
-    wickDownColor: "#ff5252"
-  });
-
-  // চার্টে পরিবর্তন হলে ড্রয়িং আবার আঁকা
-  chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-    if (typeof redrawDrawings === "function") {
-      redrawDrawings();
-    }
-  });
-
-  // ড্রয়িং সিস্টেম ইনিশিয়ালাইজ
-  if (typeof initDrawingSystem === "function") {
-    initDrawingSystem();
-  }
-
-  // রিসাইজ হ্যান্ডলার
-  window.addEventListener("resize", () => {
-    if (chart && chartWrapper) {
-      chart.applyOptions({
-        width: chartEl.clientWidth,
-        height: chartWrapper.clientHeight
-      });
-      if (typeof resizeDrawingCanvas === "function") {
-        resizeDrawingCanvas();
-      }
-    }
-  });
-}
-
-// ===== Timeframe Convert =====
-function convertTimeframe(tf) {
-  const map = {
-    "5s": "5s",
-    "10s": "10s",
-    "15s": "15s",
-    "30s": "30s",
-    "1m": "1m",
-    "5m": "5m",
-    "15m": "15m",
-    "1h": "1h",
-    "4h": "4h"
-  };
-  return map[tf] || "1m";
-}
-
-// ===== Binance থেকে ক্যান্ডেল লোড =====
-async function loadCandles() {
-  try {
-    const interval = convertTimeframe(selectedTimeframe);
-    const limit = interval.includes("s") ? 200 : 150;
-
-    const url = `https://api.binance.com/api/v3/klines?symbol=${selectedAsset}&interval=${interval}&limit=${limit}`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!Array.isArray(data)) {
-      console.error("Binance error:", data);
-      return;
-    }
-
-    const candleData = data.map(k => ({
-      time: Math.floor(k[0] / 1000),
-      open: parseFloat(k[1]),
-      high: parseFloat(k[2]),
-      low: parseFloat(k[3]),
-      close: parseFloat(k[4])
-    }));
-
-    if (candleSeries) {
-      candleSeries.setData(candleData);
-      chart.timeScale().fitContent();
-    }
-
-    if (candleData.length > 0) {
-      currentPrice = candleData[candleData.length - 1].close;
-      prevPrice = currentPrice;
-      currentPriceEl.textContent = currentPrice.toFixed(2);
-    }
-
-  } catch (err) {
-    console.error("Candle load error:", err);
-  }
-}
-
-// ===== WebSocket লাইভ প্রাইস =====
-function startLivePrice() {
-  stopLivePrice();
-
-  const interval = convertTimeframe(selectedTimeframe);
-  const streamName = selectedAsset.toLowerCase() + "@kline_" + interval;
-  const url = `wss://stream.binance.com:9443/ws/${streamName}`;
-
-  try {
-    livePriceWS = new WebSocket(url);
-
-    livePriceWS.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (!msg.k) return;
-
-        const k = msg.k;
-        const price = parseFloat(k.c);
-
-        prevPrice = currentPrice;
-        currentPrice = price;
-
-        currentPriceEl.textContent = currentPrice.toFixed(2);
-
-        if (currentPrice >= prevPrice) {
-          currentPriceEl.style.color = "#00c853";
-          priceArrowEl.textContent = "▲";
-          priceArrowEl.className = "price-arrow up";
-        } else {
-          currentPriceEl.style.color = "#ff5252";
-          priceArrowEl.textContent = "▼";
-          priceArrowEl.className = "price-arrow down";
-        }
-
-        if (candleSeries) {
-          candleSeries.update({
-            time: Math.floor(k.t / 1000),
-            open: parseFloat(k.o),
-            high: parseFloat(k.h),
-            low: parseFloat(k.l),
-            close: parseFloat(k.c)
-          });
-        }
-
-        checkExpiredTrades();
-        updateBigTimer();
-
-      } catch (err) {
-        // Silent
-      }
-    };
-
-    livePriceWS.onerror = () => {};
-
-    livePriceWS.onclose = () => {
-      setTimeout(() => {
-        if (currentUser) startLivePrice();
-      }, 3000);
-    };
-
-  } catch (e) {
-    console.log("WS init error:", e);
-  }
-}
-
-function stopLivePrice() {
-  if (livePriceWS) {
-    try { livePriceWS.close(); } catch (e) {}
-    livePriceWS = null;
-  }
-}
-
-// ===== প্রাইস ফরম্যাট =====
-function formatPrice(price) {
-  if (!price && price !== 0) return "0.00";
-  if (price >= 1000) return price.toFixed(2);
-  if (price >= 1) return price.toFixed(3);
-  return price.toFixed(5);
-}
-// ============================================
-// Part 4: Drawing System (Canvas-based)
-// ============================================
-
-let drawingCtx = null;
-
-// ===== ড্রয়িং সিস্টেম ইনিশিয়ালাইজ =====
-function initDrawingSystem() {
-  if (!drawingCanvas || !chart || !candleSeries) return;
-
-  drawingCtx = drawingCanvas.getContext("2d");
-  resizeDrawingCanvas();
-
-  // টাচ/মাউস ইভেন্ট
-  drawingCanvas.addEventListener("touchstart", handleDrawStart, { passive: false });
-  drawingCanvas.addEventListener("touchmove", handleDrawMove, { passive: false });
-  drawingCanvas.addEventListener("touchend", handleDrawEnd, { passive: false });
-
-  drawingCanvas.addEventListener("mousedown", handleDrawStart);
-  drawingCanvas.addEventListener("mousemove", handleDrawMove);
-  drawingCanvas.addEventListener("mouseup", handleDrawEnd);
-
-  // Chart scroll/zoom হলে redraw
-  chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-    redrawDrawings();
-  });
-}
-
-// ===== ক্যানভাস সাইজ =====
-function resizeDrawingCanvas() {
-  if (!drawingCanvas || !chartWrapper) return;
-  const rect = chartWrapper.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-
-  drawingCanvas.width = rect.width * dpr;
-  drawingCanvas.height = rect.height * dpr;
-  drawingCanvas.style.width = rect.width + "px";
-  drawingCanvas.style.height = rect.height + "px";
-
-  if (drawingCtx) {
-    drawingCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-
-  redrawDrawings();
-}
-
-// ===== পয়েন্ট কনভার্ট =====
-function getCanvasPoint(event) {
-  const rect = drawingCanvas.getBoundingClientRect();
-  let clientX, clientY;
-
-  if (event.touches && event.touches.length > 0) {
-    clientX = event.touches[0].clientX;
-    clientY = event.touches[0].clientY;
-  } else if (event.changedTouches && event.changedTouches.length > 0) {
-    clientX = event.changedTouches[0].clientX;
-    clientY = event.changedTouches[0].clientY;
-  } else {
-    clientX = event.clientX;
-    clientY = event.clientY;
-  }
-
-  return {
-    x: clientX - rect.left,
-    y: clientY - rect.top
-  };
-}
-
-// ===== পিক্সেল → প্রাইস/টাইম =====
-function pixelToData(x, y) {
-  if (!chart || !candleSeries) return null;
-
-  try {
-    const time = chart.timeScale().coordinateToTime(x);
-    const price = candleSeries.coordinateToPrice(y);
-
-    if (time === null || price === null) return null;
-
-    return { time, price, x, y };
-  } catch (e) {
-    return null;
-  }
-}
-
-function dataToPixel(time, price) {
-  if (!chart || !candleSeries) return null;
-
-  try {
-    const x = chart.timeScale().timeToCoordinate(time);
-    const y = candleSeries.priceToCoordinate(price);
-
-    if (x === null || y === null) return null;
-
-    return { x, y };
-  } catch (e) {
-    return null;
-  }
-}
-
-// ===== ড্রয়িং শুরু =====
-function handleDrawStart(event) {
-  if (currentDrawingTool === "cursor") return;
-  event.preventDefault();
-
-  const point = getCanvasPoint(event);
-  const data = pixelToData(point.x, point.y);
-  if (!data) return;
-
-  isDrawing = true;
-  drawStartPoint = data;
-
-  // Horizontal / Vertical — এক ট্যাপেই শেষ
-  if (currentDrawingTool === "HorizontalLine" || currentDrawingTool === "VerticalLine") {
-    saveDrawing({
-      tool: currentDrawingTool,
-      points: [data]
-    });
-    isDrawing = false;
-    drawStartPoint = null;
-    return;
-  }
-
-  // Text — prompt
-  if (currentDrawingTool === "TextAnnotation") {
-    const text = prompt("লেখা লিখুন:");
-    if (text) {
-      saveDrawing({
-        tool: "TextAnnotation",
-        points: [data],
-        text: text
-      });
-    }
-    isDrawing = false;
-    drawStartPoint = null;
-    return;
-  }
-}
-
-// ===== ড্রয়িং মুভ =====
-function handleDrawMove(event) {
-  if (!isDrawing || !drawStartPoint) return;
-  event.preventDefault();
-
-  const point = getCanvasPoint(event);
-  const data = pixelToData(point.x, point.y);
-  if (!data) return;
-
-  // প্রিভিউ আঁকা
-  redrawDrawings();
-
-  drawPreview({
-    tool: currentDrawingTool,
-    points: [drawStartPoint, data]
-  });
-}
-
-// ===== ড্রয়িং শেষ =====
-function handleDrawEnd(event) {
-  if (!isDrawing || !drawStartPoint) return;
-  event.preventDefault();
-
-  const point = getCanvasPoint(event);
-  const data = pixelToData(point.x, point.y);
-
-  if (data && (Math.abs(data.x - drawStartPoint.x) > 5 || Math.abs(data.y - drawStartPoint.y) > 5)) {
-    saveDrawing({
-      tool: currentDrawingTool,
-      points: [drawStartPoint, data]
-    });
-  }
-
-  isDrawing = false;
-  drawStartPoint = null;
-  redrawDrawings();
-}
-
-// ===== ড্রয়িং সেভ =====
-function saveDrawing(drawing) {
-  drawings.push(drawing);
-  redrawDrawings();
-}
-
-// ===== সব ড্রয়িং মুছুন =====
-function clearAllDrawings() {
-  drawings = [];
-  if (drawingCtx && drawingCanvas) {
-    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-  }
-}
-
-// ===== সব রিড্র =====
-function redrawDrawings() {
-  if (!drawingCtx || !drawingCanvas) return;
-
-  drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-  drawings.forEach(drawing => {
-    drawShape(drawing);
-  });
-}
-
-// ===== প্রিভিউ =====
-function drawPreview(drawing) {
-  if (!drawingCtx) return;
-  drawingCtx.save();
-  drawingCtx.globalAlpha = 0.6;
-  drawShape(drawing);
-  drawingCtx.restore();
-}
-
-// ===== একটি আকার আঁকা =====
-function drawShape(drawing) {
-  if (!drawingCtx) return;
-
-  const { tool, points, text } = drawing;
-  if (!points || points.length === 0) return;
-
-  const color = "#2196f3";
-  const lineWidth = 1.5;
-
-  drawingCtx.strokeStyle = color;
-  drawingCtx.fillStyle = color;
-  drawingCtx.lineWidth = lineWidth;
-  drawingCtx.font = "12px Arial";
-  drawingCtx.textBaseline = "middle";
-
-  if (tool === "HorizontalLine") {
-    const p = dataToPixel(points[0].time, points[0].price);
-    if (!p) return;
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(0, p.y);
-    drawingCtx.lineTo(drawingCanvas.width, p.y);
-    drawingCtx.stroke();
-
-  } else if (tool === "VerticalLine") {
-    const p = dataToPixel(points[0].time, points[0].price);
-    if (!p) return;
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(p.x, 0);
-    drawingCtx.lineTo(p.x, drawingCanvas.height);
-    drawingCtx.stroke();
-
-  } else if (tool === "TextAnnotation") {
-    const p = dataToPixel(points[0].time, points[0].price);
-    if (!p) return;
-    drawingCtx.fillStyle = "#fff";
-    drawingCtx.font = "bold 13px Arial";
-    drawingCtx.fillText(text || "", p.x, p.y);
-
-  } else if (points.length >= 2) {
-    const p1 = dataToPixel(points[0].time, points[0].price);
-    const p2 = dataToPixel(points[1].time, points[1].price);
-    if (!p1 || !p2) return;
-
-    if (tool === "TrendLine") {
-      drawingCtx.beginPath();
-      drawingCtx.moveTo(p1.x, p1.y);
-      drawingCtx.lineTo(p2.x, p2.y);
-      drawingCtx.stroke();
-
-    } else if (tool === "CrossLine") {
-      drawingCtx.beginPath();
-      drawingCtx.moveTo(0, p1.y);
-      drawingCtx.lineTo(drawingCanvas.width, p1.y);
-      drawingCtx.stroke();
-
-      drawingCtx.beginPath();
-      drawingCtx.moveTo(p1.x, 0);
-      drawingCtx.lineTo(p1.x, drawingCanvas.height);
-      drawingCtx.stroke();
-
-    } else if (tool === "Rectangle") {
-      drawingCtx.strokeRect(
-        p1.x,
-        p1.y,
-        p2.x - p1.x,
-        p2.y - p1.y
-      );
-
-    } else if (tool === "Ray") {
-      drawingCtx.beginPath();
-      drawingCtx.moveTo(p1.x, p1.y);
-      drawingCtx.lineTo(p2.x, p2.y);
-      drawingCtx.stroke();
-
-      // তীরের মাথা
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-      const arrowSize = 10;
-      drawingCtx.beginPath();
-      drawingCtx.moveTo(p2.x, p2.y);
-      drawingCtx.lineTo(
-        p2.x - arrowSize * Math.cos(angle - Math.PI / 6),
-        p2.y - arrowSize * Math.sin(angle - Math.PI / 6)
-      );
-      drawingCtx.moveTo(p2.x, p2.y);
-      drawingCtx.lineTo(
-        p2.x - arrowSize * Math.cos(angle + Math.PI / 6),
-        p2.y - arrowSize * Math.sin(angle + Math.PI / 6)
-      );
-      drawingCtx.stroke();
-
-    } else if (tool === "FibRetracement") {
-      drawFibonacci(p1, p2);
-    }
-  }
-}
-
-// ===== Fibonacci =====
-function drawFibonacci(p1, p2) {
-  const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-  const colors = [
-    "#6b7a90", "#ff5252", "#ffb300", "#00c853",
-    "#2196f3", "#9c27b0", "#6b7a90"
-  ];
-
-  const height = p2.y - p1.y;
-  const leftX = Math.min(p1.x, p2.x);
-  const rightX = Math.max(p1.x, p2.x);
-
-  levels.forEach((level, i) => {
-    const y = p1.y + height * level;
-
-    drawingCtx.strokeStyle = colors[i];
-    drawingCtx.lineWidth = 1;
-    drawingCtx.beginPath();
-    drawingCtx.moveTo(leftX, y);
-    drawingCtx.lineTo(rightX, y);
-    drawingCtx.stroke();
-
-    drawingCtx.fillStyle = colors[i];
-    drawingCtx.font = "10px Arial";
-    drawingCtx.fillText(
-      (level * 100).toFixed(1) + "%",
-      rightX + 4,
-      y
-    );
-  });
-}
-// ============================================
-// Part 5: Trade Logic + Timer + History
-// ============================================
-
-// ===== বড় টাইমার =====
-function updateBigTimer() {
-  if (!bigTimer) return;
-
-  if (activeTradesLocal.length === 0) {
-    bigTimer.classList.add("hidden");
-    return;
-  }
-
-  let soonest = activeTradesLocal[0].expiresAt;
-  activeTradesLocal.forEach(t => {
-    if (t.expiresAt < soonest) soonest = t.expiresAt;
-  });
-
-  const remaining = Math.max(0, Math.ceil((soonest - Date.now()) / 1000));
-  const m = Math.floor(remaining / 60);
-  const s = remaining % 60;
-  bigTimer.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  bigTimer.classList.remove("hidden");
-
-  if (remaining <= 5) {
-    bigTimer.style.borderColor = "#ff5252";
-    bigTimer.style.color = "#ff5252";
-  } else {
-    bigTimer.style.borderColor = "#1f6feb";
-    bigTimer.style.color = "#58a6ff";
-  }
-}
-
-// ===== চার্টে ট্রেড মার্কার =====
-function updateTradeMarkers() {
-  if (!candleSeries) return;
-
-  const markers = [];
-
-  activeTradesLocal.forEach((trade) => {
-    if (!trade.entryTime) return;
-    const entryTimeSec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
-
-    markers.push({
-      time: entryTimeSec,
-      position: trade.type === "call" ? "belowBar" : "aboveBar",
-      color: trade.type === "call" ? "#00c853" : "#ff5252",
-      shape: trade.type === "call" ? "arrowUp" : "arrowDown",
-      text: `${trade.type.toUpperCase()} $${trade.amount}`
-    });
-  });
-
-  markers.sort((a, b) => a.time - b.time);
-
-  try {
-    candleSeries.setMarkers(markers);
-  } catch (e) {
-    // ignore marker time error
-  }
-}
-
-// ===== ট্রেড প্লেস =====
-async function placeTrade(type) {
-  if (!currentUser) return;
-
-  const now = Date.now();
-  if (now - lastTradeTime < 500) return;
-  lastTradeTime = now;
-
-  const amount = parseFloat(tradeAmountInput.value);
-
-  if (!amount || amount < 1) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = "সর্বনিম্ন $1 ট্রেড করুন";
-    return;
-  }
-
-  if (amount > userBalance) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = "পর্যাপ্ত ব্যালেন্স নেই";
-    return;
-  }
-
-  playSound("click");
-
-  const entryPrice = currentPrice;
-  const expiresAt = Date.now() + selectedTime * 1000;
-  const entryTime = new Date().toISOString();
-
-  try {
-    const newBalance = userBalance - amount;
-    const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      [balanceField]: newBalance,
-      balance: newBalance
-    });
-
-    userBalance = newBalance;
-    balanceEl.textContent = userBalance.toFixed(2);
-    if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-    animateBalanceChange(-amount);
-
-    await addDoc(collection(db, "trades"), {
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      type: type,
-      amount: amount,
-      entryPrice: entryPrice,
-      expiresAt: expiresAt,
-      entryTime: entryTime,
-      asset: selectedAsset,
-      accountType: accountType,
-      status: "pending",
-      result: null,
-      profit: 0,
-      createdAt: entryTime
-    });
-
-    tradeMessage.style.color = type === "call" ? "#00c853" : "#ff5252";
-    tradeMessage.textContent = `${type.toUpperCase()} $${amount} প্লেস হয়েছে`;
-
-    setTimeout(() => { tradeMessage.textContent = ""; }, 2000);
-
-  } catch (error) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = error.message;
-  }
-}
-
-if (callBtn) callBtn.addEventListener("click", () => placeTrade("call"));
-if (putBtn) putBtn.addEventListener("click", () => placeTrade("put"));
-
-// ===== ট্রেড এক্সপায়ারি =====
-async function checkExpiredTrades() {
-  if (!currentUser) return;
-
-  const now = Date.now();
-
-  for (const trade of activeTradesLocal) {
-    if (trade.expiresAt <= now && trade.status === "pending") {
-      const exitPrice = currentPrice;
-      const entryPrice = trade.entryPrice;
-
-      let result = "loss";
-      if (trade.type === "call" && exitPrice > entryPrice) result = "win";
-      else if (trade.type === "put" && exitPrice < entryPrice) result = "win";
-
-      const payout = 1.85;
-      const profit = result === "win" ? trade.amount * payout : 0;
-
-      try {
-        await updateDoc(doc(db, "trades", trade.id), {
-          status: "completed",
-          result: result,
-          exitPrice: exitPrice,
-          profit: profit,
-          completedAt: new Date().toISOString()
-        });
-
-        if (result === "win") {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          const currentBal = userDoc.data().balance || 0;
-          const newBal = currentBal + profit;
-          const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-
-          await updateDoc(doc(db, "users", currentUser.uid), {
-            [balanceField]: newBal,
-            balance: newBal
-          });
-
-          userBalance = newBal;
-          balanceEl.textContent = userBalance.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-          animateBalanceChange(profit);
-          showResultFlash("win");
-          playSound("win");
-
-          tradeMessage.style.color = "#00c853";
-          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
-        } else {
-          showResultFlash("loss");
-          playSound("loss");
-
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
-        }
-
-        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
-
-      } catch (error) {
-        console.error("Trade expire error:", error);
-      }
-    }
-  }
-}
-
-// ===== অ্যাক্টিভ ট্রেড লোড =====
-function loadActiveTrades() {
-  if (!currentUser) return;
-
-  const q = query(
-    collection(db, "trades"),
-    where("userId", "==", currentUser.uid),
-    where("status", "==", "pending")
-  );
-
-  activeTradesUnsub = onSnapshot(q, (snapshot) => {
-    activeTradesLocal = [];
-    activeTradesList.innerHTML = "";
-
-    if (snapshot.empty) {
-      activeTradesList.innerHTML = '<p class="empty-text">কোনো চলমান ট্রেড নেই</p>';
-      if (activeCount) activeCount.textContent = "0";
-      bigTimer.classList.add("hidden");
-      updateTradeMarkers();
-      return;
-    }
-
-    snapshot.forEach((docSnap) => {
-      const trade = { id: docSnap.id, ...docSnap.data() };
-      activeTradesLocal.push(trade);
-
-      const remaining = Math.max(0, Math.ceil((trade.expiresAt - Date.now()) / 1000));
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      const timeStr = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-
-      const div = document.createElement("div");
-      div.className = `trade-item ${trade.type}`;
-      div.innerHTML = `
-        <div class="trade-info">
-          <span class="trade-type ${trade.type}">${trade.type.toUpperCase()}</span>
-          <span class="trade-time">$${trade.amount} @ ${trade.entryPrice.toFixed(2)}</span>
-        </div>
-        <div class="trade-result pending">${timeStr}</div>
-      `;
-      activeTradesList.appendChild(div);
-    });
-
-    if (activeCount) activeCount.textContent = activeTradesLocal.length;
-    updateBigTimer();
-    updateTradeMarkers();
-  });
-}
-
-// ===== ট্রেড হিস্ট্রি =====
-function loadHistory() {
-  if (!currentUser) return;
-
-  const q = query(
-    collection(db, "trades"),
-    where("userId", "==", currentUser.uid),
-    where("status", "==", "completed")
-  );
-
-  historyUnsub = onSnapshot(q, (snapshot) => {
-    historyList.innerHTML = "";
-
-    if (snapshot.empty) {
-      historyList.innerHTML = '<p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>';
-      return;
-    }
-
-    const trades = [];
-    snapshot.forEach((docSnap) => {
-      trades.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    trades.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-
-    trades.slice(0, 30).forEach((trade) => {
-      const div = document.createElement("div");
-      div.className = `trade-item ${trade.result}`;
-
-      const entryTime = new Date(trade.createdAt).toLocaleTimeString("en-US", {
-        hour: "2-digit", minute: "2-digit"
-      });
-      const exitTime = trade.completedAt
-        ? new Date(trade.completedAt).toLocaleTimeString("en-US", {
-            hour: "2-digit", minute: "2-digit"
-          })
-        : "-";
-
-      div.innerHTML = `
-        <div class="trade-info">
-          <span class="trade-type ${trade.type}">
-            ${trade.type.toUpperCase()} ${trade.result === "win" ? "✓" : "✗"}
-          </span>
-          <span class="trade-time">Entry: $${trade.entryPrice.toFixed(2)} (${entryTime})</span>
-          <span class="trade-time">Exit: $${(trade.exitPrice || 0).toFixed(2)} (${exitTime})</span>
-          <span class="trade-time">Amount: $${trade.amount}</span>
-        </div>
-        <div class="trade-result ${trade.result}">
-          ${trade.result === "win" ? "+$" + trade.profit.toFixed(2) : "-$" + trade.amount.toFixed(2)}
-        </div>
-      `;
-      historyList.appendChild(div);
-    });
-  });
-}
-
-// ===== প্রতি সেকেন্ডে টাইমার আপডেট =====
-setInterval(() => {
-  if (currentUser && activeTradesLocal.length > 0) {
-    updateBigTimer();
-    updateTradeMarkers();
-  }
-}, 1000);
-
-// ============================================
-// UPDATE Part 1: Settings Listen + Admin Force
-// ============================================
-
-// ===== Admin Settings Globals =====
-let adminWinRate = 50;
-let adminPayout = 85;
-let adminForceMarket = 0;
-let adminForceMarketAt = 0;
-let adminAutoMode = false;
-let lastForceMarket = 0;
-let settingsUnsub = null;
-
-// ===== Settings Listen করা (Real-time) =====
-function listenAdminSettings() {
-  if (settingsUnsub) settingsUnsub();
-
-  try {
-    settingsUnsub = onSnapshot(doc(db, "settings", "global"), (snap) => {
-      if (!snap.exists()) return;
-
-      const data = snap.data();
-      adminWinRate = data.winRate ?? 50;
-      adminPayout = data.payout ?? 85;
-      adminAutoMode = data.autoMode ?? false;
-
-      const newForce = data.forceMarket ?? 0;
-      const newForceAt = data.forceMarketAt ?? 0;
-
-      // Force market change ধরা
-      if (newForce !== lastForceMarket && newForceAt > adminForceMarketAt) {
-        const diff = newForce - lastForceMarket;
-        applyMarketForce(diff);
-        lastForceMarket = newForce;
-        adminForceMarketAt = newForceAt;
-      } else {
-        lastForceMarket = newForce;
-        adminForceMarketAt = newForceAt;
-      }
-
-      adminForceMarket = newForce;
-
-      console.log(
-        `⚙️ Admin Settings — WinRate: ${adminWinRate}%, ` +
-        `Payout: ${adminPayout}%, Auto: ${adminAutoMode}, ` +
-        `Force: ${adminForceMarket}`
-      );
-    });
-  } catch (err) {
-    console.error("Settings listen error:", err);
-  }
-}
-
-// ===== Market Force Apply (প্রাইস উপরে/নিচে) =====
-function applyMarketForce(diff) {
-  if (!diff) return;
-
-  // প্রতি force = 50 point মুভ
-  const moveAmount = diff * 50;
-
-  currentPrice += moveAmount;
-  currentPriceEl.textContent = currentPrice.toFixed(2);
-
-  if (moveAmount > 0) {
-    currentPriceEl.style.color = "#00c853";
-    priceArrowEl.textContent = "▲";
-    priceArrowEl.className = "price-arrow up";
-  } else {
-    currentPriceEl.style.color = "#ff5252";
-    priceArrowEl.textContent = "▼";
-    priceArrowEl.className = "price-arrow down";
-  }
-
-  // চার্টে আপডেট
-  if (candleSeries) {
-    const now = Math.floor(Date.now() / 1000);
-    try {
-      candleSeries.update({
-        time: now,
-        open: currentPrice - moveAmount,
-        high: Math.max(currentPrice, currentPrice - moveAmount) + 5,
-        low: Math.min(currentPrice, currentPrice - moveAmount) - 5,
-        close: currentPrice
-      });
-    } catch (e) {
-      // ignore time errors
-    }
-  }
-}
-
-// ===== Auth হলে Settings Listen শুরু =====
-// পুরোনো onAuthStateChanged এর ভিতরে যোগ করতে হবে না।
-// আলাদা করে চেক করি।
-
-setTimeout(() => {
-  if (currentUser) {
-    listenAdminSettings();
-  }
-}, 2000);
-
-// Auth পরিবর্তনে settings listen চালু/বন্ধ
-const originalUserCheck = setInterval(() => {
-  if (currentUser && !settingsUnsub) {
-    listenAdminSettings();
-  }
-  if (!currentUser && settingsUnsub) {
-    settingsUnsub();
-    settingsUnsub = null;
-  }
-}, 3000);
-
-// ============================================
-// UPDATE Part 2: Win Rate + Payout Apply
-// ============================================
-
-// ===== checkExpiredTrades এর Override =====
-// পুরোনো checkExpiredTrades ফাংশন আছে।
-// এখন সেটাকে admin winRate + payout দিয়ে কাজ করাতে হবে।
-
-async function checkExpiredTradesAdmin() {
-  if (!currentUser) return;
-
-  const now = Date.now();
-
-  for (const trade of activeTradesLocal) {
-    if (trade.expiresAt <= now && trade.status === "pending") {
-      const exitPrice = currentPrice;
-      const entryPrice = trade.entryPrice;
-
-      // ===== Trade আগে সত্যিকারের Win/Loss চেক =====
-      let realResult = "loss";
-      if (trade.type === "call" && exitPrice > entryPrice) realResult = "win";
-      else if (trade.type === "put" && exitPrice < entryPrice) realResult = "win";
-
-      // ===== Admin Win Rate Apply =====
-      // যদি adminWinRate = 50 (ডিফল্ট), realResult রেখে দাও
-      // অন্যথায় admin-এর winRate অনুযায়ী random chance
-      let finalResult = realResult;
-
-      // ইউজারের নিজস্ব winRate থাকলে সেটা আগে দেখো
-      let userWinRate = adminWinRate;
-      try {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData.winRate !== undefined && userData.winRate !== null) {
-            userWinRate = userData.winRate;
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      // Admin Win Rate প্রয়োগ
-      const random = Math.random() * 100; // 0-100
-      if (random < userWinRate) {
-        finalResult = "win";
-      } else {
-        finalResult = "loss";
-      }
-
-      // ===== Payout Apply =====
-      const payoutRate = adminPayout / 100 + 1; // 85% → 1.85
-      const profit = finalResult === "win" ? trade.amount * payoutRate : 0;
-
-      try {
-        // ট্রেড আপডেট
-        await updateDoc(doc(db, "trades", trade.id), {
-          status: "completed",
-          result: finalResult,
-          exitPrice: exitPrice,
-          profit: profit,
-          completedAt: new Date().toISOString(),
-          adminProcessed: true
-        });
-
-        if (finalResult === "win") {
-          // ইউজার ব্যালেন্স বাড়াও
-          const userRef = doc(db, "users", currentUser.uid);
-          const userDoc = await getDoc(userRef);
-          const userData = userDoc.data();
-          const balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-          const currentBal = userData[balanceField] ?? 0;
-          const newBal = currentBal + profit;
-
-          await updateDoc(userRef, {
-            [balanceField]: newBal,
-            balance: newBal
-          });
-
-          userBalance = newBal;
-          balanceEl.textContent = userBalance.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-          animateBalanceChange(profit);
-          showResultFlash("win");
-          playSound("win");
-
-          tradeMessage.style.color = "#00c853";
-          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
-
-        } else {
-          showResultFlash("loss");
-          playSound("loss");
-
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
-        }
-
-        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
-
-      } catch (error) {
-        console.error("Admin trade expire error:", error);
-      }
-    }
-  }
-}
-
-// ===== পুরোনো checkExpiredTrades কে ওভাররাইড করা =====
-// Global scope-এ redeclaration করা যাবে না, তাই window-এ সেট করি
-
-window.originalCheckExpired = checkExpiredTrades;
-
-// WebSocket onmessage এবং setInterval এখনো পুরোনো checkExpiredTrades কল করছে।
-// সেটা পরিবর্তন করতে হবে — আমরা একটা নতুন ফাংশন দিয়ে replace করব।
-
-// সব জায়গায় checkExpiredTrades কে update করা যায় না,
-// তাই একটা ট্রিক ব্যবহার করি: regular interval দিয়ে admin version কল করি।
-
-setInterval(() => {
-  if (currentUser && activeTradesLocal.length > 0) {
-    checkExpiredTradesAdmin();
-  }
-}, 1500);
-
-// ===== Payout & Win Rate Admin-Managed =====
-// web socket-এ যেই checkExpiredTrades কল হচ্ছে, সেটা বন্ধ করা যায় না।
-// কিন্তু duplicate trade complete হবে না, কারণ status "completed" হয়ে যাবে।
-
-console.log("✅ Admin Trade Checker চালু হয়েছে");
-
-// ============================================
-// UPDATE Part 3: Market Force + Auto Mode
-// ============================================
-
-// ===== Force Market থেকে প্রাইস ড্রিফট =====
-// Admin ⬆ চাপলে forceMarket = +1, +2, +3 ...
-// Admin ⬇ চাপলে forceMarket = -1, -2, -3 ...
-// Admin 🔄 চাপলে forceMarket = 0
-
-let autoModePriceInterval = null;
-
-function startAutoModeDrift() {
-  if (autoModePriceInterval) {
-    clearInterval(autoModePriceInterval);
-    autoModePriceInterval = null;
-  }
-
-  // প্রতি ১ সেকেন্ডে auto drift চেক
-  autoModePriceInterval = setInterval(() => {
-    if (!adminAutoMode) return;
-    if (!currentUser) return;
-
-    // Auto mode-এ প্রাইস random move হবে — adminForceMarket এর দিকেও ঝোঁক থাকবে
-    let drift = (Math.random() - 0.5) * 40;
-
-    // যদি adminForceMarket পজিটিভ হয় → উপরে ঝোঁক
-    if (adminForceMarket > 0) {
-      drift += Math.random() * 30;
-    }
-    // যদি negative হয় → নিচে ঝোঁক
-    else if (adminForceMarket < 0) {
-      drift -= Math.random() * 30;
-    }
-
-    currentPrice = Math.max(100, currentPrice + drift);
-    currentPriceEl.textContent = currentPrice.toFixed(2);
-
-    if (drift >= 0) {
-      currentPriceEl.style.color = "#00c853";
-      priceArrowEl.textContent = "▲";
-      priceArrowEl.className = "price-arrow up";
-    } else {
-      currentPriceEl.style.color = "#ff5252";
-      priceArrowEl.textContent = "▼";
-      priceArrowEl.className = "price-arrow down";
-    }
-
-    // চার্টে আপডেট
-    if (candleSeries) {
-      const now = Math.floor(Date.now() / 1000);
-      const openP = currentPrice - drift;
-      try {
-        candleSeries.update({
-          time: now,
-          open: openP,
-          high: Math.max(currentPrice, openP) + Math.abs(drift) * 0.5 + 2,
-          low: Math.min(currentPrice, openP) - Math.abs(drift) * 0.5 - 2,
-          close: currentPrice
-        });
-      } catch (e) {
-        // duplicate time ignore
-      }
-    }
-
-    // ট্রেড check
-    updateBigTimer();
-
-  }, 1000);
-}
-
-// ===== Admin Force চেক করার interval =====
-// Part 1 এ settings listener আছে যেটা forceMarket পরিবর্তন ধরবে।
-// এইখানে আমরা শুধু auto mode drift চালু করি।
-
-setInterval(() => {
-  if (currentUser && !autoModePriceInterval) {
-    startAutoModeDrift();
-  }
-  if (!currentUser && autoModePriceInterval) {
-    clearInterval(autoModePriceInterval);
-    autoModePriceInterval = null;
-  }
-}, 2000);
-
-// ===== Admin Win Rate UI-তে দেখানো =====
-function updateAdminInfoBar() {
-  // যদি চাই, ব্যালেন্স চিপের পাশে ছোট করে দেখানো যায়
-  // এখন শুধু console-এ log করি
-  console.log(
-    `[Admin] WinRate: ${adminWinRate}% | ` +
-    `Payout: ${adminPayout}% | ` +
-    `AutoMode: ${adminAutoMode ? "ON" : "OFF"} | ` +
-    `Force: ${adminForceMarket}`
-  );
-}
-
-// প্রতি ৩০ সেকেন্ডে log
-setInterval(() => {
-  if (currentUser) updateAdminInfoBar();
-}, 30000);
-
-// ============================================
-// UPDATE Part 4: Final Integration
-// ============================================
-
-// ===== Settings Listener চালু/বন্ধ — Auth State সাথে =====
-// Part 1-এ যে setInterval ছিল, সেটা যথেষ্ট নয়।
-// এখন নির্ভরযোগ্যভাবে Auth State-এর সাথে bind করি।
-
-const authStateWatcher = setInterval(() => {
-  // User আছে এবং settings listener নেই → চালু করো
-  if (currentUser && !settingsUnsub) {
-    listenAdminSettings();
-  }
-  // User নেই এবং settings listener আছে → বন্ধ করো
-  if (!currentUser && settingsUnsub) {
-    settingsUnsub();
-    settingsUnsub = null;
-  }
-}, 2000);
-
-// ===== WS প্রাইস আপডেটে Force প্রভাব =====
-// পুরোনো WebSocket handler আছে যেটা সত্যিকারের Binance প্রাইস নিয়ে আসে।
-// এখন আমরা adminForceMarket থাকলে সেটার প্রভাব যোগ করি।
-
-// Force market এর সর্বশেষ মান
-let lastKnownForce = 0;
-
-setInterval(() => {
-  // Force পরিবর্তন হলে সাথে সাথে প্রাইসে প্রভাব ফেলো
-  if (adminForceMarket !== lastKnownForce && currentUser) {
-    const diff = adminForceMarket - lastKnownForce;
-    applyMarketForce(diff);
-    lastKnownForce = adminForceMarket;
-  }
-}, 500);
-
-// ===== Trade Expire কে Admin Win Rate দিয়ে প্রয়োগ =====
-// WS handler ভিতরে checkExpiredTrades() কল হচ্ছে।
-// সেটা আমরাও শুনছি Part 2 এ checkExpiredTradesAdmin() দিয়ে।
-// কিন্তু duplicate কল হলে "already completed" হবে — সমস্যা নেই।
-
-// ===== Payout % Dynamic Update =====
-// CALL/PUT বাটনের payout label adminPayout অনুযায়ী আপডেট হবে
-function updatePayoutLabels() {
-  const labels = document.querySelectorAll(".btn-payout");
-  labels.forEach(label => {
-    label.textContent = `+${adminPayout}%`;
-  });
-}
-
-// প্রতি ৫ সেকেন্ডে payout label আপডেট
-setInterval(() => {
-  if (currentUser) updatePayoutLabels();
-}, 5000);
-
-// ===== পেজ লোড হলে admin settings রিফ্রেশ =====
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    if (currentUser) {
-      listenAdminSettings();
-      console.log("✅ Admin Settings লোড হয়েছে");
-    }
-  }, 2500);
-});
-
-// ===== ট্রেড শেষ হলে Settings থেকে Force রিসেট =====
-// Admin যদি Force বাড়ায়, সেটা একটা সময় পর নিজে থেকে 0 হবে না।
-// Admin কেই 🔄 চাপতে হবে।
-
-// কিন্তু আমরা একটা safety mechanism দিই — ৫ মিনিট পরে Force auto reset
-setInterval(async () => {
-  if (!currentUser) return;
-  if (adminForceMarket === 0) return;
-
-  // ৫ মিনিট (300000 ms) আগের force change হলে reset
-  const now = Date.now();
-  if (adminForceMarketAt > 0 && now - adminForceMarketAt > 300000) {
-    try {
-      await setDoc(doc(db, "settings", "global"), {
-        forceMarket: 0,
-        forceMarketAt: Date.now()
-      }, { merge: true });
-      console.log("🔄 Force auto reset (৫ মিনিট)");
-    } catch (e) {
-      // ignore
-    }
-  }
-}, 60000); // প্রতি ১ মিনিটে চেক
-
-// ============================================
-// সব কাজ শেষ — Admin Control এখন ইউজার সাইটে সক্রিয়
-// ============================================
-
-console.log("🎉 Admin Control Integration সম্পূর্ণ!");
 /* ============================================================
-   PART 7A: DYNAMIC MARKET LOAD
-   (Firestore theke admin-er market load)
+   TABS
    ============================================================ */
 
-window.userMarkets = [];
-window.marketsUnsub = null;
-window.selectedMarketId = null;
+adminTabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    adminTabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    tabPanes.forEach(p => p.classList.remove("active"));
+    const target = document.getElementById("tab-" + tab.dataset.tab);
+    if (target) target.classList.add("active");
+  });
+});
 
-/**
- * Firestore theke enabled markets load kore
- */
-async function loadUserMarketsFromFirestore() {
-  try {
-    const snap = await getDocs(collection(db, "markets"));
-    const markets = [];
-    snap.forEach(function(docSnap) {
-      const m = docSnap.data();
-      if (m.enabled === true) {
-        markets.push({
-          id: docSnap.id,
-          name: m.name || "Unknown",
-          symbol: m.symbol || "",
-          basePrice: m.basePrice || 50000,
-          payout: m.payout || 85,
-          winRate: m.winRate || 50,
-          candleMode: m.candleMode || "locked",
-          currentCandleIndex: m.currentCandleIndex || 0
-        });
-      }
-    });
-    markets.sort(function(a, b) {
-      return (a.name || "").localeCompare(b.name || "");
-    });
-    console.log("[Markets] Loaded " + markets.length + " user markets");
-    return markets;
-  } catch (err) {
-    console.error("[Markets] Load error:", err.message);
-    return [];
-  }
+if (refreshUsers) refreshUsers.addEventListener("click", () => loadUsers());
+if (refreshTrades) refreshTrades.addEventListener("click", () => loadTrades());
+if (refreshDeposits) refreshDeposits.addEventListener("click", () => loadDeposits());
+if (refreshWithdrawals) refreshWithdrawals.addEventListener("click", () => loadWithdrawals());
+if (refreshMarkets) refreshMarkets.addEventListener("click", () => loadMarkets());
+
+/* ============================================================
+   MARKET CREATE
+   ============================================================ */
+
+if (createMarketBtn) {
+  createMarketBtn.addEventListener("click", async () => {
+    const name = newMarketName.value.trim();
+    const symbol = newMarketSymbol.value.trim().toUpperCase();
+    const base = parseFloat(newMarketBase.value) || 50000;
+    const payout = newMarketPayout ? (parseInt(newMarketPayout.value) || currentPayout) : currentPayout;
+    const winRate = newMarketWinrate ? (parseInt(newMarketWinrate.value) || currentWinRate) : currentWinRate;
+    if (!name || !symbol) {
+      alert("Name and symbol required");
+      return;
+    }
+    try {
+      const marketId = symbol.toLowerCase() + "_" + Date.now();
+      await setDoc(doc(db, "markets", marketId), {
+        id: marketId, name: name, symbol: symbol,
+        basePrice: base, currentPrice: base,
+        enabled: true, payout: payout, winRate: winRate,
+        candleMode: window.candleMode || "locked",
+        currentCandleIndex: 0,
+        autoModeInterval: currentAutoInterval,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      newMarketName.value = "";
+      newMarketSymbol.value = "";
+      newMarketBase.value = "";
+      if (newMarketPayout) newMarketPayout.value = "";
+      if (newMarketWinrate) newMarketWinrate.value = "";
+      alert(name + " created!");
+    } catch (err) { alert(err.message); }
+  });
 }
 
-/**
- * asset-select element-e markets populate kore
- */
-function populateAssetSelect(markets) {
-  const sel = document.getElementById("asset-select");
-  if (!sel) {
-    console.warn("[Markets] asset-select not found");
+/* ============================================================
+   MARKETS LIST
+   ============================================================ */
+
+function loadMarkets() {
+  if (!marketsList) {
+    console.warn('[Markets] marketsList element not found');
     return;
   }
+  marketsList.innerHTML = '<p class="loading-text">Loading...</p>';
+  if (marketsUnsub) marketsUnsub();
+  marketsUnsub = onSnapshot(collection(db, "markets"), (snap) => {
+    marketsList.innerHTML = "";
+    if (snap.empty) {
+      marketsList.innerHTML = '<p class="loading-text">No markets</p>';
+      updateCandleMarketSelect([]);
+      return;
+    }
+    const markets = [];
+    snap.forEach(d => markets.push({ id: d.id, ...d.data() }));
+    markets.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    markets.forEach(m => renderMarketItem(m));
+    updateCandleMarketSelect(markets);
+    console.log('[Markets] Loaded', markets.length, 'markets');
+  });
+}
 
-  if (!markets || markets.length === 0) {
-    // No markets - show placeholder
-    sel.innerHTML = '<option value="">-- No Markets Available --</option>';
-    console.log("[Markets] No enabled markets to populate");
-    return;
-  }
+function renderMarketItem(market) {
+  const div = document.createElement("div");
+  div.className = "market-item" + (market.enabled ? "" : " disabled");
+  div.dataset.marketId = market.id;
+  const enabledBadge = market.enabled
+    ? '<span class="admin-item-badge badge-win">ACTIVE</span>'
+    : '<span class="admin-item-badge badge-rejected">DISABLED</span>';
+  div.innerHTML = '<div class="market-item-header"><div class="market-item-name">' + (market.name || "no-name") + '</div>' + enabledBadge + '</div>' +
+    '<div class="market-item-info">' +
+      '<span>Symbol: <strong>' + (market.symbol || "-") + '</strong></span>' +
+      '<span>Base: <strong>$' + (market.basePrice || 0).toFixed(2) + '</strong></span>' +
+      '<span>Payout: <strong>' + (market.payout || 85) + '%</strong></span>' +
+      '<span>Win Rate: <strong>' + (market.winRate || 50) + '%</strong></span>' +
+      '<span>Mode: <strong>' + (market.candleMode || "random") + '</strong></span>' +
+      '<span>Candle: <strong>#' + (market.currentCandleIndex || 0) + '</strong></span>' +
+    '</div>' +
+    '<div class="market-item-actions">' +
+      '<button class="btn-action btn-edit" data-action="edit-market" data-mid="' + market.id + '">Edit</button>' +
+      '<button class="btn-action ' + (market.enabled ? 'btn-reject' : 'btn-approve') + '" data-action="toggle-market" data-mid="' + market.id + '" data-enabled="' + market.enabled + '">' + (market.enabled ? "Disable" : "Enable") + '</button>' +
+      '<button class="btn-action btn-reject" data-action="delete-market" data-mid="' + market.id + '">Delete</button>' +
+    '</div>';
+  marketsList.appendChild(div);
+}
 
-  const currentValue = sel.value;
-  sel.innerHTML = "";
+if (marketsList) {
+  marketsList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const mid = btn.dataset.mid;
+    if (!mid) return;
+    if (action === "edit-market") await editMarket(mid);
+    else if (action === "toggle-market") await toggleMarket(mid, btn.dataset.enabled === "true");
+    else if (action === "delete-market") await deleteMarket(mid);
+  });
+}
 
-  markets.forEach(function(m) {
+async function editMarket(mid) {
+  try {
+    const marketDoc = await getDoc(doc(db, "markets", mid));
+    if (!marketDoc.exists()) { alert("Not found"); return; }
+    const m = marketDoc.data();
+    const newName = prompt("Name:", m.name || "");
+    if (newName === null) return;
+    const newPayout = prompt("Payout %:", m.payout || 85);
+    if (newPayout === null) return;
+    const newWinRate = prompt("Win Rate %:", m.winRate || 50);
+    if (newWinRate === null) return;
+    const payoutVal = parseInt(newPayout);
+    const winVal = parseInt(newWinRate);
+    if (isNaN(payoutVal) || payoutVal < 0 || payoutVal > 200) { alert("Payout 0-200"); return; }
+    if (isNaN(winVal) || winVal < 0 || winVal > 100) { alert("Win Rate 0-100"); return; }
+    await updateDoc(doc(db, "markets", mid), {
+      name: newName, payout: payoutVal, winRate: winVal,
+      updatedAt: new Date().toISOString()
+    });
+    alert("Updated");
+  } catch (err) { alert(err.message); }
+}
+
+async function toggleMarket(mid, isEnabled) {
+  const action = isEnabled ? "Disable" : "Enable";
+  if (!confirm(action + "?")) return;
+  try {
+    await updateDoc(doc(db, "markets", mid), {
+      enabled: !isEnabled, updatedAt: new Date().toISOString()
+    });
+    alert(action + " done");
+  } catch (err) { alert(err.message); }
+}
+
+async function deleteMarket(mid) {
+  if (!confirm("Delete this market and all candles?")) return;
+  if (!confirm("Really delete?")) return;
+  try {
+    const candlesSnap = await getDocs(collection(db, "markets", mid, "candles"));
+    for (const c of candlesSnap.docs) {
+      await deleteDoc(doc(db, "markets", mid, "candles", c.id));
+    }
+    await deleteDoc(doc(db, "markets", mid));
+    alert("Deleted");
+  } catch (err) { alert(err.message); }
+}
+
+function updateCandleMarketSelect(markets) {
+  const sel = document.getElementById("candle-market-select");
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- Select Market --</option>';
+  markets.forEach(m => {
     const opt = document.createElement("option");
-    opt.value = m.symbol;
-    opt.textContent = m.name + (m.payout ? " +" + m.payout + "%" : "");
-    opt.dataset.marketId = m.id;
-    opt.dataset.basePrice = m.basePrice;
-    opt.dataset.payout = m.payout;
-    opt.dataset.winRate = m.winRate;
+    opt.value = m.id;
+    opt.textContent = m.name + " (" + m.symbol + ")";
     sel.appendChild(opt);
   });
-
-  // Try to restore previous selection
-  let found = false;
-  for (let i = 0; i < sel.options.length; i++) {
-    if (sel.options[i].value === currentValue) {
-      sel.value = currentValue;
-      found = true;
-      break;
-    }
-  }
-
-  // If previous not found, select first
-  if (!found && sel.options.length > 0) {
-    sel.selectedIndex = 0;
-  }
-
-  // Update global selectedAsset
-  if (sel.value) {
-    selectedAsset = sel.value;
-    window.selectedMarketId = sel.options[sel.selectedIndex]?.dataset.marketId || null;
-  }
-
-  console.log("[Markets] Populated " + markets.length + " markets. Selected: " + selectedAsset);
+  if (current) sel.value = current;
 }
 
-/**
- * Real-time listener — admin market add korle auto update
- */
-function listenUserMarkets() {
-  if (window.marketsUnsub) {
-    window.marketsUnsub();
-    window.marketsUnsub = null;
-  }
-
-  try {
-    window.marketsUnsub = onSnapshot(collection(db, "markets"), function(snap) {
-      const markets = [];
-      snap.forEach(function(docSnap) {
-        const m = docSnap.data();
-        if (m.enabled === true) {
-          markets.push({
-            id: docSnap.id,
-            name: m.name || "Unknown",
-            symbol: m.symbol || "",
-            basePrice: m.basePrice || 50000,
-            payout: m.payout || 85,
-            winRate: m.winRate || 50,
-            candleMode: m.candleMode || "locked",
-            currentCandleIndex: m.currentCandleIndex || 0
-          });
-        }
-      });
-      markets.sort(function(a, b) {
-        return (a.name || "").localeCompare(b.name || "");
-      });
-
-      window.userMarkets = markets;
-      populateAssetSelect(markets);
-
-      // Update payout labels on CALL/PUT buttons
-      if (typeof updatePayoutLabelsFromMarket === "function") {
-        updatePayoutLabelsFromMarket();
-      }
-
-      console.log("[Markets] Real-time update: " + markets.length + " markets");
-    }, function(err) {
-      console.error("[Markets] Listener error:", err.message);
-    });
-  } catch (err) {
-    console.error("[Markets] Listen error:", err.message);
-  }
-}
-
-/**
- * Payout labels update based on selected market
- */
-function updatePayoutLabelsFromMarket() {
-  const sel = document.getElementById("asset-select");
-  if (!sel || !sel.selectedOptions || sel.selectedOptions.length === 0) return;
-
-  const selectedOpt = sel.selectedOptions[0];
-  const payout = selectedOpt.dataset.payout || 85;
-
-  document.querySelectorAll(".btn-payout").forEach(function(el) {
-    el.textContent = "+" + payout + "%";
-  });
-}
-
-/**
- * Market change handler — select change hole candle reload
- */
-function bindMarketChangeHandler() {
-  const sel = document.getElementById("asset-select");
-  if (!sel || sel.dataset.boundUserMarket === "1") return;
-
-  sel.dataset.boundUserMarket = "1";
-
-  sel.addEventListener("change", async function() {
-    const sel2 = document.getElementById("asset-select");
-    if (!sel2) return;
-
-    selectedAsset = sel2.value;
-    const selectedOpt = sel2.selectedOptions[0];
-    if (selectedOpt) {
-      window.selectedMarketId = selectedOpt.dataset.marketId || null;
-    }
-
-    console.log("[Markets] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
-
-    updatePayoutLabelsFromMarket();
-
-    // Reload candles + restart live price
-    if (typeof loadCandles === "function") {
-      await loadCandles();
-    }
-    if (typeof startLivePrice === "function" && currentUser) {
-      startLivePrice();
-    }
-  });
-
-  console.log("[Markets] Market change handler bound");
-}
-
-/**
- * Init — Auth state er sathe bind
- */
-function initUserMarkets() {
-  console.log("[Markets] Initializing user markets...");
-
-  // Bind change handler
-  bindMarketChangeHandler();
-
-  // Load initial markets
-  loadUserMarketsFromFirestore().then(function(markets) {
-    populateAssetSelect(markets);
-    updatePayoutLabelsFromMarket();
-  });
-
-  // Start real-time listener
-  listenUserMarkets();
-}
-
-// Auto-init when user logs in
-(function() {
-  var origAuthWatch = setInterval(function() {
-    if (window.currentUser && !window.marketsUnsub) {
-      console.log("[Markets] User logged in - initializing markets");
-      initUserMarkets();
-    }
-    if (!window.currentUser && window.marketsUnsub) {
-      window.marketsUnsub();
-      window.marketsUnsub = null;
-      console.log("[Markets] User logged out - listener stopped");
-    }
-  }, 2000);
-})();
-
-// Also init on load (in case user is already logged in)
-document.addEventListener("DOMContentLoaded", function() {
-  setTimeout(function() {
-    if (window.currentUser) {
-      initUserMarkets();
-    }
-  }, 2500);
-});
-
-// === EXPOSE FIREBASE FUNCTIONS TO WINDOW ===
-window.db = db;
-window.auth = auth;
-window.getDocs = getDocs;
-window.collection = collection;
-window.doc = doc;
-window.setDoc = setDoc;
-window.updateDoc = updateDoc;
-window.query = query;
-window.where = where;
-window.onSnapshot = onSnapshot;
-window.addDoc = addDoc;
-window.getDoc = getDoc;
-console.log("✅ Firebase functions exposed to window");
-console.log("Part 7A (Dynamic Market Load) loaded");
 /* ============================================================
-   PART 7B: CANDLE RENDER FROM FIRESTORE
-   (Admin-er save kora candle user site-e load)
+   STATS
    ============================================================ */
 
-window.userCandles = [];
-window.userCandlesUnsub = null;
-window.candleModeGlobal = "locked";
-
-/**
- * Admin-er candle Firestore theke load kore
- */
-async function loadAdminCandlesFromFirestore(marketId) {
-  if (!marketId) {
-    console.log("[Candles] No marketId provided");
-    return [];
-  }
-
+async function loadStats() {
   try {
-    const candlesRef = collection(db, "markets", marketId, "candles");
-    const snap = await getDocs(candlesRef);
-
-    if (snap.empty) {
-      console.log("[Candles] No candles in Firestore for market: " + marketId);
-      return [];
-    }
-
-    const candles = [];
-    snap.forEach(function(docSnap) {
-      const c = docSnap.data();
-      candles.push({
-        id: docSnap.id,
-        number: c.number || 0,
-        date: c.date || "",
-        startTime: c.startTime || c.time || "",
-        endTime: c.endTime || "",
-        timeframe: c.timeframe || "1m",
-        open: Number(c.open) || 0,
-        high: Number(c.high) || 0,
-        low: Number(c.low) || 0,
-        close: Number(c.close) || 0,
-        color: c.color || "green",
-        direction: c.direction || "up",
-        size: c.size || "medium",
-        wickLength: Number(c.wickLength) || 20,
-        bodySize: Number(c.bodySize) || 60,
-        status: c.status || "pending"
-      });
-    });
-
-    candles.sort(function(a, b) {
-      return (a.number || 0) - (b.number || 0);
-    });
-
-    console.log("[Candles] Loaded " + candles.length + " admin candles from Firestore");
-    return candles;
-
-  } catch (err) {
-    console.error("[Candles] Load error:", err.message);
-    return [];
-  }
+    const usersSnap = await getDocs(collection(db, "users"));
+    if (statUsers) statUsers.textContent = usersSnap.size;
+    const activeTradesSnap = await getDocs(query(collection(db, "trades"), where("status", "==", "pending")));
+    if (statActiveTrades) statActiveTrades.textContent = activeTradesSnap.size;
+    const depositsSnap = await getDocs(query(collection(db, "deposits"), where("status", "==", "pending")));
+    if (statPendingDeposits) statPendingDeposits.textContent = depositsSnap.size;
+    const withdrawalsSnap = await getDocs(query(collection(db, "withdrawals"), where("status", "==", "pending")));
+    if (statPendingWithdrawals) statPendingWithdrawals.textContent = withdrawalsSnap.size;
+  } catch (err) { console.error("Stats error:", err); }
 }
 
-/**
- * Admin candle → LightweightCharts format
- * Time conversion: date + startTime → Unix timestamp (seconds)
- */
-function convertAdminCandleToChart(candle, baseIndex) {
-  try {
-    // Date + Time → Unix timestamp
-    const dateStr = candle.date || "2026-01-01";
-    const timeStr = candle.startTime || "00:00:00";
-    const dateTimeStr = dateStr + "T" + timeStr + "Z";
-    let timestamp = Math.floor(new Date(dateTimeStr).getTime() / 1000);
+/* ============================================================
+   USERS
+   ============================================================ */
 
-    // If invalid, use fallback (incremental)
-    if (isNaN(timestamp) || timestamp <= 0) {
-      timestamp = Math.floor(Date.now() / 1000) - (baseIndex * 60);
-    }
-
-    return {
-      time: timestamp,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close
-    };
-
-  } catch (err) {
-    return null;
-  }
+function loadUsers() {
+  if (!usersList) return;
+  usersList.innerHTML = '<p class="loading-text">Loading...</p>';
+  if (usersUnsub) usersUnsub();
+  usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
+    usersList.innerHTML = "";
+    if (snap.empty) { usersList.innerHTML = '<p class="loading-text">No users</p>'; return; }
+    const users = [];
+    snap.forEach(d => users.push({ id: d.id, ...d.data() }));
+    users.sort((a, b) => {
+      const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bT - aT;
+    });
+    users.forEach(u => renderUserItem(u));
+    loadStats();
+  });
 }
 
-/**
- * Admin candles render kore chart-e
- */
-function renderAdminCandlesOnChart(candles) {
-  if (!candleSeries) {
-    console.warn("[Candles] candleSeries not initialized");
-    return;
-  }
+function renderUserItem(user) {
+  const div = document.createElement("div");
+  div.className = "admin-item";
+  const roleBadge = user.role === "admin"
+    ? '<span class="admin-item-badge badge-admin">ADMIN</span>'
+    : '<span class="admin-item-badge badge-user">USER</span>';
+  const demoBal = (user.demoBalance ?? 1000).toFixed(2);
+  const realBal = (user.realBalance ?? 0).toFixed(2);
+  const joined = user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB") : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (user.email || "no-email") + '</div>' + roleBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Demo: <strong>$' + demoBal + '</strong></span>' +
+      '<span>Real: <strong>$' + realBal + '</strong></span>' +
+      '<span>Joined: <strong>' + joined + '</strong></span>' +
+      '<span>Banned: <strong>' + (user.banned ? "Yes" : "No") + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-edit" data-action="edit-demo" data-uid="' + user.id + '" data-bal="' + (user.demoBalance ?? 1000) + '">Demo</button>' +
+      '<button class="btn-action btn-edit" data-action="edit-real" data-uid="' + user.id + '" data-bal="' + (user.realBalance ?? 0) + '">Real</button>' +
+      '<button class="btn-action ' + (user.banned ? 'btn-approve' : 'btn-reject') + '" data-action="ban" data-uid="' + user.id + '" data-banned="' + (user.banned ? "true" : "false") + '">' + (user.banned ? "Unban" : "Ban") + '</button>' +
+    '</div>';
+  usersList.appendChild(div);
+}
 
-  if (!candles || candles.length === 0) {
-    console.log("[Candles] No candles to render");
-    return;
-  }
-
-  const chartData = [];
-  candles.forEach(function(c, i) {
-    const chartCandle = convertAdminCandleToChart(c, i);
-    if (chartCandle && chartCandle.open > 0) {
-      chartData.push(chartCandle);
-    }
+if (usersList) {
+  usersList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const uid = btn.dataset.uid;
+    if (!uid) return;
+    if (action === "edit-demo") await editBalance(uid, "demoBalance", btn.dataset.bal);
+    else if (action === "edit-real") await editBalance(uid, "realBalance", btn.dataset.bal);
+    else if (action === "ban") await toggleBan(uid, btn.dataset.banned === "true");
   });
+}
 
-  if (chartData.length === 0) {
-    console.warn("[Candles] No valid chart data after conversion");
-    return;
-  }
-
-  // Sort by time (ascending)
-  chartData.sort(function(a, b) { return a.time - b.time; });
-
-  // Remove duplicates (same time)
-  const uniqueData = [];
-  let lastTime = 0;
-  chartData.forEach(function(c) {
-    if (c.time > lastTime) {
-      uniqueData.push(c);
-      lastTime = c.time;
-    }
-  });
-
+async function editBalance(uid, field, currentValue) {
+  const label = field === "demoBalance" ? "Demo" : "Real";
+  const input = prompt(label + " Balance (current: $" + currentValue + ")", currentValue);
+  if (input === null) return;
+  const newVal = parseFloat(input);
+  if (isNaN(newVal) || newVal < 0) { alert("Invalid value"); return; }
   try {
-    candleSeries.setData(uniqueData);
-    chart.timeScale().fitContent();
+    await updateDoc(doc(db, "users", uid), { [field]: newVal });
+    alert(label + ": $" + newVal.toFixed(2));
+  } catch (err) { alert(err.message); }
+}
 
-    // Update current price
-    const lastCandle = uniqueData[uniqueData.length - 1];
-    if (lastCandle) {
-      currentPrice = lastCandle.close;
-      prevPrice = currentPrice;
-      if (currentPriceEl) {
-        currentPriceEl.textContent = currentPrice.toFixed(2);
+async function toggleBan(uid, isBanned) {
+  const action = isBanned ? "Unban" : "Ban";
+  if (!confirm(action + "?")) return;
+  try {
+    await updateDoc(doc(db, "users", uid), { banned: !isBanned });
+    alert(action + " done");
+  } catch (err) { alert(err.message); }
+}
+
+/* ============================================================
+   TRADES
+   ============================================================ */
+
+function loadTrades() {
+  if (!tradesList) return;
+  tradesList.innerHTML = '<p class="loading-text">Loading...</p>';
+  if (tradesUnsub) tradesUnsub();
+  tradesUnsub = onSnapshot(collection(db, "trades"), (snap) => {
+    tradesList.innerHTML = "";
+    if (snap.empty) { tradesList.innerHTML = '<p class="loading-text">No trades</p>'; return; }
+    const trades = [];
+    snap.forEach(d => trades.push({ id: d.id, ...d.data() }));
+    trades.sort((a, b) => {
+      const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bT - aT;
+    });
+    trades.slice(0, 100).forEach(t => renderTradeItem(t));
+  });
+}
+
+function renderTradeItem(trade) {
+  const div = document.createElement("div");
+  div.className = "admin-item";
+  let statusBadge = "";
+  if (trade.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (trade.result === "win") statusBadge = '<span class="admin-item-badge badge-win">WIN</span>';
+  else statusBadge = '<span class="admin-item-badge badge-loss">LOSS</span>';
+  const entryPrice = (trade.entryPrice || 0).toFixed(2);
+  const exitPrice = (trade.exitPrice || 0).toFixed(2);
+  const profit = trade.profit ? trade.profit.toFixed(2) : "0.00";
+  const created = trade.createdAt ? new Date(trade.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (trade.userEmail || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Type: <strong>' + (trade.type || "").toUpperCase() + '</strong></span>' +
+      '<span>Amount: <strong>$' + trade.amount + '</strong></span>' +
+      '<span>Entry: <strong>$' + entryPrice + '</strong></span>' +
+      '<span>Exit: <strong>$' + exitPrice + '</strong></span>' +
+      '<span>Profit: <strong>$' + profit + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-force-win" data-action="force-win" data-tid="' + trade.id + '">Force Win</button>' +
+      '<button class="btn-action btn-force-loss" data-action="force-loss" data-tid="' + trade.id + '">Force Loss</button>' +
+      '<button class="btn-action btn-force-pending" data-action="force-pending" data-tid="' + trade.id + '">Pending</button>' +
+    '</div>';
+  tradesList.appendChild(div);
+}
+
+if (tradesList) {
+  tradesList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const tid = btn.dataset.tid;
+    if (!tid) return;
+    if (action === "force-win") await forceTradeResult(tid, "win");
+    else if (action === "force-loss") await forceTradeResult(tid, "loss");
+    else if (action === "force-pending") await forceTradeResult(tid, "pending");
+  });
+}
+
+async function forceTradeResult(tradeId, result) {
+  if (!confirm("Force " + result + "?")) return;
+  try {
+    const tradeRef = doc(db, "trades", tradeId);
+    const tradeDoc = await getDoc(tradeRef);
+    if (!tradeDoc.exists()) { alert("Trade not found"); return; }
+    const trade = tradeDoc.data();
+    if (result === "pending") {
+      await updateDoc(tradeRef, { status: "pending", result: null, profit: 0 });
+      alert("Pending");
+      return;
+    }
+    const payoutRate = currentPayout / 100 + 1;
+    const profit = result === "win" ? trade.amount * payoutRate : 0;
+    await updateDoc(tradeRef, {
+      status: "completed", result: result, profit: profit,
+      exitPrice: trade.entryPrice, completedAt: new Date().toISOString()
+    });
+    if (result === "win") {
+      const userRef = doc(db, "users", trade.userId);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const field = trade.accountType === "real" ? "realBalance" : "demoBalance";
+        const curBal = userData[field] ?? 0;
+        await updateDoc(userRef, { [field]: curBal + profit });
       }
     }
+    alert(result + " done");
+  } catch (err) { alert(err.message); }
+}
 
-    console.log("[Candles] Rendered " + uniqueData.length + " candles on chart");
+/* ============================================================
+   DEPOSITS
+   ============================================================ */
+
+function loadDeposits() {
+  if (!depositsList) return;
+  depositsList.innerHTML = '<p class="loading-text">Loading...</p>';
+  if (depositsUnsub) depositsUnsub();
+  depositsUnsub = onSnapshot(collection(db, "deposits"), (snap) => {
+    depositsList.innerHTML = "";
+    if (snap.empty) { depositsList.innerHTML = '<p class="loading-text">No deposits</p>'; return; }
+    const deposits = [];
+    snap.forEach(d => deposits.push({ id: d.id, ...d.data() }));
+    deposits.sort((a, b) => {
+      const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bT - aT;
+    });
+    deposits.forEach(d => renderDepositItem(d));
+    loadStats();
+  });
+}
+
+function renderDepositItem(dep) {
+  const div = document.createElement("div");
+  div.className = "admin-item";
+  let statusBadge = "";
+  if (dep.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (dep.status === "approved") statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
+  else statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
+  const created = dep.createdAt ? new Date(dep.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (dep.email || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Amount: <strong>$' + dep.amount + '</strong></span>' +
+      '<span>Method: <strong>' + (dep.method || "manual") + '</strong></span>' +
+      '<span>TrxID: <strong>' + (dep.txid || "-") + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-approve" data-action="approve-dep" data-did="' + dep.id + '">Approve</button>' +
+      '<button class="btn-action btn-reject" data-action="reject-dep" data-did="' + dep.id + '">Reject</button>' +
+    '</div>';
+  depositsList.appendChild(div);
+}
+
+if (depositsList) {
+  depositsList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const did = btn.dataset.did;
+    if (!did) return;
+    if (action === "approve-dep") await approveDeposit(did);
+    else if (action === "reject-dep") await rejectDeposit(did);
+  });
+}
+
+async function approveDeposit(depositId) {
+  if (!confirm("Approve?")) return;
+  try {
+    const depRef = doc(db, "deposits", depositId);
+    const depDoc = await getDoc(depRef);
+    if (!depDoc.exists()) { alert("Not found"); return; }
+    const dep = depDoc.data();
+    if (dep.status === "approved") { alert("Already approved"); return; }
+    const userRef = doc(db, "users", dep.userId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const curReal = userDoc.data().realBalance ?? 0;
+      await updateDoc(userRef, { realBalance: curReal + dep.amount });
+    }
+    await updateDoc(depRef, { status: "approved", approvedAt: new Date().toISOString() });
+    alert("Approved");
+    loadStats();
+  } catch (err) { alert(err.message); }
+}
+
+async function rejectDeposit(depositId) {
+  if (!confirm("Reject?")) return;
+  try {
+    await updateDoc(doc(db, "deposits", depositId), { status: "rejected", rejectedAt: new Date().toISOString() });
+    alert("Rejected");
+    loadStats();
+  } catch (err) { alert(err.message); }
+}
+
+/* ============================================================
+   WITHDRAWALS
+   ============================================================ */
+
+function loadWithdrawals() {
+  if (!withdrawalsList) return;
+  withdrawalsList.innerHTML = '<p class="loading-text">Loading...</p>';
+  if (withdrawalsUnsub) withdrawalsUnsub();
+  withdrawalsUnsub = onSnapshot(collection(db, "withdrawals"), (snap) => {
+    withdrawalsList.innerHTML = "";
+    if (snap.empty) { withdrawalsList.innerHTML = '<p class="loading-text">No withdrawals</p>'; return; }
+    const ws = [];
+    snap.forEach(d => ws.push({ id: d.id, ...d.data() }));
+    ws.sort((a, b) => {
+      const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bT - aT;
+    });
+    ws.forEach(w => renderWithdrawItem(w));
+    loadStats();
+  });
+}
+
+function renderWithdrawItem(w) {
+  const div = document.createElement("div");
+  div.className = "admin-item";
+  let statusBadge = "";
+  if (w.status === "pending") statusBadge = '<span class="admin-item-badge badge-pending">PENDING</span>';
+  else if (w.status === "approved") statusBadge = '<span class="admin-item-badge badge-win">APPROVED</span>';
+  else statusBadge = '<span class="admin-item-badge badge-rejected">REJECTED</span>';
+  const created = w.createdAt ? new Date(w.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+  div.innerHTML = '<div class="admin-item-header"><div class="admin-item-title">' + (w.email || "no-email") + '</div>' + statusBadge + '</div>' +
+    '<div class="admin-item-info">' +
+      '<span>Amount: <strong>$' + w.amount + '</strong></span>' +
+      '<span>Method: <strong>' + (w.method || "-") + '</strong></span>' +
+      '<span>Number: <strong>' + (w.number || "-") + '</strong></span>' +
+      '<span>Time: <strong>' + created + '</strong></span>' +
+    '</div>' +
+    '<div class="admin-item-actions">' +
+      '<button class="btn-action btn-approve" data-action="approve-wd" data-wid="' + w.id + '">Approve</button>' +
+      '<button class="btn-action btn-reject" data-action="reject-wd" data-wid="' + w.id + '">Reject</button>' +
+    '</div>';
+  withdrawalsList.appendChild(div);
+}
+
+if (withdrawalsList) {
+  withdrawalsList.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const wid = btn.dataset.wid;
+    if (!wid) return;
+    if (action === "approve-wd") await approveWithdrawal(wid);
+    else if (action === "reject-wd") await rejectWithdrawal(wid);
+  });
+}
+
+async function approveWithdrawal(wid) {
+  if (!confirm("Approve?")) return;
+  try {
+    const wRef = doc(db, "withdrawals", wid);
+    const wDoc = await getDoc(wRef);
+    if (!wDoc.exists()) { alert("Not found"); return; }
+    const w = wDoc.data();
+    if (w.status === "approved") { alert("Already approved"); return; }
+    const userRef = doc(db, "users", w.userId);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const curReal = userDoc.data().realBalance ?? 0;
+      if (curReal < w.amount) { alert("Insufficient balance"); return; }
+      await updateDoc(userRef, { realBalance: curReal - w.amount });
+    }
+    await updateDoc(wRef, { status: "approved", approvedAt: new Date().toISOString() });
+    alert("Approved");
+    loadStats();
+  } catch (err) { alert(err.message); }
+}
+
+async function rejectWithdrawal(wid) {
+  if (!confirm("Reject?")) return;
+  try {
+    await updateDoc(doc(db, "withdrawals", wid), { status: "rejected", rejectedAt: new Date().toISOString() });
+    alert("Rejected");
+    loadStats();
+  } catch (err) { alert(err.message); }
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+
+async function loadSettings() {
+  try {
+    const sDoc = await getDoc(doc(db, "settings", "global"));
+    if (sDoc.exists()) {
+      const d = sDoc.data();
+      currentWinRate = d.winRate ?? 50;
+      currentPayout = d.payout ?? 85;
+      currentAutoInterval = d.autoModeInterval ?? 5;
+      window.adminSettings.winRate = currentWinRate;
+      window.adminSettings.payout = currentPayout;
+      window.adminSettings.autoMode = d.autoMode === true;
+      window.adminSettings.autoModeInterval = d.autoModeInterval || 5000;
+      if (winRateInput) winRateInput.value = currentWinRate;
+      if (payoutInput) payoutInput.value = currentPayout;
+      if (autoIntervalInput) autoIntervalInput.value = currentAutoInterval;
+      console.log('[Settings] Loaded from Firestore:', window.adminSettings);
+    }
+  } catch (err) { console.error('[Settings] Load error:', err); }
+}
+
+if (saveWinRateBtn) {
+  saveWinRateBtn.addEventListener("click", async () => {
+    const val = parseInt(winRateInput.value);
+    if (isNaN(val) || val < 0 || val > 100) { alert("0-100"); return; }
+    try {
+      await setDoc(doc(db, "settings", "global"), { winRate: val }, { merge: true });
+      currentWinRate = val;
+      window.adminSettings.winRate = val;
+      alert("Win Rate: " + val + "%");
+    } catch (err) { alert(err.message); }
+  });
+}
+
+if (savePayoutBtn) {
+  savePayoutBtn.addEventListener("click", async () => {
+    const val = parseInt(payoutInput.value);
+    if (isNaN(val) || val < 0 || val > 200) { alert("0-200"); return; }
+    try {
+      await setDoc(doc(db, "settings", "global"), { payout: val }, { merge: true });
+      currentPayout = val;
+      window.adminSettings.payout = val;
+      alert("Payout: " + val + "%");
+    } catch (err) { alert(err.message); }
+  });
+}
+
+if (saveAutoIntervalBtn) {
+  saveAutoIntervalBtn.addEventListener("click", async () => {
+    const val = parseInt(autoIntervalInput.value);
+    if (isNaN(val) || val < 1 || val > 60) { alert("1-60"); return; }
+    try {
+      await setDoc(doc(db, "settings", "global"), { autoModeInterval: val }, { merge: true });
+      currentAutoInterval = val;
+      window.adminSettings.autoModeInterval = val * 1000;
+      alert("Interval: " + val + " min");
+    } catch (err) { alert(err.message); }
+  });
+}
+
+/* ============================================================
+   CANDLE SCHEDULER (Part 6A-6D)
+   ============================================================ */
+
+window.candleList = [];
+window.candleCounter = 0;
+window.currentMarketId = null;
+
+function renderCandleTable() {
+  const tbody = document.getElementById('candle-table-body');
+  if (!tbody) return;
+  if (window.candleList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" class="empty-text">No candles</td></tr>';
+    return;
+  }
+  tbody.innerHTML = window.candleList.map((c, i) => {
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+    const color = c.color || (dir === 'up' ? 'green' : 'red');
+    const colorEmoji = color === 'green' ? 'G' : 'R';
+    return '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + (c.date || '-') + '</td>' +
+      '<td>' + (c.time || '-') + '</td>' +
+      '<td>' + (c.timeframe || '1m') + '</td>' +
+      '<td>' + c.open + '</td>' +
+      '<td>' + c.high + '</td>' +
+      '<td>' + c.low + '</td>' +
+      '<td>' + c.close + '</td>' +
+      '<td class="' + color + '">' + colorEmoji + ' ' + color + '</td>' +
+      '<td>' + (c.up || 0) + 'm</td>' +
+      '<td>' + (c.down || 0) + 'm</td>' +
+      '<td>' +
+        '<button class="act-btn edit" data-i="' + i + '">E</button>' +
+        '<button class="act-btn del" data-i="' + i + '">D</button>' +
+        '<button class="act-btn copy" data-i="' + i + '">C</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+  tbody.querySelectorAll('.act-btn.edit').forEach(b => b.onclick = () => editCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.del').forEach(b => b.onclick = () => deleteCandle(Number(b.dataset.i)));
+  tbody.querySelectorAll('.act-btn.copy').forEach(b => b.onclick = () => copyCandle(Number(b.dataset.i)));
+  if (typeof renderCandlePreview === 'function') renderCandlePreview();
+  if (typeof renderDirectionTimeline === 'function') renderDirectionTimeline();
+}
+
+function addCandle() {
+  try {
+    window.candleCounter++;
+    const baseEl = document.getElementById('bulk-base');
+    const base = Number(baseEl?.value || 50000);
+    const open = base + (Math.random() * 100 - 50);
+    const close = open + (Math.random() * 80 - 40);
+    const high = Math.max(open, close) + Math.random() * 20;
+    const low = Math.min(open, close) - Math.random() * 20;
+    const color = close >= open ? 'green' : 'red';
+    const now = new Date();
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().slice(0, 8);
+    window.candleList.push({
+      number: window.candleCounter, date, time,
+      timeframe: document.getElementById('candle-timeframe')?.value || '1m',
+      open: open.toFixed(2), high: high.toFixed(2),
+      low: low.toFixed(2), close: close.toFixed(2),
+      color, direction: close >= open ? 'up' : 'down', size: 'medium',
+      up: Number(document.getElementById('bulk-up')?.value || 5),
+      down: Number(document.getElementById('bulk-down')?.value || 5)
+    });
+    renderCandleTable();
+    console.log('Candle added, total =', window.candleList.length);
   } catch (err) {
-    console.error("[Candles] Render error:", err.message);
+    console.error('addCandle error:', err);
+    alert('Error: ' + err.message);
   }
 }
 
-/**
- * Real-time listener for admin candles
- */
-function listenAdminCandles(marketId) {
-  if (window.userCandlesUnsub) {
-    window.userCandlesUnsub();
-    window.userCandlesUnsub = null;
-  }
+function deleteCandle(index) {
+  if (!confirm('Delete candle #' + (index + 1) + '?')) return;
+  window.candleList.splice(index, 1);
+  renderCandleTable();
+}
 
-  if (!marketId) {
-    console.log("[Candles] No marketId - listener not started");
+function editCandle(index) {
+  const c = window.candleList[index];
+  const newOpen = prompt('Open:', c.open); if (newOpen === null) return;
+  const newClose = prompt('Close:', c.close); if (newClose === null) return;
+  const newHigh = prompt('High:', c.high); if (newHigh === null) return;
+  const newLow = prompt('Low:', c.low); if (newLow === null) return;
+  c.open = Number(newOpen).toFixed(2);
+  c.close = Number(newClose).toFixed(2);
+  c.high = Number(newHigh).toFixed(2);
+  c.low = Number(newLow).toFixed(2);
+  c.color = Number(newClose) >= Number(newOpen) ? 'green' : 'red';
+  c.direction = Number(newClose) >= Number(newOpen) ? 'up' : 'down';
+  renderCandleTable();
+}
+
+function copyCandle(index) {
+  window.candleCounter++;
+  const c = Object.assign({}, window.candleList[index], { number: window.candleCounter });
+  window.candleList.splice(index + 1, 0, c);
+  renderCandleTable();
+}
+
+function clearCandles() {
+  if (!confirm('Delete all candles?')) return;
+  window.candleList = [];
+  window.candleCounter = 0;
+  renderCandleTable();
+}
+
+function bindCandleButtons() {
+  const add = document.getElementById('add-candle-btn');
+  if (add) add.onclick = addCandle;
+  const clr = document.getElementById('clear-candles-btn');
+  if (clr) clr.onclick = clearCandles;
+  renderCandleTable();
+}
+
+bindCandleButtons();
+document.addEventListener('DOMContentLoaded', bindCandleButtons);
+setTimeout(bindCandleButtons, 800);
+setTimeout(bindCandleButtons, 2500);
+
+function bindMarketSelect() {
+  const sel = document.getElementById('candle-market-select');
+  if (!sel || sel.dataset.bound === '1') return;
+  sel.dataset.bound = '1';
+  sel.addEventListener('change', () => {
+    window.currentMarketId = sel.value || null;
+    console.log('Market changed:', window.currentMarketId);
+    if (window.currentMarketId) {
+      loadCandlesFromFirestore(window.currentMarketId);
+    } else {
+      window.candleList = [];
+      window.candleCounter = 0;
+      renderCandleTable();
+    }
+  });
+  console.log('Market select bound');
+}
+
+async function loadCandlesFromFirestore(marketId) {
+  if (!marketId) return;
+  console.log('Loading candles for market:', marketId);
+  try {
+    const candlesSnap = await getDocs(collection(db, "markets", marketId, "candles"));
+    if (candlesSnap.empty) {
+      window.candleList = [];
+      window.candleCounter = 0;
+      renderCandleTable();
+      return;
+    }
+    window.candleList = [];
+    candlesSnap.forEach(d => {
+      const data = d.data();
+      window.candleList.push({
+        id: d.id, number: data.number || 0,
+        date: data.date || '-',
+        time: data.startTime || data.time || '-',
+        endTime: data.endTime || '',
+        timeframe: data.timeframe || '1m',
+        open: Number(data.open || 0).toFixed(2),
+        high: Number(data.high || 0).toFixed(2),
+        low: Number(data.low || 0).toFixed(2),
+        close: Number(data.close || 0).toFixed(2),
+        color: data.color || 'green',
+        direction: data.direction || (Number(data.close) >= Number(data.open) ? 'up' : 'down'),
+        size: data.size || 'medium',
+        wick: data.wick || data.wickLength || 20,
+        body: data.body || data.bodySize || 60,
+        up: data.upDuration || data.up || 5,
+        down: data.downDuration || data.down || 5
+      });
+    });
+    window.candleList.sort((a, b) => (a.number || 0) - (b.number || 0));
+    window.candleCounter = window.candleList.length;
+    renderCandleTable();
+    console.log('Loaded', window.candleList.length, 'candles');
+  } catch (err) {
+    console.error('Load error:', err);
+    alert('Load error: ' + err.message);
+  }
+}
+
+async function saveAllCandles() {
+  if (!window.currentMarketId) { alert('Select market first'); return; }
+  if (window.candleList.length === 0) { alert('No candles'); return; }
+  const confirmMsg = 'Market: ' + window.currentMarketId + '\n' + window.candleList.length + ' candles will be saved.\n\nOverwrite old?';
+  if (!confirm(confirmMsg)) return;
+  console.log('Saving', window.candleList.length, 'candles...');
+  try {
+    const oldSnap = await getDocs(collection(db, "markets", window.currentMarketId, "candles"));
+    for (const d of oldSnap.docs) {
+      await deleteDoc(doc(db, "markets", window.currentMarketId, "candles", d.id));
+    }
+    console.log('Deleted', oldSnap.size, 'old candles');
+    for (let i = 0; i < window.candleList.length; i++) {
+      const c = window.candleList[i];
+      const candleId = 'c_' + String(i + 1).padStart(4, '0');
+      const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+      await setDoc(doc(db, "markets", window.currentMarketId, "candles", candleId), {
+        number: i + 1,
+        date: c.date || '',
+        startTime: c.time || '',
+        endTime: c.endTime || '',
+        duration: 60,
+        timeframe: c.timeframe || '1m',
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close),
+        color: c.color || 'green',
+        direction: dir,
+        size: c.size || 'medium',
+        upDuration: Number(c.up || 0),
+        downDuration: Number(c.down || 0),
+        neutralDuration: 0,
+        wickLength: Number(c.wick || 20),
+        bodySize: Number(c.body || 60),
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+    }
+    await updateDoc(doc(db, "markets", window.currentMarketId), {
+      currentCandleIndex: 0,
+      updatedAt: new Date().toISOString()
+    });
+    alert(window.candleList.length + ' candles saved!');
+    console.log('All saved');
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('Save error: ' + err.message);
+  }
+}
+
+function bindRefreshCandles() {
+  const btn = document.getElementById('refresh-candles');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', async () => {
+    if (!window.currentMarketId) { alert('Select market first'); return; }
+    await loadCandlesFromFirestore(window.currentMarketId);
+    alert('Reloaded');
+  });
+  console.log('Refresh button bound');
+}
+
+function bindSaveButton() {
+  const btn = document.getElementById('save-candles-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', saveAllCandles);
+  console.log('Save button bound');
+}
+
+function bindPart6A() {
+  bindMarketSelect();
+  bindRefreshCandles();
+  bindSaveButton();
+}
+
+bindPart6A();
+document.addEventListener('DOMContentLoaded', bindPart6A);
+setTimeout(bindPart6A, 800);
+setTimeout(bindPart6A, 2500);
+
+function timeframeToSeconds(tf) {
+  const map = { '5s': 5, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400 };
+  return map[tf] || 60;
+}
+
+function secondsToTime(totalSec) {
+  const h = Math.floor(totalSec / 3600) % 24;
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function timeToSeconds(timeStr) {
+  const parts = (timeStr || '00:00:00').split(':').map(Number);
+  return (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+}
+
+function addDaysToDate(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function calcCandleTime(startDate, startTime, index, tfSeconds) {
+  const startSec = timeToSeconds(startTime);
+  const totalSec = startSec + index * tfSeconds;
+  const dayOffset = Math.floor(totalSec / 86400);
+  const daySec = totalSec % 86400;
+  return {
+    date: addDaysToDate(startDate, dayOffset),
+    startTime: secondsToTime(daySec),
+    endTime: secondsToTime(daySec + tfSeconds),
+    dayOffset
+  };
+}
+
+function validateBulkForm() {
+  const startDate = document.getElementById('bulk-date')?.value;
+  const startTime = document.getElementById('bulk-time')?.value;
+  const count = parseInt(document.getElementById('bulk-count')?.value || 0);
+  const base = parseFloat(document.getElementById('bulk-base')?.value || 0);
+  const tf = document.getElementById('candle-timeframe')?.value || '1m';
+  const up = parseInt(document.getElementById('bulk-up')?.value || 0);
+  const down = parseInt(document.getElementById('bulk-down')?.value || 0);
+  const neutral = parseInt(document.getElementById('bulk-neutral')?.value || 0);
+  const wick = parseInt(document.getElementById('bulk-wick')?.value || 20);
+  const body = parseInt(document.getElementById('bulk-body')?.value || 60);
+  if (!startDate) { alert('Start Date required'); return null; }
+  if (!startTime) { alert('Start Time required'); return null; }
+  if (isNaN(count) || count < 1 || count > 500) { alert('Count 1-500'); return null; }
+  if (isNaN(base) || base <= 0) { alert('Base Price required'); return null; }
+  if (up + down + neutral <= 0) { alert('Duration required'); return null; }
+  return { startDate, startTime, count, base, tf, up, down, neutral, wick, body };
+}
+
+async function confirmOverwrite() {
+  if (!window.currentMarketId) { alert('Select market first'); return false; }
+  try {
+    const snap = await getDocs(collection(db, "markets", window.currentMarketId, "candles"));
+    if (snap.size === 0) return true;
+    return confirm('This market has ' + snap.size + ' candles. Overwrite?');
+  } catch (err) { return true; }
+}
+
+function clearCurrentCandleList() {
+  window.candleList = [];
+  window.candleCounter = 0;
+  renderCandleTable();
+}
+
+function getPriceMovement(direction) {
+  const baseMove = 30 + Math.random() * 90;
+  if (direction === 'up') return Math.abs(baseMove);
+  if (direction === 'down') return -Math.abs(baseMove);
+  return (Math.random() - 0.5) * 10;
+}
+
+function getSizeMultiplier(sizeType) {
+  if (sizeType === 'small') return 0.5;
+  if (sizeType === 'large') return 1.8;
+  return 1.0;
+}
+
+function buildCandleWithPrice(params) {
+  const { number, date, time, endTime, timeframe, prevClose, basePrice,
+          direction, wick, body, sizeType } = params;
+  const sizeMul = getSizeMultiplier(sizeType);
+  const wickScaled = wick * sizeMul;
+  const bodyScaled = body * sizeMul;
+  const open = prevClose !== null ? prevClose : basePrice;
+  const movement = getPriceMovement(direction);
+  const close = open + movement;
+  const maxOC = Math.max(open, close);
+  const minOC = Math.min(open, close);
+  const high = maxOC + wickScaled;
+  const low = minOC - wickScaled;
+  let color;
+  if (direction === 'up') color = 'green';
+  else if (direction === 'down') color = 'red';
+  else color = close >= open ? 'green' : 'red';
+  return {
+    number, date, time, endTime, timeframe,
+    open: open.toFixed(2),
+    high: high.toFixed(2),
+    low: low.toFixed(2),
+    close: close.toFixed(2),
+    color, direction, size: sizeType,
+    wick: wickScaled.toFixed(0),
+    body: bodyScaled.toFixed(0),
+    up: 0, down: 0
+  };
+}
+
+async function bulkGenerateCandles() {
+  console.log('Bulk Generate clicked');
+  const form = validateBulkForm();
+  if (!form) return;
+  if (!window.currentMarketId) { alert('Select market first'); return; }
+  const ok = await confirmOverwrite();
+  if (!ok) return;
+  const tfSeconds = timeframeToSeconds(form.tf);
+  const patternLength = form.up + form.down + form.neutral;
+  const sizeType = 'medium';
+  console.log('Generating', form.count, 'candles');
+  clearCurrentCandleList();
+  const tempList = [];
+  let prevClose = null;
+  let upCount = 0, downCount = 0, neutralCount = 0;
+  for (let i = 0; i < form.count; i++) {
+    const timeInfo = calcCandleTime(form.startDate, form.startTime, i, tfSeconds);
+    let direction = 'up';
+    if (patternLength > 0) {
+      const pos = i % patternLength;
+      if (pos < form.up) direction = 'up';
+      else if (pos < form.up + form.down) direction = 'down';
+      else direction = 'neutral';
+    }
+    const candle = buildCandleWithPrice({
+      number: i + 1, date: timeInfo.date,
+      time: timeInfo.startTime, endTime: timeInfo.endTime,
+      timeframe: form.tf, prevClose, basePrice: form.base,
+      direction, wick: form.wick, body: form.body, sizeType
+    });
+    candle.up = form.up;
+    candle.down = form.down;
+    prevClose = parseFloat(candle.close);
+    if (direction === 'up') upCount++;
+    else if (direction === 'down') downCount++;
+    else neutralCount++;
+    tempList.push(candle);
+  }
+  window.candleList = tempList;
+  window.candleCounter = tempList.length;
+  renderCandleTable();
+  console.log('Generated', tempList.length, 'candles');
+  console.log('UP: ' + upCount + ' | DOWN: ' + downCount + ' | NEUTRAL: ' + neutralCount);
+  alert(tempList.length + ' candles generated!\n\nUP: ' + upCount + ' | DOWN: ' + downCount + ' | NEUTRAL: ' + neutralCount + '\nPrice: $' + tempList[0].open + ' -> $' + tempList[tempList.length - 1].close);
+}
+
+function rebindBulkGenerate() {
+  const btn = document.getElementById('bulk-generate-btn');
+  if (!btn) return;
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', bulkGenerateCandles);
+  console.log('Bulk Generate rebound');
+}
+
+rebindBulkGenerate();
+document.addEventListener('DOMContentLoaded', rebindBulkGenerate);
+setTimeout(rebindBulkGenerate, 800);
+setTimeout(rebindBulkGenerate, 2500);
+
+/* ============================================================
+   PLAYBACK (Part 6C-1)
+   ============================================================ */
+
+window.playbackIndex = 0;
+window.playbackTimer = null;
+window.playbackSpeed = 1000;
+
+function highlightActiveRow() {
+  const tbody = document.getElementById('candle-table-body');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach((row, i) => {
+    if (i === window.playbackIndex) {
+      row.style.background = 'rgba(255, 179, 0, 0.25)';
+      row.style.borderLeft = '4px solid #ffb300';
+      row.style.fontWeight = 'bold';
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      row.style.background = '';
+      row.style.borderLeft = '';
+      row.style.fontWeight = '';
+    }
+  });
+  const status = document.getElementById('playback-status');
+  if (status) {
+    status.textContent = 'Candle ' + (window.playbackIndex + 1) + ' / ' + window.candleList.length;
+  }
+}
+
+function playbackPlay() {
+  if (window.candleList.length === 0) { alert('No candles to play'); return; }
+  if (window.playbackTimer) { console.log('Already playing'); return; }
+  console.log('Playback START from index', window.playbackIndex);
+  if (window.playbackIndex >= window.candleList.length - 1) {
+    window.playbackIndex = 0;
+  }
+  highlightActiveRow();
+  window.playbackTimer = setInterval(() => {
+    if (window.playbackIndex < window.candleList.length - 1) {
+      window.playbackIndex++;
+      highlightActiveRow();
+      console.log('Playback -> candle', window.playbackIndex + 1);
+    } else {
+      playbackPause();
+      console.log('Playback FINISHED');
+    }
+  }, window.playbackSpeed);
+}
+
+function playbackPause() {
+  if (window.playbackTimer) {
+    clearInterval(window.playbackTimer);
+    window.playbackTimer = null;
+    console.log('Playback PAUSED at index', window.playbackIndex);
+  }
+}
+
+function playbackSkip() {
+  if (window.candleList.length === 0) return;
+  if (window.playbackIndex < window.candleList.length - 1) {
+    window.playbackIndex++;
+    highlightActiveRow();
+    console.log('Skip -> candle', window.playbackIndex + 1);
+  }
+}
+
+function playbackBack() {
+  if (window.candleList.length === 0) return;
+  if (window.playbackIndex > 0) {
+    window.playbackIndex--;
+    highlightActiveRow();
+    console.log('Back -> candle', window.playbackIndex + 1);
+  }
+}
+
+function playbackReset() {
+  playbackPause();
+  window.playbackIndex = 0;
+  highlightActiveRow();
+  console.log('Playback RESET to 0');
+}
+
+function playbackSetSpeed(ms) {
+  window.playbackSpeed = ms;
+  console.log('Playback speed set to', ms, 'ms');
+  if (window.playbackTimer) {
+    playbackPause();
+    playbackPlay();
+  }
+}
+
+function bindPlaybackButtons() {
+  const playBtn = document.getElementById('play-btn');
+  const pauseBtn = document.getElementById('pause-btn');
+  const skipBtn = document.getElementById('skip-btn');
+  const backBtn = document.getElementById('back-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  if (playBtn && playBtn.dataset.bound !== '1') { playBtn.dataset.bound = '1'; playBtn.onclick = playbackPlay; }
+  if (pauseBtn && pauseBtn.dataset.bound !== '1') { pauseBtn.dataset.bound = '1'; pauseBtn.onclick = playbackPause; }
+  if (skipBtn && skipBtn.dataset.bound !== '1') { skipBtn.dataset.bound = '1'; skipBtn.onclick = playbackSkip; }
+  if (backBtn && backBtn.dataset.bound !== '1') { backBtn.dataset.bound = '1'; backBtn.onclick = playbackBack; }
+  if (resetBtn && resetBtn.dataset.bound !== '1') { resetBtn.dataset.bound = '1'; resetBtn.onclick = playbackReset; }
+  console.log('Playback buttons bound');
+}
+
+bindPlaybackButtons();
+document.addEventListener('DOMContentLoaded', bindPlaybackButtons);
+setTimeout(bindPlaybackButtons, 800);
+setTimeout(bindPlaybackButtons, 2500);
+
+function bindSpeedSelector() {
+  const sel = document.getElementById('playback-speed');
+  if (!sel || sel.dataset.bound === '1') return;
+  sel.dataset.bound = '1';
+  sel.addEventListener('change', () => {
+    playbackSetSpeed(parseInt(sel.value));
+  });
+  console.log('Speed selector bound');
+}
+
+bindSpeedSelector();
+document.addEventListener('DOMContentLoaded', bindSpeedSelector);
+setTimeout(bindSpeedSelector, 800);
+setTimeout(bindSpeedSelector, 2500);
+
+/* ============================================================
+   LIVE PREVIEW (Part 6C-2)
+   ============================================================ */
+
+window.previewMaxCandles = 20;
+
+function renderCandlePreview() {
+  const container = document.getElementById('candle-preview');
+  if (!container) return;
+  const list = window.candleList || [];
+  if (list.length === 0) {
+    container.innerHTML = '<span class="empty-text">No candles to preview</span>';
+    return;
+  }
+  const startIdx = Math.max(0, list.length - window.previewMaxCandles);
+  const slice = list.slice(startIdx);
+  let minPrice = Infinity;
+  let maxPrice = -Infinity;
+  slice.forEach(c => {
+    const h = Number(c.high || 0);
+    const l = Number(c.low || 0);
+    if (h > maxPrice) maxPrice = h;
+    if (l < minPrice) minPrice = l;
+  });
+  if (maxPrice === minPrice) maxPrice = minPrice + 1;
+  const range = maxPrice - minPrice;
+  const CHART_HEIGHT = 180;
+  const barsHTML = slice.map((c, idx) => {
+    const open = Number(c.open || 0);
+    const close = Number(c.close || 0);
+    const high = Number(c.high || 0);
+    const low = Number(c.low || 0);
+    const yHigh = ((maxPrice - high) / range) * CHART_HEIGHT;
+    const yLow = ((maxPrice - low) / range) * CHART_HEIGHT;
+    const yOpen = ((maxPrice - open) / range) * CHART_HEIGHT;
+    const yClose = ((maxPrice - close) / range) * CHART_HEIGHT;
+    const bodyTop = Math.min(yOpen, yClose);
+    const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+    const isGreen = close >= open;
+    const color = isGreen ? '#00c853' : '#ff5252';
+    const wickTop = yHigh;
+    const wickHeight = Math.max(1, yLow - yHigh);
+    const realIdx = startIdx + idx;
+    const isActive = (realIdx === window.playbackIndex);
+    return '<div class="pv-candle' + (isActive ? ' pv-active' : '') + '" data-idx="' + realIdx + '" style="height:' + CHART_HEIGHT + 'px;">' +
+      '<div class="pv-wick" style="top:' + wickTop + 'px; height:' + wickHeight + 'px; background:' + color + ';"></div>' +
+      '<div class="pv-body" style="top:' + bodyTop + 'px; height:' + bodyHeight + 'px; background:' + color + ';"></div>' +
+      '<div class="pv-label">' + (realIdx + 1) + '</div>' +
+    '</div>';
+  }).join('');
+  const maxLabel = '<div class="pv-price-label pv-price-top">$' + maxPrice.toFixed(2) + '</div>';
+  const minLabel = '<div class="pv-price-label pv-price-bottom">$' + minPrice.toFixed(2) + '</div>';
+  container.innerHTML =
+    '<div class="pv-chart-wrap">' + maxLabel + minLabel +
+      '<div class="pv-chart">' + barsHTML + '</div>' +
+    '</div>' +
+    '<div class="pv-info">Showing last ' + slice.length + ' of ' + list.length + ' candles</div>';
+  container.querySelectorAll('.pv-candle').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.idx);
+      window.playbackIndex = idx;
+      if (typeof highlightActiveRow === 'function') highlightActiveRow();
+      renderCandlePreview();
+    };
+  });
+}
+
+const _origHighlight = window.highlightActiveRow;
+window.highlightActiveRow = function() {
+  if (_origHighlight) _origHighlight();
+  renderCandlePreview();
+};
+
+const _origRenderTable = window.renderCandleTable;
+window.renderCandleTable = function() {
+  if (_origRenderTable) _origRenderTable();
+  setTimeout(() => { renderCandlePreview(); }, 60);
+};
+
+renderCandlePreview();
+document.addEventListener('DOMContentLoaded', renderCandlePreview);
+setTimeout(renderCandlePreview, 1000);
+setTimeout(renderCandlePreview, 2500);
+
+console.log('Part 6C-2 (Live Preview) loaded');
+
+(function startPreviewWatcher() {
+  let lastCount = -1;
+  let lastFirstClose = '';
+  setInterval(function() {
+    const container = document.getElementById('candle-preview');
+    if (!container) return;
+    const list = window.candleList || [];
+    const count = list.length;
+    const firstClose = count > 0 ? (list[0].close || '') : '';
+    const isBlank = container.innerHTML.indexOf('No candles') !== -1 ||
+                    container.innerHTML.indexOf('empty-text') !== -1;
+    const changed = (count !== lastCount) || (firstClose !== lastFirstClose) ||
+                    (isBlank && count > 0);
+    if (changed) {
+      lastCount = count;
+      lastFirstClose = firstClose;
+      renderCandlePreview();
+      console.log('Preview auto-updated:', count, 'candles');
+    }
+  }, 400);
+  console.log('Preview auto-watcher started');
+})();
+
+/* ============================================================
+   DIRECTION TIMELINE (Part 6C-3)
+   ============================================================ */
+
+function renderDirectionTimeline() {
+  const container = document.getElementById('direction-timeline');
+  if (!container) return;
+  const list = window.candleList || [];
+  if (list.length === 0) {
+    container.innerHTML = '<span class="empty-text">No timeline data</span>';
+    return;
+  }
+  let upCount = 0, downCount = 0, neutralCount = 0;
+  list.forEach(c => {
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+    if (dir === 'up') upCount++;
+    else if (dir === 'down') downCount++;
+    else neutralCount++;
+  });
+  const blocks = [];
+  let currentBlock = null;
+  list.forEach((c, i) => {
+    const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+    if (!currentBlock || currentBlock.dir !== dir) {
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = { dir: dir, candles: [i], startIdx: i, endIdx: i };
+    } else {
+      currentBlock.candles.push(i);
+      currentBlock.endIdx = i;
+    }
+  });
+  if (currentBlock) blocks.push(currentBlock);
+  const blocksHTML = blocks.map((block) => {
+    const colorClass = block.dir === 'up' ? 'tl-up' :
+                       block.dir === 'down' ? 'tl-down' : 'tl-neutral';
+    const squaresHTML = block.candles.map(cIdx => {
+      const c = list[cIdx];
+      const dir = c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down');
+      const sqClass = dir === 'up' ? 'tl-sq-up' :
+                      dir === 'down' ? 'tl-sq-down' : 'tl-sq-neutral';
+      const isActive = (cIdx === window.playbackIndex);
+      return '<div class="tl-square ' + sqClass + (isActive ? ' tl-sq-active' : '') + '" ' +
+             'data-idx="' + cIdx + '" title="Candle ' + (cIdx + 1) + ' - ' + dir + '">' +
+             '<span class="tl-sq-num">' + (cIdx + 1) + '</span></div>';
+    }).join('');
+    const blockLabel = block.dir === 'up' ? 'UP' :
+                       block.dir === 'down' ? 'DOWN' : 'NEUTRAL';
+    return '<div class="tl-block ' + colorClass + '">' +
+      '<div class="tl-block-label">' + blockLabel + ' x' + block.candles.length + '</div>' +
+      '<div class="tl-squares">' + squaresHTML + '</div>' +
+    '</div>';
+  }).join('');
+  const firstCandle = list[0];
+  const lastCandle = list[list.length - 1];
+  const timeRange = (firstCandle.time || '--:--') + ' to ' + (lastCandle.time || '--:--');
+  const summaryHTML =
+    '<div class="tl-summary">' +
+      '<span class="tl-summary-item tl-sum-up">UP: ' + upCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-down">DOWN: ' + downCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-neutral">NEUTRAL: ' + neutralCount + '</span>' +
+      '<span class="tl-summary-item tl-sum-time">' + timeRange + '</span>' +
+    '</div>';
+  container.innerHTML = summaryHTML +
+    '<div class="tl-blocks-wrap"><div class="tl-blocks">' + blocksHTML + '</div></div>';
+  container.querySelectorAll('.tl-square').forEach(el => {
+    el.onclick = () => {
+      const idx = Number(el.dataset.idx);
+      window.playbackIndex = idx;
+      if (typeof highlightActiveRow === 'function') highlightActiveRow();
+      if (typeof renderCandlePreview === 'function') renderCandlePreview();
+      renderDirectionTimeline();
+    };
+  });
+}
+
+const _origHighlight2 = window.highlightActiveRow;
+window.highlightActiveRow = function() {
+  if (_origHighlight2) _origHighlight2();
+  renderDirectionTimeline();
+};
+
+const _origRenderTable2 = window.renderCandleTable;
+window.renderCandleTable = function() {
+  if (_origRenderTable2) _origRenderTable2();
+  setTimeout(function() { renderDirectionTimeline(); }, 60);
+};
+
+renderDirectionTimeline();
+document.addEventListener('DOMContentLoaded', renderDirectionTimeline);
+setTimeout(renderDirectionTimeline, 1000);
+setTimeout(renderDirectionTimeline, 2500);
+
+console.log('Part 6C-3 (Direction Timeline) loaded');
+
+(function startTimelineWatcher() {
+  let lastCount = -1;
+  let lastFirstClose = '';
+  setInterval(function() {
+    const container = document.getElementById('direction-timeline');
+    if (!container) return;
+    const list = window.candleList || [];
+    const count = list.length;
+    const firstClose = count > 0 ? (list[0].close || '') : '';
+    const isBlank = container.innerHTML.indexOf('No timeline') !== -1 ||
+                    container.innerHTML.indexOf('empty-text') !== -1;
+    const changed = (count !== lastCount) || (firstClose !== lastFirstClose) ||
+                    (isBlank && count > 0);
+    if (changed) {
+      lastCount = count;
+      lastFirstClose = firstClose;
+      renderDirectionTimeline();
+      console.log('Timeline auto-updated:', count, 'candles');
+    }
+  }, 500);
+  console.log('Timeline auto-watcher started');
+})();
+
+/* ============================================================
+   AUTO MODE (Part 6D) + MODE BEHAVIOR (Part 6E-2)
+   ============================================================ */
+
+window.autoModeActive = false;
+window.autoModeTimer = null;
+window.autoModeInterval = 5000;
+window.autoModeMaxCandles = 500;
+
+function autoGenerateOneCandle() {
+  if (!window.currentMarketId) {
+    console.log('Auto: No market selected, stopping');
+    stopAutoMode();
+    return;
+  }
+  if (window.candleList.length >= window.autoModeMaxCandles) {
+    console.log('Auto: Max candles reached, stopping');
+    stopAutoMode();
     return;
   }
 
-  try {
-    const candlesRef = collection(db, "markets", marketId, "candles");
+  const mode = window.candleMode || 'locked';
 
-    window.userCandlesUnsub = onSnapshot(candlesRef, function(snap) {
-      const candles = [];
-      snap.forEach(function(docSnap) {
-        const c = docSnap.data();
-        candles.push({
-          id: docSnap.id,
-          number: c.number || 0,
-          date: c.date || "",
-          startTime: c.startTime || c.time || "",
-          endTime: c.endTime || "",
-          timeframe: c.timeframe || "1m",
+  if (mode === 'locked') {
+    console.warn('Auto: LOCKED mode - auto generation stopped');
+    stopAutoMode();
+    return;
+  }
+
+  let lastCandle = null;
+  if (window.candleList.length > 0) {
+    lastCandle = window.candleList[window.candleList.length - 1];
+  }
+  const baseEl = document.getElementById('bulk-base');
+  const basePrice = Number(baseEl?.value || 50000);
+  const tf = document.getElementById('candle-timeframe')?.value || '1m';
+  const tfSeconds = timeframeToSeconds(tf);
+  const wick = Number(document.getElementById('bulk-wick')?.value || 20);
+  const body = Number(document.getElementById('bulk-body')?.value || 60);
+  const upDuration = Number(document.getElementById('bulk-up')?.value || 5);
+  const downDuration = Number(document.getElementById('bulk-down')?.value || 5);
+  const patternLength = upDuration + downDuration;
+  const idx = window.candleList.length;
+  let direction = 'up';
+
+  if (mode === 'random') {
+    const r = Math.random();
+    if (r < 0.45) direction = 'up';
+    else if (r < 0.90) direction = 'down';
+    else direction = 'neutral';
+    console.log('Auto: RANDOM mode - direction:', direction);
+  } else if (mode === 'mixed') {
+    if (patternLength > 0) {
+      const pos = idx % patternLength;
+      if (pos < upDuration) direction = 'up';
+      else direction = 'down';
+    }
+    console.log('Auto: MIXED mode - direction:', direction);
+  } else if (mode === 'schedule') {
+    if (patternLength > 0) {
+      const pos = idx % patternLength;
+      if (pos < upDuration) direction = 'up';
+      else direction = 'down';
+    }
+    console.log('Auto: SCHEDULE mode - direction:', direction);
+  }
+
+  const now = new Date();
+  const date = now.toISOString().split('T')[0];
+  const timeStr = now.toTimeString().slice(0, 8);
+  const endTimeSec = timeToSeconds(timeStr) + tfSeconds;
+  const endTimeStr = secondsToTime(endTimeSec);
+  const prevClose = lastCandle ? parseFloat(lastCandle.close) : null;
+  const candle = buildCandleWithPrice({
+    number: idx + 1,
+    date: date, time: timeStr, endTime: endTimeStr,
+    timeframe: tf, prevClose: prevClose, basePrice: basePrice,
+    direction: direction, wick: wick, body: body, sizeType: 'medium'
+  });
+  candle.up = upDuration;
+  candle.down = downDuration;
+  window.candleList.push(candle);
+  window.candleCounter = window.candleList.length;
+  renderCandleTable();
+  console.log('Auto-generated candle #' + candle.number + ' (' + direction + ') price: ' + candle.close);
+}
+
+function startAutoMode() {
+  if (window.autoModeActive) return;
+  if (!window.currentMarketId) { alert('Select a market first'); return; }
+  window.autoModeActive = true;
+  console.log('Auto Mode STARTED with interval', window.autoModeInterval, 'ms');
+  if (window.playbackTimer) playbackPause();
+  autoGenerateOneCandle();
+  window.autoModeTimer = setInterval(function() { autoGenerateOneCandle(); }, window.autoModeInterval);
+  updateAutoModeUI2();
+}
+
+function stopAutoMode() {
+  if (!window.autoModeActive) return;
+  if (window.autoModeTimer) {
+    clearInterval(window.autoModeTimer);
+    window.autoModeTimer = null;
+  }
+  window.autoModeActive = false;
+  console.log('Auto Mode STOPPED');
+  updateAutoModeUI2();
+}
+
+function toggleAutoMode() {
+  if (window.autoModeActive) stopAutoMode();
+  else startAutoMode();
+}
+
+function setAutoModeInterval(ms) {
+  window.autoModeInterval = ms;
+  console.log('Auto interval set to', ms, 'ms');
+  if (window.autoModeActive) { stopAutoMode(); startAutoMode(); }
+}
+
+function updateAutoModeUI2() {
+  const btn = document.getElementById('auto-mode-toggle');
+  if (!btn) return;
+  if (window.autoModeActive) {
+    btn.textContent = 'Auto Mode: ON';
+    btn.classList.add('active');
+    btn.style.background = '#00c853';
+    btn.style.color = '#04121a';
+    window.adminSettings.autoMode = true;
+  } else {
+    btn.textContent = 'Auto Mode: OFF';
+    btn.classList.remove('active');
+    btn.style.background = '';
+    btn.style.color = '';
+    window.adminSettings.autoMode = false;
+  }
+}
+
+function bindAutoMode() {
+  const btn = document.getElementById('auto-mode-toggle');
+  if (btn && btn.dataset.boundAuto !== '1') {
+    btn.dataset.boundAuto = '1';
+    btn.onclick = function(e) {
+      toggleAutoMode();
+    };
+    console.log('Auto Mode toggle bound');
+  }
+  let sel = document.getElementById('auto-mode-speed');
+  if (!sel && btn && btn.parentNode) {
+    sel = document.createElement('select');
+    sel.id = 'auto-mode-speed';
+    sel.className = 'playback-speed-select';
+    sel.style.marginLeft = '8px';
+    sel.innerHTML =
+      '<option value="1000">1s</option>' +
+      '<option value="5000" selected>5s</option>' +
+      '<option value="10000">10s</option>' +
+      '<option value="30000">30s</option>' +
+      '<option value="60000">1m</option>';
+    btn.parentNode.appendChild(sel);
+  }
+  if (sel && sel.dataset.boundAuto !== '1') {
+    sel.dataset.boundAuto = '1';
+    sel.onchange = function() { setAutoModeInterval(parseInt(sel.value)); };
+    console.log('Auto Mode speed selector bound');
+  }
+}
+
+bindAutoMode();
+document.addEventListener('DOMContentLoaded', bindAutoMode);
+setTimeout(bindAutoMode, 800);
+setTimeout(bindAutoMode, 2500);
+
+console.log('Part 6D (Auto Mode) loaded');
+console.log('Part 6C-1 (Playback) loaded');
+
+/* ============================================================
+   GLOBAL EXPOSE
+   ============================================================ */
+
+window.addCandle = addCandle;
+window.clearCandles = clearCandles;
+window.renderCandleTable = renderCandleTable;
+window.saveAllCandles = saveAllCandles;
+window.loadCandlesFromFirestore = loadCandlesFromFirestore;
+window.bulkGenerateCandles = bulkGenerateCandles;
+window.timeframeToSeconds = timeframeToSeconds;
+window.calcCandleTime = calcCandleTime;
+window.renderCandlePreview = renderCandlePreview;
+window.renderDirectionTimeline = renderDirectionTimeline;
+window.playbackPlay = playbackPlay;
+window.playbackPause = playbackPause;
+window.playbackSkip = playbackSkip;
+window.playbackBack = playbackBack;
+window.playbackReset = playbackReset;
+window.playbackSetSpeed = playbackSetSpeed;
+window.highlightActiveRow = highlightActiveRow;
+window.startAutoMode = startAutoMode;
+window.stopAutoMode = stopAutoMode;
+window.toggleAutoMode = toggleAutoMode;
+window.setAutoModeInterval = setAutoModeInterval;
+window.autoGenerateOneCandle = autoGenerateOneCandle;
+
+/* ============================================================
+   PART 6E-1 + 6E-2: CANDLE MODE SWITCH + FIRESTORE + BEHAVIOR
+   ============================================================ */
+
+window.candleMode = window.candleMode || 'locked';
+
+window.CANDLE_MODE_INFO = {
+  locked:   '<strong>LOCKED:</strong> Admin-er save kora candle user-er kache exact jabe.',
+  random:   '<strong>RANDOM:</strong> Prottek candle randomly generate hobe (up/down/neutral).',
+  mixed:    '<strong>MIXED:</strong> Locked candle thakbe, kintu win rate target maintain hobe.',
+  schedule: '<strong>SCHEDULE:</strong> Time-based candle generate hobe (schedule onujayi).'
+};
+
+window.updateCandleModeInfo = function(mode) {
+  const infoEl = document.getElementById('candle-mode-info');
+  if (!infoEl) {
+    console.warn('[Mode] candle-mode-info element not found');
+    return;
+  }
+  infoEl.innerHTML = window.CANDLE_MODE_INFO[mode] || '';
+};
+
+window.updateCandleModeButtons = function(mode) {
+  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
+  if (!buttons.length) {
+    console.warn('[Mode] No mode buttons found');
+    return;
+  }
+  buttons.forEach(function(btn) {
+    if (!btn) return;
+    if (btn.getAttribute('data-mode') === mode) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+};
+
+window.setCandleMode = function(mode, skipSave) {
+  const validModes = ['locked', 'random', 'mixed', 'schedule'];
+  if (validModes.indexOf(mode) === -1) {
+    console.error('[Mode] Invalid mode:', mode);
+    return;
+  }
+
+  const oldMode = window.candleMode;
+  window.candleMode = mode;
+  window.adminSettings.candleMode = mode;
+
+  window.updateCandleModeButtons(mode);
+  window.updateCandleModeInfo(mode);
+
+  console.log('[Mode] Switched: ' + oldMode + ' -> ' + mode);
+
+  if (!skipSave) {
+    window.saveCandleModeToFirestore(mode);
+  }
+};
+
+window.saveCandleModeToFirestore = async function(mode) {
+  try {
+    if (typeof window.db === 'undefined') {
+      console.warn('[Mode] Firestore db not exposed - skipping save');
+      return;
+    }
+    const { doc: fbDoc, setDoc: fbSetDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    await fbSetDoc(
+      fbDoc(window.db, 'settings', 'global'),
+      { candleMode: mode, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+    console.log('[Mode] Saved to Firestore:', mode);
+  } catch (err) {
+    console.error('[Mode] Firestore save error:', err.message);
+  }
+};
+
+window.loadCandleModeFromFirestore = async function() {
+  try {
+    if (typeof window.db === 'undefined') {
+      console.warn('[Mode] Firestore db not exposed - using default');
+      window.setCandleMode('locked', true);
+      return;
+    }
+    const { doc: fbDoc, getDoc: fbGetDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const docSnap = await fbGetDoc(fbDoc(window.db, 'settings', 'global'));
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const savedMode = data.candleMode || 'locked';
+      console.log('[Mode] Loaded from Firestore:', savedMode);
+      window.setCandleMode(savedMode, true);
+    } else {
+      console.log('[Mode] No settings doc, using default: locked');
+      window.setCandleMode('locked', true);
+    }
+  } catch (err) {
+    console.error('[Mode] Load error:', err.message);
+    window.setCandleMode('locked', true);
+  }
+};
+
+window.bindCandleModeButtons = function() {
+  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
+  if (!buttons.length) {
+    console.warn('[Mode] No mode buttons to bind');
+    return;
+  }
+
+  buttons.forEach(function(btn) {
+    if (btn.dataset.modeBound === '1') return;
+    btn.dataset.modeBound = '1';
+
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const mode = btn.getAttribute('data-mode');
+      console.log('[Mode] Button clicked:', mode);
+
+      if (window.autoModeActive === true && typeof window.stopAutoMode === 'function') {
+        console.log('[Mode] Auto Mode running - stopping before mode switch');
+        window.stopAutoMode();
+      }
+
+      window.setCandleMode(mode);
+    });
+  });
+
+  console.log('[Mode] Bound ' + buttons.length + ' mode buttons');
+};
+
+window.initCandleModeUI = function() {
+  console.log('[Mode] Initializing Mode UI...');
+  window.bindCandleModeButtons();
+  window.updateCandleModeButtons(window.candleMode);
+  window.updateCandleModeInfo(window.candleMode);
+  console.log('[Mode] Init complete. Current mode:', window.candleMode);
+
+  setTimeout(function() {
+    if (window.currentAdmin) {
+      window.loadCandleModeFromFirestore();
+    }
+  }, 1500);
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(window.initCandleModeUI, 800);
+});
+
+setTimeout(function() {
+  if (!document.querySelector('.mode-btn.active')) {
+    console.log('[Mode] Fallback init at 2500ms');
+    window.initCandleModeUI();
+  }
+}, 2500);
+
+/* ============================================================
+   EXPOSE FIRESTORE DB TO WINDOW
+   ============================================================ */
+
+window.db = db;
+window.auth = auth;
+console.log('[Firebase] db + auth exposed to window');
+/* ============================================================
+   PART 6F: EXPORT / IMPORT JSON
+   ============================================================ */
+
+window.exportCandles = function() {
+  console.log('[Export] Starting...');
+  
+  // Check if candles exist
+  if (!window.candleList || window.candleList.length === 0) {
+    alert('No candles to export. Generate or load candles first.');
+    return;
+  }
+  
+  try {
+    // Build export object
+    const exportData = {
+      version: '6F',
+      exportedAt: new Date().toISOString(),
+      marketId: window.currentMarketId || 'unknown',
+      candleCount: window.candleList.length,
+      candleMode: window.candleMode || 'locked',
+      candles: window.candleList.map(function(c, i) {
+        return {
+          number: i + 1,
+          date: c.date || '',
+          time: c.time || '',
+          endTime: c.endTime || '',
+          timeframe: c.timeframe || '1m',
           open: Number(c.open) || 0,
           high: Number(c.high) || 0,
           low: Number(c.low) || 0,
           close: Number(c.close) || 0,
-          color: c.color || "green",
-          direction: c.direction || "up"
-        });
-      });
-
-      candles.sort(function(a, b) {
-        return (a.number || 0) - (b.number || 0);
-      });
-
-      window.userCandles = candles;
-      renderAdminCandlesOnChart(candles);
-      console.log("[Candles] Real-time update: " + candles.length + " candles");
-    }, function(err) {
-      console.error("[Candles] Listener error:", err.message);
-    });
-
-    console.log("[Candles] Listener started for market: " + marketId);
-
+          color: c.color || 'green',
+          direction: c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down'),
+          size: c.size || 'medium',
+          wick: Number(c.wick) || 20,
+          body: Number(c.body) || 60,
+          up: Number(c.up) || 0,
+          down: Number(c.down) || 0
+        };
+      })
+    };
+    
+    // Convert to JSON string
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    
+    // Create blob
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create download link
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = 'candles_' + (window.currentMarketId || 'export') + '_' + timestamp + '.json';
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('[Export] Exported ' + exportData.candleCount + ' candles to ' + filename);
+    alert('Exported ' + exportData.candleCount + ' candles!\n\nFile: ' + filename);
+    
   } catch (err) {
-    console.error("[Candles] Listen error:", err.message);
+    console.error('[Export] Error:', err);
+    alert('Export failed: ' + err.message);
   }
-}
+};
 
-/**
- * Smart candle loader: Firestore first, Binance fallback
- */
-async function loadUserCandlesSmart() {
-  const marketId = window.selectedMarketId;
-
-  if (marketId) {
-    console.log("[Candles] Loading admin candles for market: " + marketId);
-
-    const adminCandles = await loadAdminCandlesFromFirestore(marketId);
-
-    if (adminCandles.length > 0) {
-      // Render admin candles
-      renderAdminCandlesOnChart(adminCandles);
-
-      // Start real-time listener
-      listenAdminCandles(marketId);
-      console.log("[Candles] Using ADMIN candles (" + adminCandles.length + ")");
+window.importCandles = function() {
+  console.log('[Import] Opening file picker...');
+  
+  // Find or create file input
+  let fileInput = document.getElementById('import-candles-file');
+  if (!fileInput) {
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'import-candles-file';
+    fileInput.accept = '.json,application/json';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+    console.log('[Import] Created hidden file input');
+  }
+  
+  // Bind change event
+  fileInput.onchange = async function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      console.log('[Import] No file selected');
       return;
-    } else {
-      console.log("[Candles] No admin candles - falling back to Binance");
     }
-  } else {
-    console.log("[Candles] No marketId - using Binance fallback");
-  }
+    
+    console.log('[Import] File selected: ' + file.name + ' (' + file.size + ' bytes)');
+    
+    try {
+      // Read file
+      const text = await file.text();
+      console.log('[Import] File read, length: ' + text.length);
+      
+      // Parse JSON
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error('Invalid JSON file: ' + parseErr.message);
+      }
+      
+      // Validate structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid file format: not an object');
+      }
+      
+      if (!Array.isArray(data.candles)) {
+        throw new Error('Invalid file: missing "candles" array');
+      }
+      
+      if (data.candles.length === 0) {
+        throw new Error('File contains 0 candles');
+      }
+      
+      console.log('[Import] Validated: ' + data.candles.length + ' candles');
+      
+      // Confirm with user
+      const confirmMsg = 'Import ' + data.candles.length + ' candles?\n\n' +
+        'From: ' + (data.marketId || 'unknown') + '\n' +
+        'Exported: ' + (data.exportedAt || 'unknown') + '\n\n' +
+        'This will REPLACE current ' + (window.candleList ? window.candleList.length : 0) + ' candles.';
+      
+      if (!confirm(confirmMsg)) {
+        console.log('[Import] Cancelled by user');
+        return;
+      }
+      
+      // Validate and build new candle list
+      const validCandles = [];
+      let invalidCount = 0;
+      
+      for (let i = 0; i < data.candles.length; i++) {
+        const c = data.candles[i];
+        if (!c || typeof c !== 'object') {
+          invalidCount++;
+          continue;
+        }
+        
+        // Open/close/high/low must be numbers (or parseable)
+        const open = Number(c.open);
+        const close = Number(c.close);
+        const high = Number(c.high);
+        const low = Number(c.low);
+        
+        if (isNaN(open) || isNaN(close) || isNaN(high) || isNaN(low)) {
+          invalidCount++;
+          continue;
+        }
+        
+        validCandles.push({
+          number: validCandles.length + 1,
+          date: c.date || '',
+          time: c.time || '',
+          endTime: c.endTime || '',
+          timeframe: c.timeframe || '1m',
+          open: open.toFixed(2),
+          high: high.toFixed(2),
+          low: low.toFixed(2),
+          close: close.toFixed(2),
+          color: c.color || (close >= open ? 'green' : 'red'),
+          direction: c.direction || (close >= open ? 'up' : 'down'),
+          size: c.size || 'medium',
+          wick: Number(c.wick) || 20,
+          body: Number(c.body) || 60,
+          up: Number(c.up) || 0,
+          down: Number(c.down) || 0
+        });
+      }
+      
+      if (validCandles.length === 0) {
+        throw new Error('No valid candles found. All ' + invalidCount + ' entries were invalid.');
+      }
+      
+      console.log('[Import] Validated: ' + validCandles.length + ' valid, ' + invalidCount + ' invalid');
+      
+      // Apply
+      window.candleList = validCandles;
+      window.candleCounter = validCandles.length;
+      renderCandleTable();
+      
+      // Update market select if available
+      if (data.marketId && data.marketId !== 'unknown') {
+        const sel = document.getElementById('candle-market-select');
+        if (sel) {
+          // Try to find the market in options
+          let found = false;
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === data.marketId) {
+              sel.value = data.marketId;
+              window.currentMarketId = data.marketId;
+              found = true;
+              break;
+            }
+          }
+          if (found) {
+            console.log('[Import] Auto-selected market: ' + data.marketId);
+          }
+        }
+      }
+      
+      const successMsg = 'Imported ' + validCandles.length + ' candles!\n\n' +
+        (invalidCount > 0 ? 'Skipped ' + invalidCount + ' invalid entries.\n\n' : '') +
+        'Click "Save to Firestore" to persist them.';
+      
+      alert(successMsg);
+      console.log('[Import] Success: ' + validCandles.length + ' candles loaded');
+      
+    } catch (err) {
+      console.error('[Import] Error:', err);
+      alert('Import failed:\n\n' + err.message);
+    } finally {
+      // Reset file input so same file can be re-selected
+      fileInput.value = '';
+    }
+  };
+  
+  // Open file picker
+  fileInput.click();
+};
 
-  // Fallback: Binance API
-  if (window.userCandlesUnsub) {
-    window.userCandlesUnsub();
-    window.userCandlesUnsub = null;
+function bindExportImport() {
+  const exportBtn = document.getElementById('export-candles-btn');
+  if (exportBtn && exportBtn.dataset.bound !== '1') {
+    exportBtn.dataset.bound = '1';
+    exportBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('[Export] Button clicked');
+      window.exportCandles();
+    };
+    console.log('[Export] Button bound');
   }
-
-  if (typeof loadCandles === "function") {
-    await loadCandles();
+  
+  const importBtn = document.getElementById('import-candles-btn');
+  if (importBtn && importBtn.dataset.bound !== '1') {
+    importBtn.dataset.bound = '1';
+    importBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('[Import] Button clicked');
+      window.importCandles();
+    };
+    console.log('[Import] Button bound');
   }
 }
 
-/**
- * Init on market change
- */
-function onMarketChanged() {
-  console.log("[Candles] Market changed - reloading candles");
-  loadUserCandlesSmart();
-}
+bindExportImport();
+document.addEventListener('DOMContentLoaded', bindExportImport);
+setTimeout(bindExportImport, 800);
+setTimeout(bindExportImport, 2500);
 
-// ============================================================
-// BIND: Market change handler override
-// ============================================================
+console.log('Part 6F (Export/Import JSON) loaded');
+/* ============================================================
+   PART DEBUG-1: AUTO ERROR SYSTEM
+   ============================================================ */
 
-// Wait for Part 7A to load, then override bindMarketChangeHandler
-setTimeout(function() {
-  const sel = document.getElementById("asset-select");
-  if (!sel) {
-    console.warn("[Candles] asset-select not found");
+window.debugLogs = [];
+window.debugPanelOpen = false;
+window.maxDebugLogs = 200;
+
+window.addDebugLog = function(level, message) {
+  const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const entry = {
+    time: timestamp,
+    level: level,
+    message: String(message)
+  };
+  window.debugLogs.push(entry);
+  if (window.debugLogs.length > window.maxDebugLogs) {
+    window.debugLogs.shift();
+  }
+  if (window.debugPanelOpen) {
+    window.renderDebugPanel();
+  }
+};
+
+window.createDebugPanel = function() {
+  if (document.getElementById('debug-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'debug-panel';
+  panel.style.cssText = [
+    'position: fixed',
+    'bottom: 0',
+    'right: 0',
+    'width: 100%',
+    'max-width: 420px',
+    'height: 50vh',
+    'max-height: 400px',
+    'background: #0b1220',
+    'border-top: 2px solid #2196f3',
+    'border-left: 2px solid #2196f3',
+    'border-top-left-radius: 12px',
+    'z-index: 99999',
+    'display: none',
+    'flex-direction: column',
+    'box-shadow: -4px -4px 20px rgba(0,0,0,0.6)',
+    'font-family: monospace',
+    'font-size: 11px'
+  ].join(';');
+
+  panel.innerHTML =
+    '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:#0d1522; border-bottom:1px solid #1f2a3d;">' +
+      '<span style="color:#2196f3; font-weight:bold;">DEBUG PANEL</span>' +
+      '<div>' +
+        '<button id="debug-copy-btn" style="background:#1a2333; color:#e6edf3; border:1px solid #2a3648; border-radius:4px; padding:4px 8px; font-size:10px; margin-right:4px; cursor:pointer;">Copy</button>' +
+        '<button id="debug-clear-btn" style="background:#3a1220; color:#ff5252; border:1px solid #ff5252; border-radius:4px; padding:4px 8px; font-size:10px; margin-right:4px; cursor:pointer;">Clear</button>' +
+        '<button id="debug-close-btn" style="background:#1a2333; color:#e6edf3; border:1px solid #2a3648; border-radius:4px; padding:4px 8px; font-size:10px; cursor:pointer;">X</button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="debug-log-body" style="flex:1; overflow-y:auto; padding:8px; color:#e6edf3;"></div>';
+
+  document.body.appendChild(panel);
+
+  document.getElementById('debug-copy-btn').onclick = function() {
+    const text = window.debugLogs.map(function(l) {
+      return '[' + l.time + '] [' + l.level + '] ' + l.message;
+    }).join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        alert('Logs copied to clipboard! (' + window.debugLogs.length + ' entries)');
+      }).catch(function() {
+        alert('Copy failed. Total logs: ' + window.debugLogs.length);
+      });
+    } else {
+      alert('Clipboard not available. Total logs: ' + window.debugLogs.length);
+    }
+  };
+
+  document.getElementById('debug-clear-btn').onclick = function() {
+    window.debugLogs = [];
+    window.renderDebugPanel();
+    window.addDebugLog('info', 'Logs cleared');
+  };
+
+  document.getElementById('debug-close-btn').onclick = function() {
+    window.toggleDebugPanel(false);
+  };
+};
+
+window.renderDebugPanel = function() {
+  const body = document.getElementById('debug-log-body');
+  if (!body) return;
+  if (window.debugLogs.length === 0) {
+    body.innerHTML = '<div style="color:#6b7a90; text-align:center; padding:20px;">No logs yet</div>';
     return;
   }
+  const colorMap = {
+    'error': '#ff5252',
+    'warn': '#ffb300',
+    'success': '#00c853',
+    'info': '#2196f3'
+  };
+  body.innerHTML = window.debugLogs.map(function(l) {
+    const color = colorMap[l.level] || '#e6edf3';
+    return '<div style="margin-bottom:4px; padding:4px 6px; background:rgba(255,255,255,0.03); border-left:2px solid ' + color + '; border-radius:2px;">' +
+      '<span style="color:#6b7a90;">[' + l.time + ']</span> ' +
+      '<span style="color:' + color + '; font-weight:bold;">[' + l.level.toUpperCase() + ']</span> ' +
+      '<span style="color:#e6edf3;">' + l.message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
+    '</div>';
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+};
 
-  // Remove old handlers by cloning
-  const newSel = sel.cloneNode(true);
-  sel.parentNode.replaceChild(newSel, sel);
+window.toggleDebugPanel = function(forceState) {
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  const open = typeof forceState === 'boolean' ? forceState : !window.debugPanelOpen;
+  window.debugPanelOpen = open;
+  panel.style.display = open ? 'flex' : 'none';
+  if (open) {
+    window.renderDebugPanel();
+  }
+};
 
-  // Bind new handler
-  newSel.addEventListener("change", async function() {
-    const selectedOpt = newSel.selectedOptions[0];
-    selectedAsset = newSel.value;
-    window.selectedMarketId = selectedOpt ? (selectedOpt.dataset.marketId || null) : null;
+window.createDebugButton = function() {
+  if (document.getElementById('debug-toggle-btn')) return;
 
-    console.log("[Candles] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
+  const btn = document.createElement('button');
+  btn.id = 'debug-toggle-btn';
+  btn.textContent = 'LOG';
+  btn.style.cssText = [
+    'position: fixed',
+    'bottom: 16px',
+    'right: 16px',
+    'width: 56px',
+    'height: 56px',
+    'background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+    'color: #fff',
+    'border: 2px solid #0b1220',
+    'border-radius: 50%',
+    'font-size: 12px',
+    'font-weight: bold',
+    'z-index: 99998',
+    'cursor: pointer',
+    'box-shadow: 0 4px 12px rgba(33, 150, 243, 0.5)'
+  ].join(';');
 
-    // Update payout labels
-    if (typeof updatePayoutLabelsFromMarket === "function") {
-      updatePayoutLabelsFromMarket();
-    }
+  btn.onclick = function() {
+    window.toggleDebugPanel();
+  };
 
-    // Load candles: Firestore first
-    await loadUserCandlesSmart();
+  document.body.appendChild(btn);
+};
 
-    // Restart live price (for fallback Binance mode)
-    if (window.selectedMarketId === null && typeof startLivePrice === "function" && currentUser) {
-      startLivePrice();
+// ============ GLOBAL ERROR HANDLER ============
+
+window.addEventListener('error', function(event) {
+  const msg = event.message || 'Unknown error';
+  const src = event.filename ? event.filename.split('/').pop() : '';
+  const line = event.lineno || 0;
+  const col = event.colno || 0;
+  const fullMsg = msg + (src ? ' @ ' + src + ':' + line + ':' + col : '');
+  window.addDebugLog('error', fullMsg);
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+  const reason = event.reason;
+  let msg = 'Unhandled Promise Rejection: ';
+  if (reason instanceof Error) {
+    msg += reason.message;
+  } else if (typeof reason === 'string') {
+    msg += reason;
+  } else {
+    try { msg += JSON.stringify(reason); } catch (e) { msg += String(reason); }
+  }
+  window.addDebugLog('error', msg);
+});
+
+// ============ CONSOLE FORWARDING ============
+
+(function() {
+  const origLog = console.log;
+  const origWarn = console.warn;
+  const origError = console.error;
+
+  console.log = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('info', msg);
+    origLog.apply(console, arguments);
+  };
+
+  console.warn = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('warn', msg);
+    origWarn.apply(console, arguments);
+  };
+
+  console.error = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (a instanceof Error) return a.message;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('error', msg);
+    origError.apply(console, arguments);
+  };
+})();
+
+// ============ INIT ============
+
+function initDebugSystem() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      window.createDebugButton();
+      window.createDebugPanel();
+      window.addDebugLog('success', 'Debug System initialized');
+    });
+  } else {
+    window.createDebugButton();
+    window.createDebugPanel();
+    window.addDebugLog('success', 'Debug System initialized');
+  }
+}
+
+initDebugSystem();
+
+
+console.log('Part Debug-1 (Auto Error System) loaded');
+/* ============================================================
+   PART DEBUG-2: TEST MENU (window.runTests)
+   ============================================================ */
+
+window.testResults = {
+  total: 0,
+  pass: 0,
+  fail: 0,
+  warn: 0,
+  tests: []
+};
+
+window.recordTest = function(name, status, details) {
+  window.testResults.total++;
+  if (status === 'pass') window.testResults.pass++;
+  else if (status === 'fail') window.testResults.fail++;
+  else window.testResults.warn++;
+  window.testResults.tests.push({
+    name: name,
+    status: status,
+    details: details || ''
+  });
+};
+
+window.runTests = function() {
+  console.log('===== RUN TESTS START =====');
+  if (window.addDebugLog) window.addDebugLog('info', '===== RUN TESTS START =====');
+
+  window.testResults = { total: 0, pass: 0, fail: 0, warn: 0, tests: [] };
+
+  // -------- 1. ELEMENT CHECK --------
+  console.log('--- ELEMENTS CHECK ---');
+  var requiredIds = [
+    'login-screen', 'admin-panel',
+    'login-email', 'login-password', 'login-btn', 'login-error',
+    'admin-user-email', 'admin-logout-btn',
+    'candle-market-select', 'candle-timeframe',
+    'bulk-date', 'bulk-time', 'bulk-count', 'bulk-base',
+    'bulk-up', 'bulk-down', 'bulk-neutral', 'bulk-wick', 'bulk-body',
+    'bulk-generate-btn',
+    'add-candle-btn', 'save-candles-btn', 'clear-candles-btn', 'refresh-candles',
+    'export-candles-btn', 'import-candles-btn',
+    'play-btn', 'pause-btn', 'skip-btn', 'back-btn', 'reset-btn',
+    'playback-speed', 'playback-status',
+    'auto-mode-toggle', 'auto-interval-input', 'save-auto-interval',
+    'candle-table-body', 'candle-preview', 'direction-timeline',
+    'candle-mode-info', 'win-rate-input', 'save-win-rate',
+    'payout-input', 'save-payout',
+    'users-list', 'trades-list', 'deposits-list', 'withdrawals-list'
+  ];
+
+  var missingIds = [];
+  requiredIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      window.recordTest('Element #' + id, 'pass');
+    } else {
+      window.recordTest('Element #' + id, 'fail', 'MISSING');
+      missingIds.push(id);
     }
   });
 
-  console.log("[Candles] Market change handler re-bound (Part 7B)");
-}, 3500);
-
-// ============================================================
-// INIT: Load candles on user login
-// ============================================================
-
-(function() {
-  let lastLoginState = false;
-
-  setInterval(function() {
-    const nowLoggedIn = !!window.currentUser;
-
-    // User just logged in
-    if (nowLoggedIn && !lastLoginState) {
-      console.log("[Candles] User logged in - loading candles");
-      setTimeout(function() {
-        loadUserCandlesSmart();
-      }, 3000);
-    }
-
-    // User just logged out
-    if (!nowLoggedIn && lastLoginState) {
-      console.log("[Candles] User logged out - stopping listeners");
-      if (window.userCandlesUnsub) {
-        window.userCandlesUnsub();
-        window.userCandlesUnsub = null;
-      }
-    }
-
-    lastLoginState = nowLoggedIn;
-  }, 2000);
-})();
-
-// Also init on DOMContentLoaded (if user already logged in)
-document.addEventListener("DOMContentLoaded", function() {
-  setTimeout(function() {
-    if (window.currentUser) {
-      console.log("[Candles] DOMContentLoaded - user already logged in, loading candles");
-      loadUserCandlesSmart();
-    }
-  }, 5000);
-});
-
-console.log("Part 7B (Candle Render from Firestore) loaded");
-
-// ============================================================
-// EXPOSE FIREBASE + STATE TO WINDOW (FINAL FIX)
-// ============================================================
-
-window.db = db;
-window.auth = auth;
-window.getDocs = getDocs;
-window.collection = collection;
-window.doc = doc;
-window.setDoc = setDoc;
-window.updateDoc = updateDoc;
-window.query = query;
-window.where = where;
-window.onSnapshot = onSnapshot;
-window.addDoc = addDoc;
-window.getDoc = getDoc;
-
-console.log("✅ Firebase functions exposed to window");
-
-// Sync module state to window
-setTimeout(function() {
-  window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
-  window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
-  window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
-  window.listenAdminCandles = listenAdminCandles;
-  window.loadUserCandlesSmart = loadUserCandlesSmart;
-  console.log("✅ Functions exposed after 2s");
-}, 2000);
-
-setInterval(function() {
-  if (typeof currentUser !== 'undefined' && currentUser) window.currentUser = currentUser;
-  if (typeof chart !== 'undefined' && chart) window.chart = chart;
-  if (typeof candleSeries !== 'undefined' && candleSeries) window.candleSeries = candleSeries;
-}, 500);
-
-console.log("✅ State sync started");
-
-/* ============================================================
-   MSG 10: TRUE TRADE MECHANIC + COUNTDOWN + ENTRY LINE
-   (Self-contained — no dependency on missing functions)
-   ============================================================ */
-
-// ============================================================
-// 1. TOP-LEFT COUNTDOWN TIMER
-// ============================================================
-
-window.countdownInterval = null;
-
-function updateTopCountdown() {
-  var timerEl = document.getElementById("top-countdown-timer");
-  var symbolEl = document.getElementById("countdown-symbol");
-  var timeEl = document.getElementById("countdown-time");
-  var badgeEl = document.getElementById("trade-info-badge");
-  var arrowEl = document.getElementById("trade-info-arrow");
-  var infoTextEl = document.getElementById("trade-info-text");
-
-  // Access activeTradesLocal via module scope (may be in different name)
-  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
-    ? activeTradesLocal : [];
-
-  if (trades.length === 0) {
-    if (timerEl) timerEl.classList.add("hidden");
-    if (badgeEl) badgeEl.classList.add("hidden");
-    return;
+  if (missingIds.length === 0) {
+    console.log('[ELEMENTS] All ' + requiredIds.length + ' elements found ✓');
+  } else {
+    console.warn('[ELEMENTS] Missing: ' + missingIds.join(', '));
   }
 
-  // Find soonest trade
-  var soonest = trades[0];
-  for (var i = 1; i < trades.length; i++) {
-    if (trades[i].expiresAt < soonest.expiresAt) soonest = trades[i];
+  // -------- 2. MODE BUTTONS --------
+  console.log('--- MODE BUTTONS CHECK ---');
+  var modeBtns = document.querySelectorAll('.mode-btn[data-mode]');
+  if (modeBtns.length === 4) {
+    window.recordTest('4 Mode Buttons', 'pass');
+  } else {
+    window.recordTest('4 Mode Buttons', 'fail', 'Found: ' + modeBtns.length);
   }
 
-  var remaining = Math.max(0, Math.ceil((soonest.expiresAt - Date.now()) / 1000));
-  var mm = Math.floor(remaining / 60);
-  var ss = remaining % 60;
-  var timeStr = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
-
-  if (timerEl) {
-    timerEl.classList.remove("hidden", "warning", "critical");
-    if (remaining <= 5) timerEl.classList.add("critical");
-    else if (remaining <= 15) timerEl.classList.add("warning");
-
-    if (symbolEl) symbolEl.textContent = soonest.asset || "ASSET";
-    if (timeEl) timeEl.textContent = timeStr;
-  }
-
-  if (badgeEl) {
-    badgeEl.classList.remove("hidden", "call", "put");
-    badgeEl.classList.add(soonest.type || "call");
-    if (arrowEl) arrowEl.textContent = soonest.type === "call" ? "▲" : "▼";
-    if (infoTextEl) {
-      infoTextEl.textContent = String(soonest.type || "call").toUpperCase() + " $" + (soonest.amount || 0);
-    }
-  }
-}
-
-function startCountdownInterval() {
-  if (window.countdownInterval) return;
-  window.countdownInterval = setInterval(updateTopCountdown, 200);
-  console.log("[MSG10] Countdown interval started");
-}
-
-function stopCountdownInterval() {
-  if (window.countdownInterval) {
-    clearInterval(window.countdownInterval);
-    window.countdownInterval = null;
-    console.log("[MSG10] Countdown interval stopped");
-  }
-}
-
-// Auto-start
-startCountdownInterval();
-document.addEventListener("DOMContentLoaded", startCountdownInterval);
-
-// ============================================================
-// 2. TRUE TRADE MECHANIC — Entry vs Exit Compare
-// ============================================================
-
-function safeShowResultFlash(result) {
-  if (typeof showResultFlash === "function") {
-    try { showResultFlash(result); return; } catch(e) {}
-  }
-  // Fallback flash
-  var flash = document.createElement("div");
-  flash.className = "result-flash " + result;
-  document.body.appendChild(flash);
-  setTimeout(function() { flash.remove(); }, 700);
-}
-
-function safePlaySound(type) {
-  if (typeof playSound === "function") {
-    try { playSound(type); return; } catch(e) {}
-  }
-}
-
-function safeAnimateBalanceChange(amount) {
-  if (typeof animateBalanceChange === "function") {
-    try { animateBalanceChange(amount); return; } catch(e) {}
-  }
-  // Fallback: update balance display
-  if (typeof balanceEl !== "undefined" && balanceEl) {
-    balanceEl.textContent = Number(userBalance).toFixed(2);
-  }
-}
-
-async function processTradeResults() {
-  if (typeof currentUser === "undefined" || !currentUser) return;
-
-  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
-    ? activeTradesLocal : [];
-
-  if (trades.length === 0) return;
-
-  var now = Date.now();
-
-  for (var i = 0; i < trades.length; i++) {
-    var trade = trades[i];
-    if (trade.expiresAt > now || trade.status !== "pending") continue;
-
-    var entryPrice = Number(trade.entryPrice) || Number(currentPrice) || 0;
-    var exitPrice = Number(currentPrice) || entryPrice;
-    var diff = exitPrice - entryPrice;
-
-    var realResult = "loss";
-    if (trade.type === "call" && diff > 0) realResult = "win";
-    else if (trade.type === "put" && diff < 0) realResult = "win";
-
-    console.log(
-      "[Trade Result] " + String(trade.type).toUpperCase() +
-      " | Entry: " + entryPrice.toFixed(2) +
-      " → Exit: " + exitPrice.toFixed(2) +
-      " | Diff: " + diff.toFixed(2) +
-      " | " + realResult.toUpperCase()
-    );
-
-    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 85) / 100) + 1;
-    var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
-    var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
-
-    try {
-      await updateDoc(doc(db, "trades", trade.id), {
-        status: "completed",
-        result: realResult,
-        exitPrice: exitPrice,
-        profit: returnAmount,
-        netProfit: netProfit,
-        completedAt: new Date().toISOString(),
-        adminProcessed: true
-      });
-
-      if (realResult === "win") {
-        var userRef = doc(db, "users", currentUser.uid);
-        var userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          var userData = userDoc.data();
-          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-          var curBal = userData[balanceField] || 0;
-          var newBal = curBal + returnAmount;
-
-          await updateDoc(userRef, {
-            [balanceField]: newBal,
-            balance: newBal
-          });
-
-          if (typeof userBalance !== "undefined") userBalance = newBal;
-          window.userBalance = newBal;
-
-          if (typeof balanceEl !== "undefined" && balanceEl) {
-            balanceEl.textContent = newBal.toFixed(2);
-          }
-          if (typeof balancePopupValue !== "undefined" && balancePopupValue) {
-            balancePopupValue.textContent = newBal.toFixed(2);
-          }
-
-          safeAnimateBalanceChange(returnAmount);
-          safeShowResultFlash("win");
-          safePlaySound("win");
-
-          if (typeof tradeMessage !== "undefined" && tradeMessage) {
-            tradeMessage.style.color = "#00c853";
-            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
-            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
-          }
-        }
-      } else {
-        safeShowResultFlash("loss");
-        safePlaySound("loss");
-
-        if (typeof tradeMessage !== "undefined" && tradeMessage) {
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
-          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
-        }
-      }
-    } catch (err) {
-      console.error("[Trade Process Error]", err.message);
-    }
-  }
-}
-
-// Start trade result processor (every 1.5 sec)
-setInterval(processTradeResults, 1500);
-
-// ============================================================
-// 3. CHART ENTRY LINE + TRADE MARKER
-// ============================================================
-
-function renderTradeMarkers() {
-  if (typeof candleSeries === "undefined" || !candleSeries) return;
-
-  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
-    ? activeTradesLocal : [];
-
-  var markers = [];
-
-  for (var i = 0; i < trades.length; i++) {
-    var t = trades[i];
-    if (!t.entryTime) continue;
-    var entrySec = Math.floor(new Date(t.entryTime).getTime() / 1000);
-
-    markers.push({
-      time: entrySec,
-      position: t.type === "call" ? "belowBar" : "aboveBar",
-      color: t.type === "call" ? "#00c853" : "#ff5252",
-      shape: t.type === "call" ? "arrowUp" : "arrowDown",
-      text: String(t.type).toUpperCase() + " $" + t.amount
-    });
-  }
-
-  markers.sort(function(a, b) { return a.time - b.time; });
-
-  try {
-    candleSeries.setMarkers(markers);
-  } catch(e) {}
-}
-
-setInterval(renderTradeMarkers, 2000);
-
-// ============================================================
-// 4. FINAL EXPOSE (all-in-one, null-safe)
-// ============================================================
-
-(function exposeSafely() {
-  var toExpose = [
-    "placeTrade", "checkExpiredTrades", "checkExpiredTradesAdmin",
-    "loadActiveTrades", "loadHistory", "initChart", "loadCandles",
-    "startLivePrice", "stopLivePrice", "updateBigTimer",
-    "animateBalanceChange", "showResultFlash", "playSound"
+  // -------- 3. FUNCTION CHECK --------
+  console.log('--- FUNCTIONS CHECK ---');
+  var requiredFns = [
+    'addDebugLog', 'toggleDebugPanel',
+    'exportCandles', 'importCandles',
+    'setCandleMode', 'bindCandleModeButtons', 'initCandleModeUI',
+    'saveCandleModeToFirestore', 'loadCandleModeFromFirestore',
+    'updateCandleModeButtons', 'updateCandleModeInfo',
+    'renderCandleTable', 'renderCandlePreview', 'renderDirectionTimeline',
+    'addCandle', 'clearCandles', 'saveAllCandles', 'loadCandlesFromFirestore',
+    'bulkGenerateCandles',
+    'playbackPlay', 'playbackPause', 'playbackSkip', 'playbackBack',
+    'playbackReset', 'playbackSetSpeed', 'highlightActiveRow',
+    'startAutoMode', 'stopAutoMode', 'toggleAutoMode',
+    'setAutoModeInterval', 'autoGenerateOneCandle',
+    'timeframeToSeconds', 'calcCandleTime'
   ];
 
-  for (var i = 0; i < toExpose.length; i++) {
-    var name = toExpose[i];
-    try {
-      if (typeof eval(name) === "function") {
-        window[name] = eval(name);
-      }
-    } catch(e) {
-      // silently skip
-    }
-  }
-
-  // Expose new MSG 10 functions
-  window.updateTopCountdown = updateTopCountdown;
-  window.startCountdownInterval = startCountdownInterval;
-  window.stopCountdownInterval = stopCountdownInterval;
-  window.processTradeResults = processTradeResults;
-  window.renderTradeMarkers = renderTradeMarkers;
-
-  console.log("[MSG10] Functions exposed safely");
-})();
-
-// ============================================================
-// 5. STATE SYNC (every 500ms)
-// ============================================================
-
-setInterval(function() {
-  try {
-    if (typeof currentUser !== "undefined" && currentUser) {
-      window.currentUser = currentUser;
-    }
-    if (typeof userBalance !== "undefined") {
-      window.userBalance = userBalance;
-    }
-    if (typeof currentPrice !== "undefined") {
-      window.currentPrice = currentPrice;
-    }
-    if (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal)) {
-      window.activeTradesLocal = activeTradesLocal;
-    }
-    if (typeof chart !== "undefined" && chart) {
-      window.chart = chart;
-    }
-    if (typeof candleSeries !== "undefined" && candleSeries) {
-      window.candleSeries = candleSeries;
-    }
-  } catch(e) {}
-}, 500);
-
-console.log("===== MSG 10: True Trade Mechanic + Countdown + Entry Line loaded =====");
-
-/* ============================================================
-   MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
-   ============================================================ */
-
-// ============================================================
-// 1. STATE VARIABLES
-// ============================================================
-
-window.adminWinPercent = 80;
-window.adminLossPercent = 30;
-window.liveSpeed = 500;
-window.liveMovementInterval = null;
-window.autoCandleInterval = null;
-window.analyzerInterval = null;
-
-// Track current candle time
-window.currentCandleTime = Math.floor(Date.now() / 1000);
-window.currentCandleOpen = currentPrice;
-
-// ============================================================
-// 2. LISTEN ADMIN SETTINGS FOR WIN/LOSS
-// ============================================================
-
-function listenWinLossSettings() {
-  if (typeof db === "undefined") return;
-
-  try {
-    onSnapshot(doc(db, "settings", "global"), function(snap) {
-      if (!snap.exists()) return;
-
-      var d = snap.data();
-      window.adminWinPercent = d.winPercent ?? 80;
-      window.adminLossPercent = d.lossPercent ?? 30;
-      window.liveSpeed = d.liveSpeed ?? 500;
-
-      console.log(
-        "[MSG11] Settings: Win " + window.adminWinPercent + "% | " +
-        "Loss " + window.adminLossPercent + "% | " +
-        "Speed " + window.liveSpeed + "ms"
-      );
-    });
-  } catch (err) {
-    console.error("[MSG11] Settings listen error:", err.message);
-  }
-}
-
-setTimeout(listenWinLossSettings, 2500);
-
-// ============================================================
-// 3. LIVE PRICE MOVEMENT (every 500ms)
-// ============================================================
-
-function startLiveMovement() {
-  if (window.liveMovementInterval) clearInterval(window.liveMovementInterval);
-
-  window.liveMovementInterval = setInterval(function() {
-    if (typeof candleSeries === "undefined" || !candleSeries) return;
-    if (typeof currentPrice === "undefined") return;
-
-    var speed = window.liveSpeed || 500;
-    var drift = (Math.random() - 0.5) * 30;
-
-    // Direction bias from adminForceMarket
-    var force = (typeof adminForceMarket !== "undefined") ? adminForceMarket : 0;
-    if (force > 0) drift += Math.random() * 15;
-    else if (force < 0) drift -= Math.random() * 15;
-
-    currentPrice = Math.max(100, currentPrice + drift);
-    window.currentPrice = currentPrice;
-
-    if (typeof currentPriceEl !== "undefined" && currentPriceEl) {
-      currentPriceEl.textContent = currentPrice.toFixed(2);
-      if (drift >= 0) {
-        currentPriceEl.style.color = "#00c853";
-      } else {
-        currentPriceEl.style.color = "#ff5252";
-      }
-    }
-
-    // Update chart candle in real-time
-    var now = Math.floor(Date.now() / 1000);
-    var candleTime = Math.floor(now / 60) * 60;
-
-    if (candleTime > window.currentCandleTime) {
-      // New minute started
-      window.currentCandleTime = candleTime;
-      window.currentCandleOpen = currentPrice;
-    }
-
-    try {
-      var openP = window.currentCandleOpen;
-      var closeP = currentPrice;
-      var highP = Math.max(openP, closeP) + Math.random() * 5;
-      var lowP = Math.min(openP, closeP) - Math.random() * 5;
-
-      candleSeries.update({
-        time: window.currentCandleTime,
-        open: openP,
-        high: highP,
-        low: lowP,
-        close: closeP
-      });
-    } catch(e) {
-      // ignore
-    }
-  }, 500);
-
-  console.log("[MSG11] Live movement started");
-}
-
-// ============================================================
-// 4. AUTO CANDLE GENERATION (every 1m)
-// ============================================================
-
-function startAutoCandleGeneration() {
-  if (window.autoCandleInterval) clearInterval(window.autoCandleInterval);
-
-  window.autoCandleInterval = setInterval(function() {
-    if (typeof candleSeries === "undefined" || !candleSeries) return;
-    if (!window.currentUser) return;
-
-    var mode = (typeof adminSettings !== "undefined" && adminSettings.candleMode) || "random";
-
-    // Only auto-generate if mode is random or schedule
-    if (mode === "locked") {
-      console.log("[MSG11] LOCKED mode - no auto generation");
-      return;
-    }
-
-    var now = Math.floor(Date.now() / 1000);
-    var candleTime = Math.floor(now / 60) * 60;
-
-    var openP = currentPrice;
-    var move = (Math.random() - 0.5) * 200;
-    var closeP = openP + move;
-    var highP = Math.max(openP, closeP) + Math.random() * 50;
-    var lowP = Math.min(openP, closeP) - Math.random() * 50;
-
-    try {
-      candleSeries.update({
-        time: candleTime,
-        open: openP,
-        high: highP,
-        low: lowP,
-        close: closeP
-      });
-
-      currentPrice = closeP;
-      window.currentPrice = closeP;
-      window.currentCandleTime = candleTime;
-      window.currentCandleOpen = closeP;
-
-      console.log("[MSG11] Auto candle generated:", openP.toFixed(2), "→", closeP.toFixed(2));
-    } catch(e) {
-      console.error("[MSG11] Auto candle error:", e.message);
-    }
-  }, 60000);
-
-  console.log("[MSG11] Auto candle generation started");
-}
-
-// ============================================================
-// 5. MULTI-USER TRADE ANALYSIS
-// ============================================================
-
-window.tradeAnalysis = {
-  totalCall: 0,
-  totalPut: 0,
-  callCount: 0,
-  putCount: 0,
-  callUsers: [],
-  putUsers: [],
-  suggestedDirection: "neutral"
-};
-
-async function analyzeActiveTrades() {
-  if (!window.currentUser) return;
-
-  try {
-    var q = query(
-      collection(db, "trades"),
-      where("status", "==", "pending")
-    );
-    var snap = await getDocs(q);
-
-    if (snap.empty) {
-      window.tradeAnalysis = {
-        totalCall: 0, totalPut: 0, callCount: 0, putCount: 0,
-        callUsers: [], putUsers: [], suggestedDirection: "neutral"
-      };
-      return;
-    }
-
-    var callTotal = 0, putTotal = 0, callCount = 0, putCount = 0;
-    var callUsers = [], putUsers = [];
-
-    snap.forEach(function(d) {
-      var t = d.data();
-      if (t.type === "call") {
-        callTotal += t.amount;
-        callCount++;
-        callUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
-      } else if (t.type === "put") {
-        putTotal += t.amount;
-        putCount++;
-        putUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
-      }
-    });
-
-    window.tradeAnalysis = {
-      totalCall: callTotal,
-      totalPut: putTotal,
-      callCount: callCount,
-      putCount: putCount,
-      callUsers: callUsers,
-      putUsers: putUsers,
-      suggestedDirection: callTotal > putTotal ? "down" : (putTotal > callTotal ? "up" : "neutral")
-    };
-
-    if (callCount + putCount > 0) {
-      console.log(
-        "[Analyzer] CALL: $" + callTotal + " (" + callCount + " users) | " +
-        "PUT: $" + putTotal + " (" + putCount + " users) | " +
-        "Suggest: " + window.tradeAnalysis.suggestedDirection.toUpperCase()
-      );
-    }
-  } catch (err) {
-    console.error("[Analyzer] Error:", err.message);
-  }
-}
-
-function startTradeAnalysis() {
-  if (window.analyzerInterval) clearInterval(window.analyzerInterval);
-  window.analyzerInterval = setInterval(analyzeActiveTrades, 2000);
-  console.log("[MSG11] Trade analyzer started (2s interval)");
-}
-
-// ============================================================
-// 6. AUTO-DIRECTION BASED ON ANALYSIS
-// ============================================================
-
-function applyDirectionBias() {
-  if (typeof candleSeries === "undefined" || !candleSeries) return;
-
-  var analysis = window.tradeAnalysis;
-  if (!analysis) return;
-  if (analysis.callCount + analysis.putCount === 0) return;
-
-  var direction = analysis.suggestedDirection;
-  if (direction === "neutral") return;
-
-  // Apply gentle pressure
-  var bias = direction === "up" ? 1.5 : -1.5;
-  currentPrice = currentPrice + bias;
-  window.currentPrice = currentPrice;
-}
-
-setInterval(applyDirectionBias, 1000);
-
-// ============================================================
-// 7. IMPROVED processTradeResults — uses LIVE price
-// ============================================================
-
-async function processTradeResultsV2() {
-  if (typeof currentUser === "undefined" || !currentUser) return;
-
-  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
-    ? activeTradesLocal : [];
-
-  if (trades.length === 0) return;
-
-  var now = Date.now();
-
-  for (var i = 0; i < trades.length; i++) {
-    var trade = trades[i];
-    if (trade.expiresAt > now || trade.status !== "pending") continue;
-
-    var entryPrice = Number(trade.entryPrice) || currentPrice;
-    var exitPrice = Number(currentPrice);
-    var diff = exitPrice - entryPrice;
-
-    var realResult = "loss";
-    if (trade.type === "call" && diff > 0) realResult = "win";
-    else if (trade.type === "put" && diff < 0) realResult = "win";
-
-    // Admin Win/Loss override (optional)
-    var winPercent = window.adminWinPercent || 80;
-    var useAdminOverride = (winPercent !== 100 && winPercent !== 0);
-
-    if (useAdminOverride) {
-      var r = Math.random() * 100;
-      if (r < winPercent) {
-        realResult = "win";
-      } else {
-        realResult = "loss";
-      }
-    }
-
-    console.log(
-      "[Trade Result V2] " + String(trade.type).toUpperCase() +
-      " | Entry: " + entryPrice.toFixed(2) +
-      " → Exit: " + exitPrice.toFixed(2) +
-      " | Diff: " + diff.toFixed(2) +
-      " | Real: " + (diff > 0 ? "UP" : (diff < 0 ? "DOWN" : "FLAT")) +
-      " | Result: " + realResult.toUpperCase() +
-      " | WinTarget: " + winPercent + "%"
-    );
-
-    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 96) / 100) + 1;
-    var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
-    var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
-
-    try {
-      await updateDoc(doc(db, "trades", trade.id), {
-        status: "completed",
-        result: realResult,
-        exitPrice: exitPrice,
-        profit: returnAmount,
-        netProfit: netProfit,
-        completedAt: new Date().toISOString(),
-        adminProcessed: true
-      });
-
-      if (realResult === "win") {
-        var userRef = doc(db, "users", currentUser.uid);
-        var userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          var userData = userDoc.data();
-          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-          var curBal = userData[balanceField] || 0;
-          var newBal = curBal + returnAmount;
-
-          await updateDoc(userRef, {
-            [balanceField]: newBal,
-            balance: newBal
-          });
-
-          userBalance = newBal;
-          window.userBalance = newBal;
-
-          if (balanceEl) balanceEl.textContent = newBal.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = newBal.toFixed(2);
-
-          if (typeof animateBalanceChange === "function") animateBalanceChange(returnAmount);
-          if (typeof showResultFlash === "function") showResultFlash("win");
-          if (typeof playSound === "function") playSound("win");
-
-          if (tradeMessage) {
-            tradeMessage.style.color = "#00c853";
-            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
-            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
-          }
-        }
-      } else {
-        if (typeof showResultFlash === "function") showResultFlash("loss");
-        if (typeof playSound === "function") playSound("loss");
-
-        if (tradeMessage) {
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
-          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
-        }
-      }
-    } catch (err) {
-      console.error("[Trade Process V2 Error]", err.message);
-    }
-  }
-}
-
-// Override the old processTradeResults
-window.processTradeResults = processTradeResultsV2;
-
-// ============================================================
-// 8. INIT
-// ============================================================
-
-setTimeout(function() {
-  startLiveMovement();
-  startAutoCandleGeneration();
-  startTradeAnalysis();
-  console.log("[MSG11] All systems started");
-}, 4000);
-
-// Expose for debugging
-window.startLiveMovement = startLiveMovement;
-window.startAutoCandleGeneration = startAutoCandleGeneration;
-window.analyzeActiveTrades = analyzeActiveTrades;
-window.processTradeResultsV2 = processTradeResultsV2;
-window.tradeAnalysis = window.tradeAnalysis;
-
-console.log("===== MSG 11: Live Movement + Auto Candle + Multi-user Analysis loaded =====");
-
-/* ============================================================
-   MSG 12: CANDLE MANIPULATOR + TRAP + DELAY + REVERSAL
-   ============================================================ */
-
-// ============================================================
-// 1. STATE VARIABLES
-// ============================================================
-
-window.trapEngine = {
-  trapRate: 30,
-  delayRate: 20,
-  reversalRate: 15,
-  activeTraps: {},
-  candleOpenPrice: {},
-  candlePhases: {}
-};
-
-// ============================================================
-// 2. LISTEN TRAP SETTINGS
-// ============================================================
-
-function listenTrapSettings() {
-  if (typeof db === "undefined") return;
-
-  try {
-    onSnapshot(doc(db, "settings", "global"), function(snap) {
-      if (!snap.exists()) return;
-      var d = snap.data();
-      window.trapEngine.trapRate = d.trapRate ?? 30;
-      window.trapEngine.delayRate = d.delayRate ?? 20;
-      window.trapEngine.reversalRate = d.reversalRate ?? 15;
-
-      console.log(
-        "[MSG12] Trap settings: Trap " + window.trapEngine.trapRate + "% | " +
-        "Delay " + window.trapEngine.delayRate + "% | " +
-        "Reversal " + window.trapEngine.reversalRate + "%"
-      );
-    });
-  } catch(err) {
-    console.error("[MSG12] Trap settings listen error:", err.message);
-  }
-}
-
-setTimeout(listenTrapSettings, 3000);
-
-// ============================================================
-// 3. TRAP DECISION LOGIC
-// ============================================================
-
-// Decide if current candle should be trapped
-function shouldTrap() {
-  var rate = window.trapEngine.trapRate || 0;
-  var r = Math.random() * 100;
-  return r < rate;
-}
-
-// Decide if delay should be injected
-function shouldDelay() {
-  var rate = window.trapEngine.delayRate || 0;
-  var r = Math.random() * 100;
-  return r < rate;
-}
-
-// Decide if mid-reversal should happen
-function shouldReversal() {
-  var rate = window.trapEngine.reversalRate || 0;
-  var r = Math.random() * 100;
-  return r < rate;
-}
-
-// ============================================================
-// 4. TRAP CANDLE GENERATOR
-// ============================================================
-
-// Generate a trap candle: open green → close red (or vice versa)
-function generateTrapCandle(direction) {
-  var openPrice = currentPrice;
-  var trapSize = 50 + Math.random() * 100;
-  var closePrice;
-
-  if (direction === "trap_down") {
-    // Looks like up movement, then closes down
-    closePrice = openPrice - trapSize;
-  } else if (direction === "trap_up") {
-    // Looks like down movement, then closes up
-    closePrice = openPrice + trapSize;
-  } else {
-    closePrice = openPrice + (Math.random() - 0.5) * 100;
-  }
-
-  var high = Math.max(openPrice, closePrice) + Math.random() * 30;
-  var low = Math.min(openPrice, closePrice) - Math.random() * 30;
-
-  // Trap: candle looks opposite first, then reverses
-  if (direction === "trap_down") {
-    high = openPrice + Math.random() * 80; // looks up
-  } else if (direction === "trap_up") {
-    low = openPrice - Math.random() * 80; // looks down
-  }
-
-  return {
-    open: openPrice,
-    high: high,
-    low: low,
-    close: closePrice,
-    isTrap: true
-  };
-}
-
-// ============================================================
-// 5. APPLY TRAP BASED ON ANALYSIS
-// ============================================================
-
-function applyTrapFromAnalysis() {
-  if (typeof candleSeries === "undefined" || !candleSeries) return;
-  if (!window.tradeAnalysis) return;
-  if (window.tradeAnalysis.callCount + window.tradeAnalysis.putCount === 0) return;
-
-  var analysis = window.tradeAnalysis;
-  var direction = analysis.suggestedDirection;
-
-  // Only trap if should
-  if (!shouldTrap()) return;
-
-  // Determine trap direction
-  var trapDir = "trap_down"; // Default: CALL-heavy → candle goes down
-  if (direction === "up") {
-    trapDir = "trap_up"; // PUT-heavy → candle goes up
-  }
-
-  // Get current candle time
-  var now = Math.floor(Date.now() / 1000);
-  var candleTime = Math.floor(now / 60) * 60;
-
-  var trapCandle = generateTrapCandle(trapDir);
-
-  try {
-    candleSeries.update({
-      time: candleTime,
-      open: trapCandle.open,
-      high: trapCandle.high,
-      low: trapCandle.low,
-      close: trapCandle.close
-    });
-
-    currentPrice = trapCandle.close;
-    window.currentPrice = trapCandle.close;
-
-    console.log(
-      "[MSG12] TRAP applied: " + trapDir.toUpperCase() +
-      " | Open: " + trapCandle.open.toFixed(2) +
-      " → Close: " + trapCandle.close.toFixed(2) +
-      " | For: " + analysis.callCount + " CALL, " + analysis.putCount + " PUT users"
-    );
-  } catch(err) {
-    console.error("[MSG12] Trap apply error:", err.message);
-  }
-}
-
-// ============================================================
-// 6. DELAY INJECTOR — Random delays in candle close
-// ============================================================
-
-window.delayTimer = null;
-
-function injectDelay() {
-  if (!shouldDelay()) return;
-
-  // Random delay: 1-5 seconds
-  var delaySec = 1 + Math.floor(Math.random() * 4);
-
-  console.log("[MSG12] DELAY injected: " + delaySec + "s");
-
-  // Small visual jitter (not real close delay, just visual)
-  var jitter = (Math.random() - 0.5) * 20;
-  currentPrice = currentPrice + jitter;
-  window.currentPrice = currentPrice;
-
-  if (typeof currentPriceEl !== "undefined" && currentPriceEl) {
-    currentPriceEl.textContent = currentPrice.toFixed(2);
-  }
-}
-
-setInterval(injectDelay, 5000);
-
-// ============================================================
-// 7. MID-CANDLE REVERSAL
-// ============================================================
-
-function applyMidReversal() {
-  if (!shouldReversal()) return;
-  if (typeof candleSeries === "undefined" || !candleSeries) return;
-
-  var now = Math.floor(Date.now() / 1000);
-  var candleTime = Math.floor(now / 60) * 60;
-
-  // Current close vs open
-  var openP = window.currentCandleOpen || currentPrice;
-  var closeP = currentPrice;
-
-  // If candle currently going up (green), reverse to red
-  if (closeP > openP) {
-    var reverseClose = openP - Math.random() * 50;
-    try {
-      candleSeries.update({
-        time: candleTime,
-        open: openP,
-        high: closeP + Math.random() * 20, // peak was higher
-        low: reverseClose - Math.random() * 10,
-        close: reverseClose
-      });
-      currentPrice = reverseClose;
-      window.currentPrice = reverseClose;
-
-      console.log("[MSG12] MID-REVERSAL: Green → Red | Peak: " + closeP.toFixed(2) + " → Close: " + reverseClose.toFixed(2));
-    } catch(err) {}
-  }
-  // If going down, reverse to green
-  else if (closeP < openP) {
-    var reverseClose2 = openP + Math.random() * 50;
-    try {
-      candleSeries.update({
-        time: candleTime,
-        open: openP,
-        high: reverseClose2 + Math.random() * 20,
-        low: closeP - Math.random() * 20,
-        close: reverseClose2
-      });
-      currentPrice = reverseClose2;
-      window.currentPrice = reverseClose2;
-
-      console.log("[MSG12] MID-REVERSAL: Red → Green | Bottom: " + closeP.toFixed(2) + " → Close: " + reverseClose2.toFixed(2));
-    } catch(err) {}
-  }
-}
-
-setInterval(applyMidReversal, 30000);
-
-// ============================================================
-// 8. INTEGRATE WITH ANALYZER
-// ============================================================
-
-// Run trap check every 5 seconds when trades are active
-setInterval(function() {
-  if (!window.currentUser) return;
-  if (!window.tradeAnalysis) return;
-  if (window.tradeAnalysis.callCount + window.tradeAnalysis.putCount === 0) return;
-
-  applyTrapFromAnalysis();
-}, 5000);
-
-// ============================================================
-// 9. APPLY TRAP BEFORE TRADE RESULT
-// ============================================================
-
-// Override processTradeResultsV2 to apply trap right before completion
-var _origProcessTradeResults = window.processTradeResults;
-
-window.processTradeResults = async function() {
-  // Before processing, apply trap if there are active trades
-  if (window.tradeAnalysis &&
-      window.tradeAnalysis.callCount + window.tradeAnalysis.putCount > 0) {
-    applyTrapFromAnalysis();
-  }
-
-  // Then call original
-  if (typeof _origProcessTradeResults === "function") {
-    return _origProcessTradeResults();
-  }
-};
-
-// ============================================================
-// 10. EXPOSE FOR DEBUG
-// ============================================================
-
-window.applyTrapFromAnalysis = applyTrapFromAnalysis;
-window.shouldTrap = shouldTrap;
-window.shouldDelay = shouldDelay;
-window.shouldReversal = shouldReversal;
-window.injectDelay = injectDelay;
-window.applyMidReversal = applyMidReversal;
-window.generateTrapCandle = generateTrapCandle;
-
-console.log("===== MSG 12: Candle Manipulator + Trap + Delay + Reversal loaded =====");
-
-/* ============================================================
-   MSG 13: AUTO 24/7 GENERATION + DESIGNER APPLY
-   ============================================================ */
-
-// ============================================================
-// 1. STATE VARIABLES
-// ============================================================
-
-window.autoGenerate24h = false;
-window.designerCandle = null;
-window.applyNextAt = 0;
-window.auto24hInterval = null;
-window.designerListeners = {};
-
-// ============================================================
-// 2. LISTEN AUTO 24/7 + DESIGNER
-// ============================================================
-
-function listenAuto24hSettings() {
-  if (typeof db === "undefined") return;
-
-  try {
-    onSnapshot(doc(db, "settings", "global"), function(snap) {
-      if (!snap.exists()) return;
-      var d = snap.data();
-      window.autoGenerate24h = d.autoGenerate24h === true;
-      console.log("[MSG13] Auto 24/7:", window.autoGenerate24h ? "ON" : "OFF");
-    });
-  } catch(err) {
-    console.error("[MSG13] Auto 24/7 listen error:", err.message);
-  }
-}
-
-setTimeout(listenAuto24hSettings, 3500);
-
-// Listen designer for current market
-function listenDesignerForMarket(marketId) {
-  if (!marketId) return;
-  if (typeof db === "undefined") return;
-
-  // Unsubscribe previous
-  if (window.designerListeners[marketId]) {
-    try { window.designerListeners[marketId](); } catch(e) {}
-  }
-
-  try {
-    window.designerListeners[marketId] = onSnapshot(doc(db, "markets", marketId), function(snap) {
-      if (!snap.exists()) return;
-      var d = snap.data();
-
-      if (d.designerCandle) {
-        window.designerCandle = d.designerCandle;
-      }
-
-      if (d.applyNextAt && d.applyNextAt > (window.applyNextAt || 0)) {
-        window.applyNextAt = d.applyNextAt;
-        console.log("[MSG13] New designer to apply:", d.designerCandle);
-      }
-    });
-  } catch(err) {
-    console.error("[MSG13] Designer listen error:", err.message);
-  }
-}
-
-// ============================================================
-// 3. AUTO 24/7 GENERATION ENGINE
-// ============================================================
-
-function startAuto24hGeneration() {
-  if (window.auto24hInterval) clearInterval(window.auto24hInterval);
-
-  window.auto24hInterval = setInterval(async function() {
-    if (!window.autoGenerate24h) return;
-    if (typeof candleSeries === "undefined" || !candleSeries) return;
-    if (!window.selectedMarketId) return;
-
-    // Generate a new candle
-    var now = Math.floor(Date.now() / 1000);
-    var candleTime = Math.floor(now / 60) * 60;
-
-    // Only generate if new minute
-    if (window.currentCandleTime === candleTime) return;
-
-    // Check if designer applies
-    var designerData = window.designerCandle;
-    var useDesigner = designerData &&
-                      window.applyNextAt > 0 &&
-                      (Date.now() - window.applyNextAt < 70000); // within 70s
-
-    var openP, closeP, highP, lowP;
-
-    if (useDesigner) {
-      // Use designer values
-      openP = designerData.open;
-      closeP = designerData.close;
-      highP = designerData.high;
-      lowP = designerData.low;
-
-      console.log("[MSG13] Applying designer candle:", designerData);
+  var missingFns = [];
+  requiredFns.forEach(function(fn) {
+    if (typeof window[fn] === 'function') {
+      window.recordTest('Function ' + fn, 'pass');
     } else {
-      // Natural generation
-      openP = currentPrice;
-      var move = (Math.random() - 0.5) * 120;
-      closeP = openP + move;
-      highP = Math.max(openP, closeP) + Math.random() * 40;
-      lowP = Math.min(openP, closeP) - Math.random() * 40;
+      window.recordTest('Function ' + fn, 'fail', 'MISSING');
+      missingFns.push(fn);
+    }
+  });
+
+  if (missingFns.length === 0) {
+    console.log('[FUNCTIONS] All ' + requiredFns.length + ' functions loaded ✓');
+  } else {
+    console.warn('[FUNCTIONS] Missing: ' + missingFns.join(', '));
+  }
+
+  // -------- 4. STATE CHECK --------
+  console.log('--- STATE CHECK ---');
+  var stateChecks = [
+    { name: 'window.adminSettings', val: window.adminSettings, type: 'object' },
+    { name: 'window.candleList', val: window.candleList, type: 'object' },
+    { name: 'window.candleMode', val: window.candleMode, type: 'string' },
+    { name: 'window.currentMarketId', val: window.currentMarketId, type: 'string_or_null' },
+    { name: 'window.autoModeInterval', val: window.autoModeInterval, type: 'number' },
+    { name: 'window.playbackSpeed', val: window.playbackSpeed, type: 'number' },
+    { name: 'window.debugLogs', val: window.debugLogs, type: 'object' }
+  ];
+
+  stateChecks.forEach(function(c) {
+    if (c.val === undefined) {
+      window.recordTest('State ' + c.name, 'warn', 'undefined');
+    } else {
+      window.recordTest('State ' + c.name, 'pass', typeof c.val);
+    }
+  });
+
+  // -------- 5. FIREBASE CONFIG --------
+  console.log('--- FIREBASE CHECK ---');
+  if (typeof window.db !== 'undefined' && window.db) {
+    window.recordTest('Firebase db exposed', 'pass');
+  } else {
+    window.recordTest('Firebase db exposed', 'fail', 'window.db is undefined');
+  }
+  if (typeof window.auth !== 'undefined' && window.auth) {
+    window.recordTest('Firebase auth exposed', 'pass');
+  } else {
+    window.recordTest('Firebase auth exposed', 'fail', 'window.auth is undefined');
+  }
+
+  // -------- 6. RENDER TEST --------
+  console.log('--- RENDER TEST ---');
+  try {
+    var testList = [
+      { number: 1, date: '2026-09-28', time: '10:00:00', open: '50000.00', high: '50100.00', low: '49900.00', close: '50050.00', direction: 'up', color: 'green', timeframe: '1m', up: 5, down: 5 },
+      { number: 2, date: '2026-09-28', time: '10:01:00', open: '50050.00', high: '50150.00', low: '50000.00', close: '50100.00', direction: 'up', color: 'green', timeframe: '1m', up: 5, down: 5 },
+      { number: 3, date: '2026-09-28', time: '10:02:00', open: '50100.00', high: '50120.00', low: '49980.00', close: '49990.00', direction: 'down', color: 'red', timeframe: '1m', up: 5, down: 5 }
+    ];
+    var savedList = window.candleList;
+    var savedCounter = window.candleCounter;
+
+    window.candleList = testList;
+    window.candleCounter = 3;
+
+    if (typeof window.renderCandleTable === 'function') {
+      window.renderCandleTable();
+      var tbody = document.getElementById('candle-table-body');
+      if (tbody && tbody.innerHTML.indexOf('50000') !== -1) {
+        window.recordTest('Render Table', 'pass');
+      } else {
+        window.recordTest('Render Table', 'fail', 'Table empty');
+      }
     }
 
-    try {
-      candleSeries.update({
-        time: candleTime,
-        open: openP,
-        high: highP,
-        low: lowP,
-        close: closeP
-      });
-
-      currentPrice = closeP;
-      window.currentPrice = closeP;
-      window.currentCandleTime = candleTime;
-      window.currentCandleOpen = closeP;
-
-      // Save to Firestore (persist)
-      if (window.selectedMarketId) {
-        var cid = 'auto_' + candleTime;
-        try {
-          await setDoc(doc(db, "markets", window.selectedMarketId, "candles", cid), {
-            number: candleTime,
-            date: new Date(candleTime * 1000).toISOString().split('T')[0],
-            startTime: new Date(candleTime * 1000).toTimeString().slice(0, 8),
-            timeframe: "1m",
-            open: Number(openP.toFixed(2)),
-            high: Number(highP.toFixed(2)),
-            low: Number(lowP.toFixed(2)),
-            close: Number(closeP.toFixed(2)),
-            color: closeP >= openP ? "green" : "red",
-            direction: closeP > openP ? "up" : (closeP < openP ? "down" : "neutral"),
-            size: "medium",
-            status: "auto",
-            createdAt: new Date().toISOString()
-          });
-        } catch(e) {}
+    if (typeof window.renderCandlePreview === 'function') {
+      window.renderCandlePreview();
+      var preview = document.getElementById('candle-preview');
+      if (preview && preview.innerHTML.indexOf('pv-candle') !== -1) {
+        window.recordTest('Render Preview', 'pass');
+      } else {
+        window.recordTest('Render Preview', 'fail', 'No candles');
       }
-
-      console.log("[MSG13] Auto 24/7 candle generated: " + openP.toFixed(2) + " → " + closeP.toFixed(2) + (useDesigner ? " [DESIGNER]" : ""));
-
-      // Clear designer after apply
-      if (useDesigner) {
-        window.applyNextAt = 0;
-      }
-    } catch(err) {
-      console.error("[MSG13] Auto 24/7 error:", err.message);
     }
-  }, 10000); // Check every 10s, generate on new minute
 
-  console.log("[MSG13] Auto 24/7 generation engine started");
-}
+    if (typeof window.renderDirectionTimeline === 'function') {
+      window.renderDirectionTimeline();
+      var timeline = document.getElementById('direction-timeline');
+      if (timeline && timeline.innerHTML.indexOf('tl-block') !== -1) {
+        window.recordTest('Render Timeline', 'pass');
+      } else {
+        window.recordTest('Render Timeline', 'fail', 'No blocks');
+      }
+    }
 
-// ============================================================
-// 4. AUTO-START
-// ============================================================
+    // Restore
+    window.candleList = savedList;
+    window.candleCounter = savedCounter;
+    if (typeof window.renderCandleTable === 'function') window.renderCandleTable();
+  } catch (err) {
+    window.recordTest('Render Test', 'fail', err.message);
+  }
+
+  // -------- FINAL SUMMARY --------
+  console.log('===== RUN TESTS END =====');
+  var summary = 'PASS: ' + window.testResults.pass +
+    ' | FAIL: ' + window.testResults.fail +
+    ' | WARN: ' + window.testResults.warn +
+    ' | TOTAL: ' + window.testResults.total;
+
+  console.log(summary);
+  if (window.addDebugLog) {
+    if (window.testResults.fail > 0) {
+      window.addDebugLog('error', '[Tests] ' + summary);
+    } else {
+      window.addDebugLog('success', '[Tests] ' + summary);
+    }
+  }
+
+  // Alert user
+  var alertMsg = 'TEST RESULTS\n\n' +
+    'Total: ' + window.testResults.total + '\n' +
+    'Pass: ' + window.testResults.pass + '\n' +
+    'Fail: ' + window.testResults.fail + '\n' +
+    'Warn: ' + window.testResults.warn + '\n\n';
+
+  if (window.testResults.fail === 0) {
+    alertMsg += 'ALL TESTS PASSED!';
+  } else {
+    alertMsg += 'Check Debug Panel for failures.';
+    var fails = window.testResults.tests.filter(function(t) { return t.status === 'fail'; });
+    fails.forEach(function(f) {
+      if (window.addDebugLog) window.addDebugLog('error', '[FAIL] ' + f.name + ' - ' + f.details);
+    });
+  }
+
+  alert(alertMsg);
+
+  return window.testResults;
+};
+
+// ============ TEST BUTTON IN DEBUG PANEL ============
+
+window.addTestButtonToPanel = function() {
+  var panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  if (document.getElementById('debug-run-tests-btn')) return;
+
+  var header = panel.querySelector('div');
+  if (!header) return;
+
+  var testBtn = document.createElement('button');
+  testBtn.id = 'debug-run-tests-btn';
+  testBtn.textContent = 'Run Tests';
+  testBtn.style.cssText = 'background:linear-gradient(135deg,#00c853 0%,#00a844 100%);color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;margin-right:4px;cursor:pointer;font-weight:bold;';
+
+  testBtn.onclick = function() {
+    window.runTests();
+  };
+
+  // Insert before Copy button
+  var copyBtn = document.getElementById('debug-copy-btn');
+  if (copyBtn && copyBtn.parentNode) {
+    copyBtn.parentNode.insertBefore(testBtn, copyBtn);
+  } else {
+    header.appendChild(testBtn);
+  }
+};
+
+// Re-add test button whenever panel is created
+var _origCreateDebugPanel = window.createDebugPanel;
+window.createDebugPanel = function() {
+  if (_origCreateDebugPanel) _origCreateDebugPanel();
+  setTimeout(window.addTestButtonToPanel, 100);
+};
+
+// Try adding button on init
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(window.addTestButtonToPanel, 1500);
+});
 
 setTimeout(function() {
-  startAuto24hGeneration();
+  window.addTestButtonToPanel();
+}, 2500);
 
-  // Also start designer listener for current market
-  if (window.selectedMarketId) {
-    listenDesignerForMarket(window.selectedMarketId);
-  }
-}, 5000);
-
-// Listen for market change → update designer listener
-setInterval(function() {
-  if (window.selectedMarketId && !window.designerListeners[window.selectedMarketId]) {
-    listenDesignerForMarket(window.selectedMarketId);
-  }
-}, 5000);
-
-// ============================================================
-// 5. EXPOSE FOR DEBUG
-// ============================================================
-
-window.startAuto24hGeneration = startAuto24hGeneration;
-window.listenDesignerForMarket = listenDesignerForMarket;
-
-console.log("===== MSG 13: Auto 24/7 Generation + Designer Apply loaded =====");
-
-/* ============================================================
-   MSG 14: User Chat System
-   ============================================================ */
-
-window.userChatUnsub = null;
-
-// ============================================================
-// 1. OPEN/CLOSE CHAT POPUP
-// ============================================================
-
-function openUserChat() {
-  var popup = document.getElementById("chat-popup");
-  var overlay = document.getElementById("chat-popup-overlay");
-  if (!popup) return;
-
-  popup.classList.remove("hidden");
-  if (overlay) overlay.onclick = function() { closeUserChat(); };
-
-  // Start listening to messages
-  startUserChatListener();
-}
-
-function closeUserChat() {
-  var popup = document.getElementById("chat-popup");
-  if (!popup) return;
-  popup.classList.add("hidden");
-}
-
-// ============================================================
-// 2. LISTEN TO USER'S MESSAGES
-// ============================================================
-
-function startUserChatListener() {
-  if (!currentUser) return;
-
-  if (window.userChatUnsub) {
-    try { window.userChatUnsub(); } catch(e) {}
-    window.userChatUnsub = null;
-  }
-
-  try {
-    var q = query(
-      collection(db, "chats", currentUser.uid, "messages"),
-      orderBy("timestamp", "asc")
-    );
-
-    window.userChatUnsub = onSnapshot(q, function(snap) {
-      var messagesEl = document.getElementById("user-chat-messages");
-      if (!messagesEl) return;
-
-      messagesEl.innerHTML = "";
-      if (snap.empty) {
-        messagesEl.innerHTML = '<p class="empty-text">Send a message to admin...</p>';
-        return;
-      }
-
-      snap.forEach(function(d) {
-        var m = d.data();
-        var div = document.createElement("div");
-        div.className = "user-chat-msg " + (m.from === "user" ? "from-user" : "from-admin");
-
-        var textNode = document.createTextNode(m.text || "");
-        div.appendChild(textNode);
-
-        var timeSpan = document.createElement("span");
-        timeSpan.className = "chat-msg-time";
-        var ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
-        timeSpan.textContent = ts;
-        div.appendChild(timeSpan);
-
-        messagesEl.appendChild(div);
-      });
-
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
-  } catch (err) {
-    console.error("[MSG14] User chat error:", err.message);
-  }
-}
-
-// ============================================================
-// 3. SEND MESSAGE (USER SIDE)
-// ============================================================
-
-async function sendUserChatMessage() {
-  if (!currentUser) return;
-
-  var input = document.getElementById("user-chat-input");
-  if (!input) return;
-  var text = input.value.trim();
-  if (!text) return;
-
-  input.value = "";
-
-  try {
-    await addDoc(collection(db, "chats", currentUser.uid, "messages"), {
-      from: "user",
-      text: text,
-      timestamp: new Date().toISOString()
-    });
-
-    console.log("[MSG14-User] Message sent to admin");
-  } catch (err) {
-    console.error("[MSG14-User] Send error:", err.message);
-  }
-}
-
-// ============================================================
-// 4. BIND BUTTONS
-// ============================================================
-
-setTimeout(function() {
-  var chatBtn = document.getElementById("chat-btn");
-  if (chatBtn && chatBtn.dataset.bound !== "1") {
-    chatBtn.dataset.bound = "1";
-    chatBtn.onclick = openUserChat;
-    console.log("[MSG14-User] Chat button bound");
-  }
-
-  var closeBtn = document.getElementById("chat-popup-close");
-  if (closeBtn && closeBtn.dataset.bound !== "1") {
-    closeBtn.dataset.bound = "1";
-    closeBtn.onclick = closeUserChat;
-  }
-
-  var sendBtn = document.getElementById("user-chat-send");
-  if (sendBtn && sendBtn.dataset.bound !== "1") {
-    sendBtn.dataset.bound = "1";
-    sendBtn.onclick = sendUserChatMessage;
-    console.log("[MSG14-User] Send button bound");
-  }
-
-  var input = document.getElementById("user-chat-input");
-  if (input && input.dataset.bound !== "1") {
-    input.dataset.bound = "1";
-    input.addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendUserChatMessage();
-      }
-    });
-  }
-}, 3000);
-
-console.log("===== MSG 14: Admin Chat + User Chat loaded =====");
-/* ============================================================
-   GLOBAL EXPOSE (Debug + Cross-module access)
-   ============================================================ */
-
-// Expose Auth state (module -> window)
-setInterval(function() {
-  window.currentUser = currentUser;
-  window.userBalance = userBalance;
-  window.selectedAsset = selectedAsset;
-  window.accountType = accountType;
-}, 1000);
-
-// Expose Part 7A functions
-window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
-window.populateAssetSelect = populateAssetSelect;
-window.listenUserMarkets = listenUserMarkets;
-window.bindMarketChangeHandler = bindMarketChangeHandler;
-window.initUserMarkets = initUserMarkets;
-window.updatePayoutLabelsFromMarket = updatePayoutLabelsFromMarket;
-
-// Expose Part 7B functions
-window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
-window.convertAdminCandleToChart = convertAdminCandleToChart;
-window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
-window.listenAdminCandles = listenAdminCandles;
-window.loadUserCandlesSmart = loadUserCandlesSmart;
-window.onMarketChanged = onMarketChanged;
-
-// Expose core functions (for testing)
-window.loadCandles = loadCandles;
-window.startLivePrice = startLivePrice;
-window.stopLivePrice = stopLivePrice;
-window.placeTrade = placeTrade;
-window.checkExpiredTrades = checkExpiredTrades;
-window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
-window.listenAdminSettings = listenAdminSettings;
-window.updatePayoutLabels = updatePayoutLabels;
-window.applyMarketForce = applyMarketForce;
-window.startAutoModeDrift = startAutoModeDrift;
-
-// Expose chart state
-setInterval(function() {
-  window.chart = chart;
-  window.candleSeries = candleSeries;
-}, 500);
-
-console.log("✅ All Part 7A + 7B functions exposed to window");
-console.log("✅ Auth state synced (window.currentUser)");
-console.log("📊 যা এখন কাজ করবে:");
-console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
-console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
-console.log("   3. Market Force — Admin ⬆⬇ → প্রাইস উপরে-নিচে");
-console.log("   4. Auto Mode — Admin Toggle → অটো drift");
-
-// === FINAL EXPOSE ===
-window.placeTrade = placeTrade;
-window.checkExpiredTrades = checkExpiredTrades;
-window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
-window.updateTradeMarkers = updateTradeMarkers;
-window.loadActiveTrades = loadActiveTrades;
-
-// === FINAL STATE SYNC ===
-setInterval(function() {
-  if (typeof currentUser !== 'undefined' && currentUser) {
-    window.currentUser = currentUser;
-    window.userBalance = userBalance;
-  }
-  if (typeof chart !== 'undefined' && chart) {
-    window.chart = chart;
-  }
-  if (typeof candleSeries !== 'undefined' && candleSeries) {
-    window.candleSeries = candleSeries;
-  }
-  if (typeof activeTradesLocal !== 'undefined') {
-    window.activeTradesLocal = activeTradesLocal;
-  }
-  if (typeof currentPrice !== 'undefined') {
-    window.currentPrice = currentPrice;
-  }
-}, 500);
-
-console.log("✅ APP.JS FINAL EXPOSE COMPLETE");
+console.log('Part Debug-2 (Test Menu) loaded');
+console.log('admin.js FULLY loaded - Part 3 to Debug-2');
