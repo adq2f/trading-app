@@ -1940,3 +1940,40 @@ div#candle-preview .empty-text {
   flex-direction: column;
   gap: 8px;
 }
+
+/* ============================================
+   MSG 13: Candle Designer Styles
+   ============================================ */
+
+#designer-market-select,
+#designer-direction,
+#designer-type {
+  width: 100%;
+  padding: 11px 14px;
+  background: #0b1220;
+  border: 1px solid #1f2a3d;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+#designer-direction[value="up"] {
+  border-color: #00c853;
+}
+
+#designer-direction[value="down"] {
+  border-color: #ff5252;
+}
+
+#auto-24h-toggle.active {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+}
+
+#designer-save-btn,
+#designer-apply-btn,
+#designer-reset-btn {
+  width: 100%;
+  margin-top: 6px;
+}
