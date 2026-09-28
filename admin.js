@@ -2879,6 +2879,214 @@ console.log('admin.js FULLY loaded - Part 3 to Debug-2');
 console.log("MSG 12: Trap/Delay/Reversal settings loaded");
 
 /* ============================================================
+   MSG 13: Future Candle Designer + Auto 24/7
+   ============================================================ */
+
+// ============================================================
+// 1. AUTO 24/7 TOGGLE
+// ============================================================
+
+(function bindAuto24h() {
+  var btn = document.getElementById("auto-24h-toggle");
+  if (!btn) return;
+
+  btn.addEventListener("click", async function() {
+    var isActive = btn.classList.contains("active");
+    var newState = !isActive;
+
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        autoGenerate24h: newState,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      if (newState) {
+        btn.classList.add("active");
+        btn.textContent = "Auto 24/7: ON";
+        btn.style.background = "#00c853";
+        btn.style.color = "#04121a";
+        console.log("[MSG13] Auto 24/7: ON");
+      } else {
+        btn.classList.remove("active");
+        btn.textContent = "Auto 24/7: OFF";
+        btn.style.background = "";
+        btn.style.color = "";
+        console.log("[MSG13] Auto 24/7: OFF");
+      }
+
+      alert("Auto 24/7: " + (newState ? "ON" : "OFF"));
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  // Load current state
+  (async function loadState() {
+    try {
+      var sDoc = await getDoc(doc(db, "settings", "global"));
+      if (sDoc.exists()) {
+        var d = sDoc.data();
+        if (d.autoGenerate24h) {
+          btn.classList.add("active");
+          btn.textContent = "Auto 24/7: ON";
+          btn.style.background = "#00c853";
+          btn.style.color = "#04121a";
+        }
+      }
+    } catch(e) {}
+  })();
+
+  console.log("[MSG13] Auto 24/7 toggle bound");
+})();
+
+// ============================================================
+// 2. LOAD MARKET SELECT IN DESIGNER
+// ============================================================
+
+(function bindDesignerMarket() {
+  var sel = document.getElementById("designer-market-select");
+  if (!sel) return;
+
+  async function loadMarkets() {
+    try {
+      var snap = await getDocs(collection(db, "markets"));
+      sel.innerHTML = '<option value="">-- Select Market --</option>';
+      snap.forEach(function(d) {
+        var m = d.data();
+        if (m.enabled) {
+          var opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = m.name + " (" + m.symbol + ")";
+          sel.appendChild(opt);
+        }
+      });
+      console.log("[MSG13] Designer markets loaded");
+    } catch(err) {
+      console.error("[MSG13] Load markets error:", err.message);
+    }
+  }
+
+  loadMarkets();
+  setInterval(loadMarkets, 30000); // Refresh every 30s
+})();
+
+// ============================================================
+// 3. SAVE CANDLE DESIGNER
+// ============================================================
+
+(function bindDesignerSave() {
+  var btn = document.getElementById("designer-save-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", async function() {
+    var marketId = document.getElementById("designer-market-select").value;
+    if (!marketId) { alert("Select market first"); return; }
+
+    var data = {
+      direction: document.getElementById("designer-direction").value,
+      type: document.getElementById("designer-type").value,
+      bodySize: parseInt(document.getElementById("designer-body").value) || 60,
+      wickLength: parseInt(document.getElementById("designer-wick").value) || 20,
+      open: parseFloat(document.getElementById("designer-open").value) || 50000,
+      close: parseFloat(document.getElementById("designer-close").value) || 50100,
+      high: parseFloat(document.getElementById("designer-high").value) || 50150,
+      low: parseFloat(document.getElementById("designer-low").value) || 49950,
+      savedAt: new Date().toISOString()
+    };
+
+    // Auto-calculate direction from open/close
+    if (data.close > data.open) data.direction = "up";
+    else if (data.close < data.open) data.direction = "down";
+    else data.direction = "neutral";
+
+    try {
+      await setDoc(doc(db, "markets", marketId), {
+        designerCandle: data,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      console.log("[MSG13] Designer saved:", data);
+      alert("Designer saved for " + marketId);
+    } catch(err) {
+      alert(err.message);
+    }
+  });
+
+  console.log("[MSG13] Designer save button bound");
+})();
+
+// ============================================================
+// 4. APPLY TO NEXT CANDLE
+// ============================================================
+
+(function bindDesignerApply() {
+  var btn = document.getElementById("designer-apply-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", async function() {
+    var marketId = document.getElementById("designer-market-select").value;
+    if (!marketId) { alert("Select market first"); return; }
+
+    var data = {
+      direction: document.getElementById("designer-direction").value,
+      type: document.getElementById("designer-type").value,
+      bodySize: parseInt(document.getElementById("designer-body").value) || 60,
+      wickLength: parseInt(document.getElementById("designer-wick").value) || 20,
+      open: parseFloat(document.getElementById("designer-open").value) || 50000,
+      close: parseFloat(document.getElementById("designer-close").value) || 50100,
+      high: parseFloat(document.getElementById("designer-high").value) || 50150,
+      low: parseFloat(document.getElementById("designer-low").value) || 49950,
+      applyToNext: true,
+      appliedAt: new Date().toISOString()
+    };
+
+    if (data.close > data.open) data.direction = "up";
+    else if (data.close < data.open) data.direction = "down";
+    else data.direction = "neutral";
+
+    try {
+      // Save designer + set applyToNext flag
+      await setDoc(doc(db, "markets", marketId), {
+        designerCandle: data,
+        applyNextAt: Date.now(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      console.log("[MSG13] Apply to next candle:", data);
+      alert("Next candle will use your design!");
+    } catch(err) {
+      alert(err.message);
+    }
+  });
+
+  console.log("[MSG13] Designer apply button bound");
+})();
+
+// ============================================================
+// 5. RESET DESIGNER
+// ============================================================
+
+(function bindDesignerReset() {
+  var btn = document.getElementById("designer-reset-btn");
+  if (!btn) return;
+
+  btn.addEventListener("click", function() {
+    document.getElementById("designer-direction").value = "up";
+    document.getElementById("designer-type").value = "medium";
+    document.getElementById("designer-body").value = 60;
+    document.getElementById("designer-wick").value = 20;
+    document.getElementById("designer-open").value = 50000;
+    document.getElementById("designer-close").value = 50100;
+    document.getElementById("designer-high").value = 50150;
+    document.getElementById("designer-low").value = 49950;
+    alert("Designer reset");
+  });
+
+  console.log("[MSG13] Designer reset button bound");
+})();
+
+console.log("MSG 13: Future Candle Designer + Auto 24/7 loaded");
+/* ============================================================
    MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
    ============================================================ */
 
