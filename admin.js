@@ -2248,4 +2248,245 @@ setTimeout(bindExportImport, 800);
 setTimeout(bindExportImport, 2500);
 
 console.log('Part 6F (Export/Import JSON) loaded');
-console.log('admin.js FULLY loaded - Part 3 to 6F');
+/* ============================================================
+   PART DEBUG-1: AUTO ERROR SYSTEM
+   ============================================================ */
+
+window.debugLogs = [];
+window.debugPanelOpen = false;
+window.maxDebugLogs = 200;
+
+window.addDebugLog = function(level, message) {
+  const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const entry = {
+    time: timestamp,
+    level: level,
+    message: String(message)
+  };
+  window.debugLogs.push(entry);
+  if (window.debugLogs.length > window.maxDebugLogs) {
+    window.debugLogs.shift();
+  }
+  if (window.debugPanelOpen) {
+    window.renderDebugPanel();
+  }
+};
+
+window.createDebugPanel = function() {
+  if (document.getElementById('debug-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'debug-panel';
+  panel.style.cssText = [
+    'position: fixed',
+    'bottom: 0',
+    'right: 0',
+    'width: 100%',
+    'max-width: 420px',
+    'height: 50vh',
+    'max-height: 400px',
+    'background: #0b1220',
+    'border-top: 2px solid #2196f3',
+    'border-left: 2px solid #2196f3',
+    'border-top-left-radius: 12px',
+    'z-index: 99999',
+    'display: none',
+    'flex-direction: column',
+    'box-shadow: -4px -4px 20px rgba(0,0,0,0.6)',
+    'font-family: monospace',
+    'font-size: 11px'
+  ].join(';');
+
+  panel.innerHTML =
+    '<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:#0d1522; border-bottom:1px solid #1f2a3d;">' +
+      '<span style="color:#2196f3; font-weight:bold;">DEBUG PANEL</span>' +
+      '<div>' +
+        '<button id="debug-copy-btn" style="background:#1a2333; color:#e6edf3; border:1px solid #2a3648; border-radius:4px; padding:4px 8px; font-size:10px; margin-right:4px; cursor:pointer;">Copy</button>' +
+        '<button id="debug-clear-btn" style="background:#3a1220; color:#ff5252; border:1px solid #ff5252; border-radius:4px; padding:4px 8px; font-size:10px; margin-right:4px; cursor:pointer;">Clear</button>' +
+        '<button id="debug-close-btn" style="background:#1a2333; color:#e6edf3; border:1px solid #2a3648; border-radius:4px; padding:4px 8px; font-size:10px; cursor:pointer;">X</button>' +
+      '</div>' +
+    '</div>' +
+    '<div id="debug-log-body" style="flex:1; overflow-y:auto; padding:8px; color:#e6edf3;"></div>';
+
+  document.body.appendChild(panel);
+
+  document.getElementById('debug-copy-btn').onclick = function() {
+    const text = window.debugLogs.map(function(l) {
+      return '[' + l.time + '] [' + l.level + '] ' + l.message;
+    }).join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        alert('Logs copied to clipboard! (' + window.debugLogs.length + ' entries)');
+      }).catch(function() {
+        alert('Copy failed. Total logs: ' + window.debugLogs.length);
+      });
+    } else {
+      alert('Clipboard not available. Total logs: ' + window.debugLogs.length);
+    }
+  };
+
+  document.getElementById('debug-clear-btn').onclick = function() {
+    window.debugLogs = [];
+    window.renderDebugPanel();
+    window.addDebugLog('info', 'Logs cleared');
+  };
+
+  document.getElementById('debug-close-btn').onclick = function() {
+    window.toggleDebugPanel(false);
+  };
+};
+
+window.renderDebugPanel = function() {
+  const body = document.getElementById('debug-log-body');
+  if (!body) return;
+  if (window.debugLogs.length === 0) {
+    body.innerHTML = '<div style="color:#6b7a90; text-align:center; padding:20px;">No logs yet</div>';
+    return;
+  }
+  const colorMap = {
+    'error': '#ff5252',
+    'warn': '#ffb300',
+    'success': '#00c853',
+    'info': '#2196f3'
+  };
+  body.innerHTML = window.debugLogs.map(function(l) {
+    const color = colorMap[l.level] || '#e6edf3';
+    return '<div style="margin-bottom:4px; padding:4px 6px; background:rgba(255,255,255,0.03); border-left:2px solid ' + color + '; border-radius:2px;">' +
+      '<span style="color:#6b7a90;">[' + l.time + ']</span> ' +
+      '<span style="color:' + color + '; font-weight:bold;">[' + l.level.toUpperCase() + ']</span> ' +
+      '<span style="color:#e6edf3;">' + l.message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
+    '</div>';
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+};
+
+window.toggleDebugPanel = function(forceState) {
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  const open = typeof forceState === 'boolean' ? forceState : !window.debugPanelOpen;
+  window.debugPanelOpen = open;
+  panel.style.display = open ? 'flex' : 'none';
+  if (open) {
+    window.renderDebugPanel();
+  }
+};
+
+window.createDebugButton = function() {
+  if (document.getElementById('debug-toggle-btn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'debug-toggle-btn';
+  btn.textContent = 'LOG';
+  btn.style.cssText = [
+    'position: fixed',
+    'bottom: 16px',
+    'right: 16px',
+    'width: 56px',
+    'height: 56px',
+    'background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
+    'color: #fff',
+    'border: 2px solid #0b1220',
+    'border-radius: 50%',
+    'font-size: 12px',
+    'font-weight: bold',
+    'z-index: 99998',
+    'cursor: pointer',
+    'box-shadow: 0 4px 12px rgba(33, 150, 243, 0.5)'
+  ].join(';');
+
+  btn.onclick = function() {
+    window.toggleDebugPanel();
+  };
+
+  document.body.appendChild(btn);
+};
+
+// ============ GLOBAL ERROR HANDLER ============
+
+window.addEventListener('error', function(event) {
+  const msg = event.message || 'Unknown error';
+  const src = event.filename ? event.filename.split('/').pop() : '';
+  const line = event.lineno || 0;
+  const col = event.colno || 0;
+  const fullMsg = msg + (src ? ' @ ' + src + ':' + line + ':' + col : '');
+  window.addDebugLog('error', fullMsg);
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+  const reason = event.reason;
+  let msg = 'Unhandled Promise Rejection: ';
+  if (reason instanceof Error) {
+    msg += reason.message;
+  } else if (typeof reason === 'string') {
+    msg += reason;
+  } else {
+    try { msg += JSON.stringify(reason); } catch (e) { msg += String(reason); }
+  }
+  window.addDebugLog('error', msg);
+});
+
+// ============ CONSOLE FORWARDING ============
+
+(function() {
+  const origLog = console.log;
+  const origWarn = console.warn;
+  const origError = console.error;
+
+  console.log = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('info', msg);
+    origLog.apply(console, arguments);
+  };
+
+  console.warn = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('warn', msg);
+    origWarn.apply(console, arguments);
+  };
+
+  console.error = function() {
+    const msg = Array.prototype.slice.call(arguments).map(function(a) {
+      if (typeof a === 'string') return a;
+      if (a instanceof Error) return a.message;
+      if (typeof a === 'object') {
+        try { return JSON.stringify(a); } catch (e) { return String(a); }
+      }
+      return String(a);
+    }).join(' ');
+    window.addDebugLog('error', msg);
+    origError.apply(console, arguments);
+  };
+})();
+
+// ============ INIT ============
+
+function initDebugSystem() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      window.createDebugButton();
+      window.createDebugPanel();
+      window.addDebugLog('success', 'Debug System initialized');
+    });
+  } else {
+    window.createDebugButton();
+    window.createDebugPanel();
+    window.addDebugLog('success', 'Debug System initialized');
+  }
+}
+
+initDebugSystem();
+
+console.log('Part Debug-1 (Auto Error System) loaded');
+console.log('admin.js FULLY loaded - Part 3 to Debug-1');
