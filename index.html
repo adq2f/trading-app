@@ -58,8 +58,10 @@
       <button class="side-icon" id="signals-btn" title="Signals">📡</button>
 
       <!-- নিচে: লগআউট -->
+      <!-- Chat -->
+      <button class="side-icon" id="chat-btn" title="Chat">💬</button>
       <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
-
+      
     </aside>
 
     <!-- ===== মূল কনটেন্ট ===== -->
@@ -249,6 +251,26 @@
   </div>
   <!-- dashboard-page শেষ -->
 
+  <!-- ========== চ্যাট পপআপ (User side) ========== -->
+  <div id="chat-popup" class="popup hidden">
+    <div class="popup-overlay" id="chat-popup-overlay"></div>
+
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Support Chat</h3>
+        <button id="chat-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <div class="user-chat-messages" id="user-chat-messages">
+        <p class="empty-text">Send a message to admin...</p>
+      </div>
+
+      <div class="user-chat-input-row">
+        <input id="user-chat-input" class="user-chat-input" type="text" placeholder="Type a message...">
+        <button id="user-chat-send" class="user-chat-send-btn" type="button">Send</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ========== ব্যালেন্স পপআপ ========== -->
   <div id="balance-popup" class="popup hidden">
