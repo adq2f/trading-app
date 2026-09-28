@@ -3086,6 +3086,224 @@ console.log("MSG 12: Trap/Delay/Reversal settings loaded");
 })();
 
 console.log("MSG 13: Future Candle Designer + Auto 24/7 loaded");
+
+/* ============================================================
+   MSG 14: Admin Chat System
+   ============================================================ */
+
+window.chatCurrentUserId = null;
+window.chatMessagesUnsub = null;
+window.chatAllUsers = [];
+window.chatUnreadCounts = {};
+
+// ============================================================
+// 1. LOAD USER LIST FOR CHAT
+// ============================================================
+
+function loadChatUsers() {
+  var container = document.getElementById("chat-user-list");
+  if (!container) return;
+
+  try {
+    onSnapshot(collection(db, "users"), function(snap) {
+      var users = [];
+      snap.forEach(function(d) {
+        var u = d.data();
+        if (u.role !== "admin") {
+          users.push({
+            id: d.id,
+            email: u.email || "no-email"
+          });
+        }
+      });
+      users.sort(function(a, b) {
+        return (a.email || "").localeCompare(b.email || "");
+      });
+      window.chatAllUsers = users;
+
+      container.innerHTML = "";
+      if (users.length === 0) {
+        container.innerHTML = '<p class="loading-text">No users</p>';
+        return;
+      }
+
+      users.forEach(function(u) {
+        var div = document.createElement("div");
+        div.className = "chat-user-item";
+        div.dataset.uid = u.id;
+        div.textContent = u.email;
+        if (window.chatUnreadCounts[u.id] > 0) {
+          var dot = document.createElement("span");
+          dot.className = "unread-dot";
+          div.appendChild(dot);
+        }
+        div.onclick = function() {
+          selectChatUser(u.id, u.email);
+        };
+        container.appendChild(div);
+      });
+
+      console.log("[MSG14] Chat users loaded:", users.length);
+    });
+  } catch (err) {
+    console.error("[MSG14] Chat users error:", err.message);
+  }
+}
+
+// ============================================================
+// 2. SELECT USER + LOAD MESSAGES
+// ============================================================
+
+function selectChatUser(userId, userEmail) {
+  window.chatCurrentUserId = userId;
+
+  var headerEl = document.getElementById("chat-current-user");
+  if (headerEl) headerEl.textContent = userEmail;
+
+  document.querySelectorAll(".chat-user-item").forEach(function(el) {
+    el.classList.toggle("active", el.dataset.uid === userId);
+  });
+
+  window.chatUnreadCounts[userId] = 0;
+
+  // Unsubscribe previous
+  if (window.chatMessagesUnsub) {
+    window.chatMessagesUnsub();
+    window.chatMessagesUnsub = null;
+  }
+
+  // Load messages
+  var messagesEl = document.getElementById("chat-messages");
+  if (!messagesEl) return;
+  messagesEl.innerHTML = '<p class="empty-text">Loading messages...</p>';
+
+  try {
+    var q = query(
+      collection(db, "chats", userId, "messages"),
+      orderBy("timestamp", "asc")
+    );
+
+    window.chatMessagesUnsub = onSnapshot(q, function(snap) {
+      messagesEl.innerHTML = "";
+      if (snap.empty) {
+        messagesEl.innerHTML = '<p class="empty-text">No messages yet</p>';
+        return;
+      }
+
+      snap.forEach(function(d) {
+        var m = d.data();
+        var div = document.createElement("div");
+        div.className = "chat-msg " + (m.from === "admin" ? "from-admin" : "from-user");
+
+        var textNode = document.createTextNode(m.text || "");
+        div.appendChild(textNode);
+
+        var timeSpan = document.createElement("span");
+        timeSpan.className = "chat-msg-time";
+        var ts = m.timestamp ? new Date(m.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "-";
+        timeSpan.textContent = ts;
+        div.appendChild(timeSpan);
+
+        messagesEl.appendChild(div);
+      });
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+  } catch (err) {
+    console.error("[MSG14] Messages error:", err.message);
+    messagesEl.innerHTML = '<p class="empty-text">Error: ' + err.message + '</p>';
+  }
+}
+
+// ============================================================
+// 3. SEND MESSAGE
+// ============================================================
+
+async function sendChatMessage() {
+  if (!window.chatCurrentUserId) {
+    alert("Select a user first");
+    return;
+  }
+
+  var input = document.getElementById("chat-input");
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) return;
+
+  input.value = "";
+
+  try {
+    await addDoc(collection(db, "chats", window.chatCurrentUserId, "messages"), {
+      from: "admin",
+      text: text,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log("[MSG14] Message sent to:", window.chatCurrentUserId);
+  } catch (err) {
+    console.error("[MSG14] Send error:", err.message);
+    alert("Send failed: " + err.message);
+  }
+}
+
+// ============================================================
+// 4. BIND SEND BUTTON + ENTER KEY
+// ============================================================
+
+setTimeout(function() {
+  var sendBtn = document.getElementById("chat-send-btn");
+  if (sendBtn && sendBtn.dataset.bound !== "1") {
+    sendBtn.dataset.bound = "1";
+    sendBtn.onclick = sendChatMessage;
+    console.log("[MSG14] Send button bound");
+  }
+
+  var input = document.getElementById("chat-input");
+  if (input && input.dataset.bound !== "1") {
+    input.dataset.bound = "1";
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendChatMessage();
+      }
+    });
+  }
+}, 2000);
+
+// ============================================================
+// 5. TRACK UNREAD MESSAGES
+// ============================================================
+
+function trackUnreadMessages() {
+  if (!window.currentAdmin) return;
+
+  try {
+    // Watch each user's chat
+    window.chatAllUsers.forEach(function(u) {
+      if (!u.id) return;
+      // Simple approach: count messages since last read
+      // For simplicity, skip complex unread logic
+    });
+  } catch (err) {}
+}
+
+// ============================================================
+// 6. INIT ON ADMIN LOGIN
+// ============================================================
+
+setInterval(function() {
+  if (window.currentAdmin && window.chatAllUsers.length === 0) {
+    loadChatUsers();
+  }
+}, 3000);
+
+setTimeout(function() {
+  if (window.currentAdmin) {
+    loadChatUsers();
+  }
+}, 4000);
+
+console.log("[MSG14] Admin Chat System loaded");
 /* ============================================================
    MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
    ============================================================ */
