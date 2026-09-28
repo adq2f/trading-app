@@ -2772,6 +2772,113 @@ console.log('Part Debug-2 (Test Menu) loaded');
 console.log('admin.js FULLY loaded - Part 3 to Debug-2');
 
 /* ============================================================
+   MSG 12: Trap + Delay + Reversal Settings Save
+   ============================================================ */
+
+(function bindTrapRate() {
+  var btn = document.getElementById("save-trap-rate");
+  var input = document.getElementById("trap-rate-input");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", async function() {
+    var val = parseInt(input.value);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert("Trap % must be 0-100");
+      return;
+    }
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        trapRate: val,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log("[Settings] Trap Rate saved:", val + "%");
+      alert("Trap Rate: " + val + "%");
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+  console.log("[Settings] Trap Rate button bound");
+})();
+
+(function bindDelayRate() {
+  var btn = document.getElementById("save-delay-rate");
+  var input = document.getElementById("delay-rate-input");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", async function() {
+    var val = parseInt(input.value);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert("Delay % must be 0-100");
+      return;
+    }
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        delayRate: val,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log("[Settings] Delay Rate saved:", val + "%");
+      alert("Delay Rate: " + val + "%");
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+  console.log("[Settings] Delay Rate button bound");
+})();
+
+(function bindReversalRate() {
+  var btn = document.getElementById("save-reversal-rate");
+  var input = document.getElementById("reversal-rate-input");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", async function() {
+    var val = parseInt(input.value);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert("Reversal % must be 0-100");
+      return;
+    }
+    try {
+      await setDoc(doc(db, "settings", "global"), {
+        reversalRate: val,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log("[Settings] Reversal Rate saved:", val + "%");
+      alert("Reversal Rate: " + val + "%");
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+  console.log("[Settings] Reversal Rate button bound");
+})();
+
+// Load values on Admin Panel load
+(function loadTrapSettings() {
+  async function fetchTrapSettings() {
+    try {
+      var sDoc = await getDoc(doc(db, "settings", "global"));
+      if (!sDoc.exists()) return;
+
+      var d = sDoc.data();
+      var trapInput = document.getElementById("trap-rate-input");
+      var delayInput = document.getElementById("delay-rate-input");
+      var reversalInput = document.getElementById("reversal-rate-input");
+
+      if (trapInput && d.trapRate !== undefined) trapInput.value = d.trapRate;
+      if (delayInput && d.delayRate !== undefined) delayInput.value = d.delayRate;
+      if (reversalInput && d.reversalRate !== undefined) reversalInput.value = d.reversalRate;
+
+      console.log("[Settings] Trap/Delay/Reversal loaded:",
+        (d.trapRate || 30) + "% / " + (d.delayRate || 20) + "% / " + (d.reversalRate || 15) + "%");
+    } catch (err) {
+      console.error("Trap settings load error:", err.message);
+    }
+  }
+
+  setTimeout(fetchTrapSettings, 2500);
+})();
+
+console.log("MSG 12: Trap/Delay/Reversal settings loaded");
+
+/* ============================================================
    MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
    ============================================================ */
 
