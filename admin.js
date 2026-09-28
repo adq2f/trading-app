@@ -1670,3 +1670,141 @@ window.toggleAutoMode = toggleAutoMode;
 window.setAutoModeInterval = setAutoModeInterval;
 window.autoGenerateOneCandle = autoGenerateOneCandle;
 console.log('admin.js FULLY loaded - Part 3 to 6D');
+/* ============================================================
+   PART 6E-1: CANDLE MODE SWITCH UI
+   ============================================================ */
+
+// Global mode state
+window.candleMode = window.candleMode || 'locked';
+
+// Mode descriptions
+window.CANDLE_MODE_INFO = {
+  locked:   '<strong>LOCKED:</strong> Admin-er save kora candle user-er kache exact jabe.',
+  random:   '<strong>RANDOM:</strong> Prottek candle randomly generate hobe (up/down/neutral).',
+  mixed:    '<strong>MIXED:</strong> Locked candle thakbe, kintu win rate target maintain hobe.',
+  schedule: '<strong>SCHEDULE:</strong> Time-based candle generate hobe (schedule onujayi).'
+};
+
+// Update mode info text
+window.updateCandleModeInfo = function(mode) {
+  const infoEl = document.getElementById('candle-mode-info');
+  if (!infoEl) {
+    console.warn('[Mode] candle-mode-info element not found');
+    return;
+  }
+  infoEl.innerHTML = window.CANDLE_MODE_INFO[mode] || '';
+};
+
+// Update active button highlight
+window.updateCandleModeButtons = function(mode) {
+  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
+  if (!buttons.length) {
+    console.warn('[Mode] No mode buttons found');
+    return;
+  }
+  buttons.forEach(function(btn) {
+    if (btn.getAttribute('data-mode') === mode) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+};
+
+// Set candle mode (main function)
+window.setCandleMode = function(mode, skipSave) {
+  const validModes = ['locked', 'random', 'mixed', 'schedule'];
+  if (validModes.indexOf(mode) === -1) {
+    console.error('[Mode] Invalid mode:', mode);
+    return;
+  }
+
+  const oldMode = window.candleMode;
+  window.candleMode = mode;
+
+  // Update UI
+  window.updateCandleModeButtons(mode);
+  window.updateCandleModeInfo(mode);
+
+  // Log
+  console.log('[Mode] Switched: ' + oldMode + ' -> ' + mode);
+
+  // Firestore save (MSG 2-te implement hobe)
+  if (!skipSave && typeof window.saveCandleModeToFirestore === 'function') {
+    window.saveCandleModeToFirestore(mode);
+  }
+};
+
+// Bind mode button clicks
+window.bindCandleModeButtons = function() {
+  const buttons = document.querySelectorAll('.mode-btn[data-mode]');
+  if (!buttons.length) {
+    console.warn('[Mode] No mode buttons to bind');
+    return;
+  }
+
+  buttons.forEach(function(btn) {
+    // Avoid duplicate listeners
+    if (btn.dataset.modeBound === '1') return;
+    btn.dataset.modeBound = '1';
+
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const mode = btn.getAttribute('data-mode');
+      console.log('[Mode] Button clicked:', mode);
+      window.setCandleMode(mode);
+    });
+  });
+
+  console.log('[Mode] Bound ' + buttons.length + ' mode buttons');
+};
+
+// Load mode from Firestore (MSG 2-te full implement)
+window.loadCandleModeFromFirestore = async function() {
+  if (typeof firebase === 'undefined' || !firebase.firestore) {
+    console.warn('[Mode] Firebase not ready, using default: locked');
+    window.setCandleMode('locked', true);
+    return;
+  }
+
+  try {
+    const doc = await firebase.firestore()
+      .collection('settings')
+      .doc('global')
+      .get();
+
+    if (doc.exists) {
+      const data = doc.data();
+      const savedMode = data.candleMode || 'locked';
+      console.log('[Mode] Loaded from Firestore:', savedMode);
+      window.setCandleMode(savedMode, true);
+    } else {
+      console.log('[Mode] No settings doc, using default: locked');
+      window.setCandleMode('locked', true);
+    }
+  } catch (err) {
+    console.error('[Mode] Load error:', err.message);
+    window.setCandleMode('locked', true);
+  }
+};
+
+// Initialize on DOM ready
+window.initCandleModeUI = function() {
+  console.log('[Mode] Initializing Mode UI...');
+  window.bindCandleModeButtons();
+  window.updateCandleModeButtons(window.candleMode);
+  window.updateCandleModeInfo(window.candleMode);
+  console.log('[Mode] Init complete. Current mode:', window.candleMode);
+};
+
+// 3-layer binding
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(window.initCandleModeUI, 800);
+});
+
+setTimeout(function() {
+  if (!document.querySelector('.mode-btn.active')) {
+    console.log('[Mode] Fallback init at 2500ms');
+    window.initCandleModeUI();
+  }
+}, 2500);
