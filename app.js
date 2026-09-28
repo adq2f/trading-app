@@ -2890,6 +2890,11 @@ function startLiveMovement() {
 
   window.liveMovementInterval = setInterval(function() {
     if (typeof candleSeries === "undefined" || !candleSeries) return;
+    if (typeof currentPrice === "undefined" || currentPrice === null) return;
+    if (isNaN(Number(currentPrice))) return;                          // ← এই line যোগ করুন
+
+  window.liveMovementInterval = setInterval(function() {
+    if (typeof candleSeries === "undefined" || !candleSeries) return;
     if (typeof currentPrice === "undefined") return;
 
     var speed = window.liveSpeed || 500;
@@ -3182,7 +3187,7 @@ async function processTradeResultsV2() {
 
           if (tradeMessage) {
             tradeMessage.style.color = "#00c853";
-            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
+            tradeMessage.textContent = " PROFIT! +$" + netProfit.toFixed(2);
             setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
           }
         }
@@ -3192,7 +3197,7 @@ async function processTradeResultsV2() {
 
         if (tradeMessage) {
           tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          tradeMessage.textContent = "Loss -$" + trade.amount.toFixed(2);
           setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
         }
       }
