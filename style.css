@@ -1534,3 +1534,350 @@ input, select {
   font-size: 13px;
   font-weight: 700;
 }
+
+
+/* ============================================
+   MSG 15: DESIGN OVERHAUL — Inter Font + Better Layout
+   ============================================ */
+
+/* ===== Inter Font (Global) ===== */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  font-variation-settings: 'opsz' 32;
+}
+
+/* ===== Better Typography ===== */
+body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* ===== Dashboard Layout — 70% Chart ===== */
+@media (min-width: 768px) {
+  #dashboard-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 12px;
+  }
+
+  .main-content {
+    max-width: 100%;
+  }
+
+  /* Chart larger on desktop */
+  #chart-wrapper {
+    height: 500px !important;
+  }
+
+  .chart-section {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  #chart-wrapper {
+    height: 550px !important;
+  }
+
+  .left-sidebar {
+    width: 60px;
+  }
+
+  .side-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 18px;
+  }
+}
+
+/* ===== Top Bar — Better Look ===== */
+.top-bar {
+  padding: 10px 16px !important;
+  background: linear-gradient(180deg, #0f1728 0%, #0d1522 100%) !important;
+  border-color: #1f2a3d !important;
+}
+
+.brand-name {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* ===== Balance Chip — Modern ===== */
+.balance-chip {
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  background: linear-gradient(135deg, #0f2818 0%, #0d1522 100%) !important;
+  border: 1px solid rgba(0, 200, 83, 0.4) !important;
+}
+
+.balance-chip:hover {
+  border-color: #00c853 !important;
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.35) !important;
+}
+
+/* ===== Chart Header — Cleaner ===== */
+.chart-header {
+  padding: 4px 6px 10px !important;
+  border-bottom: 1px solid #1a2436;
+  margin-bottom: 8px;
+}
+
+.asset-picker {
+  background: #141d2e !important;
+  border: 1px solid #1f2a3d !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+}
+
+.asset-select {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.price-box {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* ===== Time Labels Under Chart (Quotex-style) ===== */
+.chart-time-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px 0;
+  font-size: 11px;
+  color: #6b7a90;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
+  border-top: 1px solid #1a2436;
+  margin-top: 4px;
+}
+
+.chart-time-labels span {
+  flex: 1;
+  text-align: center;
+}
+
+/* ===== Timeframe Buttons — Better ===== */
+.tf-btn {
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.3px !important;
+  transition: all 0.15s ease;
+}
+
+.tf-btn.active {
+  box-shadow: 0 2px 12px rgba(33, 150, 243, 0.45) !important;
+}
+
+/* ===== Trade Panel — Modern ===== */
+.trade-panel {
+  padding: 16px !important;
+  gap: 14px !important;
+}
+
+.trade-label {
+  font-size: 11px !important;
+  letter-spacing: 1.2px !important;
+  font-weight: 700 !important;
+  color: #8b98ab !important;
+}
+
+.amount-input-wrap input {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.amount-btn {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  transition: all 0.15s ease;
+}
+
+.amount-btn:hover {
+  background: #1f2a3d !important;
+}
+
+/* ===== CALL/PUT Buttons — Modern ===== */
+.call-btn,
+.put-btn {
+  padding: 16px 10px !important;
+  border-radius: 14px !important;
+  transition: all 0.2s ease;
+}
+
+.call-btn .btn-label,
+.put-btn .btn-label {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1.5px !important;
+}
+
+.call-btn .btn-payout,
+.put-btn .btn-payout {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.call-btn:hover,
+.put-btn:hover {
+  transform: translateY(-2px);
+}
+
+.call-btn:active,
+.put-btn:active {
+  transform: scale(0.97);
+}
+
+/* ===== Trades Section — Better ===== */
+.trades-section {
+  padding: 12px !important;
+}
+
+.tabs {
+  padding: 5px !important;
+}
+
+.tab-btn {
+  font-weight: 700 !important;
+  letter-spacing: 0.2px !important;
+  transition: all 0.15s ease;
+}
+
+/* ===== Popup — Modern ===== */
+.popup-content {
+  border-radius: 18px !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85) !important;
+  animation: popupSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes popupSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popup-header h3 {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* ===== Countdown Timer — Better Position ===== */
+.top-countdown-timer {
+  top: 12px !important;
+  left: 12px !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  background: rgba(11, 18, 32, 0.95) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.top-countdown-timer #countdown-time {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+}
+
+/* ===== Trade Info Badge — Better ===== */
+.trade-info-badge {
+  top: 12px !important;
+  right: 12px !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  background: rgba(11, 18, 32, 0.95) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.trade-info-badge #trade-info-text {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* ===== Smooth Transitions Everywhere ===== */
+button,
+input,
+select {
+  transition: background-color 0.15s ease,
+              border-color 0.15s ease,
+              transform 0.15s ease,
+              box-shadow 0.2s ease;
+}
+
+/* ===== Better Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f2a3d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a3648;
+}
+
+/* ===== Mobile Refinement ===== */
+@media (max-width: 500px) {
+  body {
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  .chart-header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .price-box {
+    font-size: 18px !important;
+  }
+
+  .amount-input-wrap input {
+    font-size: 18px !important;
+  }
+
+  .call-btn,
+  .put-btn {
+    padding: 14px 8px !important;
+  }
+
+  .call-btn .btn-label,
+  .put-btn .btn-label {
+    font-size: 14px !important;
+  }
+}
+
+/* ===== Fix: Number Precision Display ===== */
+.price-display {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ===== Smooth Chart Container ===== */
+#chart-wrapper {
+  transition: height 0.3s ease;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
