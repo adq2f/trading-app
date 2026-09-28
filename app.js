@@ -2581,3 +2581,32 @@ console.log("   1. Win Rate — Admin থেকে সেট → ট্রেড
 console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
 console.log("   3. Market Force — Admin ⬆⬇ → প্রাইস উপরে-নিচে");
 console.log("   4. Auto Mode — Admin Toggle → অটো drift");
+
+// === FINAL EXPOSE ===
+window.placeTrade = placeTrade;
+window.checkExpiredTrades = checkExpiredTrades;
+window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
+window.updateTradeMarkers = updateTradeMarkers;
+window.loadActiveTrades = loadActiveTrades;
+
+// === FINAL STATE SYNC ===
+setInterval(function() {
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    window.currentUser = currentUser;
+    window.userBalance = userBalance;
+  }
+  if (typeof chart !== 'undefined' && chart) {
+    window.chart = chart;
+  }
+  if (typeof candleSeries !== 'undefined' && candleSeries) {
+    window.candleSeries = candleSeries;
+  }
+  if (typeof activeTradesLocal !== 'undefined') {
+    window.activeTradesLocal = activeTradesLocal;
+  }
+  if (typeof currentPrice !== 'undefined') {
+    window.currentPrice = currentPrice;
+  }
+}, 500);
+
+console.log("✅ APP.JS FINAL EXPOSE COMPLETE");
