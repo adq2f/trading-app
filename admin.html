@@ -56,6 +56,7 @@
       <button class="admin-tab" data-tab="deposits" type="button">Deposits</button>
       <button class="admin-tab" data-tab="withdrawals" type="button">Withdrawals</button>
       <button class="admin-tab" data-tab="settings" type="button">Settings</button>
+            <button class="admin-tab" data-tab="chat" type="button">Chat</button>
     </nav>
 
     <!-- TAB: MARKETS -->
@@ -224,6 +225,32 @@
       <h2 class="section-title">Withdrawals</h2>
       <div id="withdrawals-list" class="withdrawals-list"></div>
     </section>
+    <!-- ============================================================
+         TAB: CHAT
+         ============================================================ -->
+    <section id="tab-chat" class="admin-tab-content">
+      <h2 class="section-title">Chat with Users</h2>
+
+      <div class="chat-container">
+        <div class="chat-sidebar" id="chat-user-list">
+          <p class="loading-text">Loading users...</p>
+        </div>
+
+        <div class="chat-main">
+          <div class="chat-header" id="chat-header">
+            <span class="chat-header-name" id="chat-current-user">Select a user</span>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <p class="empty-text">Select a user to start chatting</p>
+          </div>
+          <div class="chat-input-row">
+            <input id="chat-input" class="admin-input" type="text" placeholder="Type a message...">
+            <button id="chat-send-btn" class="admin-btn primary" type="button">Send</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB: SETTINGS -->
     <section id="tab-settings" class="admin-tab-content">
       <h2 class="section-title">Settings</h2>
