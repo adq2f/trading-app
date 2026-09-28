@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Admin Panel - Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css?v=6E1">
+  <link rel="stylesheet" href="admin.css?v=6E3">
 
   <!-- Eruda Mobile Console -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
@@ -167,10 +167,7 @@
       <!-- Auto Mode Toggle -->
       <div class="auto-mode-section">
         <h3 class="subsection-title">Auto Mode</h3>
-        <label class="switch-label">
-          <input id="auto-mode-toggle" type="checkbox">
-          <span>Auto Generate (Real-Time)</span>
-        </label>
+        <button id="auto-mode-toggle" class="admin-btn" type="button">Auto Mode: OFF</button>
         <input id="auto-interval-input" class="admin-input" type="number" placeholder="Interval (ms)" value="5000">
         <button id="save-auto-interval" class="admin-btn" type="button">Save Interval</button>
       </div>
@@ -199,7 +196,7 @@
       <!-- Preview Chart -->
       <div class="candle-preview-wrap">
         <h3 class="subsection-title">Preview</h3>
-        <canvas id="candle-preview" width="600" height="200"></canvas>
+        <div id="candle-preview" class="candle-preview"></div>
       </div>
 
       <!-- Direction Timeline -->
@@ -278,7 +275,7 @@
   <!-- ============================================================
        SCRIPTS
        ============================================================ -->
-  <script type="module" src="admin.js?v=6E1"></script>
+  <script type="module" src="admin.js?v=6E3"></script>
 
 </body>
 </html>
