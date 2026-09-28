@@ -2831,6 +2831,398 @@ setInterval(function() {
 }, 500);
 
 console.log("===== MSG 10: True Trade Mechanic + Countdown + Entry Line loaded =====");
+
+/* ============================================================
+   MSG 11: LIVE MOVEMENT + AUTO CANDLE + MULTI-USER ANALYSIS
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
+
+window.adminWinPercent = 80;
+window.adminLossPercent = 30;
+window.liveSpeed = 500;
+window.liveMovementInterval = null;
+window.autoCandleInterval = null;
+window.analyzerInterval = null;
+
+// Track current candle time
+window.currentCandleTime = Math.floor(Date.now() / 1000);
+window.currentCandleOpen = currentPrice;
+
+// ============================================================
+// 2. LISTEN ADMIN SETTINGS FOR WIN/LOSS
+// ============================================================
+
+function listenWinLossSettings() {
+  if (typeof db === "undefined") return;
+
+  try {
+    onSnapshot(doc(db, "settings", "global"), function(snap) {
+      if (!snap.exists()) return;
+
+      var d = snap.data();
+      window.adminWinPercent = d.winPercent ?? 80;
+      window.adminLossPercent = d.lossPercent ?? 30;
+      window.liveSpeed = d.liveSpeed ?? 500;
+
+      console.log(
+        "[MSG11] Settings: Win " + window.adminWinPercent + "% | " +
+        "Loss " + window.adminLossPercent + "% | " +
+        "Speed " + window.liveSpeed + "ms"
+      );
+    });
+  } catch (err) {
+    console.error("[MSG11] Settings listen error:", err.message);
+  }
+}
+
+setTimeout(listenWinLossSettings, 2500);
+
+// ============================================================
+// 3. LIVE PRICE MOVEMENT (every 500ms)
+// ============================================================
+
+function startLiveMovement() {
+  if (window.liveMovementInterval) clearInterval(window.liveMovementInterval);
+
+  window.liveMovementInterval = setInterval(function() {
+    if (typeof candleSeries === "undefined" || !candleSeries) return;
+    if (typeof currentPrice === "undefined") return;
+
+    var speed = window.liveSpeed || 500;
+    var drift = (Math.random() - 0.5) * 30;
+
+    // Direction bias from adminForceMarket
+    var force = (typeof adminForceMarket !== "undefined") ? adminForceMarket : 0;
+    if (force > 0) drift += Math.random() * 15;
+    else if (force < 0) drift -= Math.random() * 15;
+
+    currentPrice = Math.max(100, currentPrice + drift);
+    window.currentPrice = currentPrice;
+
+    if (typeof currentPriceEl !== "undefined" && currentPriceEl) {
+      currentPriceEl.textContent = currentPrice.toFixed(2);
+      if (drift >= 0) {
+        currentPriceEl.style.color = "#00c853";
+      } else {
+        currentPriceEl.style.color = "#ff5252";
+      }
+    }
+
+    // Update chart candle in real-time
+    var now = Math.floor(Date.now() / 1000);
+    var candleTime = Math.floor(now / 60) * 60;
+
+    if (candleTime > window.currentCandleTime) {
+      // New minute started
+      window.currentCandleTime = candleTime;
+      window.currentCandleOpen = currentPrice;
+    }
+
+    try {
+      var openP = window.currentCandleOpen;
+      var closeP = currentPrice;
+      var highP = Math.max(openP, closeP) + Math.random() * 5;
+      var lowP = Math.min(openP, closeP) - Math.random() * 5;
+
+      candleSeries.update({
+        time: window.currentCandleTime,
+        open: openP,
+        high: highP,
+        low: lowP,
+        close: closeP
+      });
+    } catch(e) {
+      // ignore
+    }
+  }, 500);
+
+  console.log("[MSG11] Live movement started");
+}
+
+// ============================================================
+// 4. AUTO CANDLE GENERATION (every 1m)
+// ============================================================
+
+function startAutoCandleGeneration() {
+  if (window.autoCandleInterval) clearInterval(window.autoCandleInterval);
+
+  window.autoCandleInterval = setInterval(function() {
+    if (typeof candleSeries === "undefined" || !candleSeries) return;
+    if (!window.currentUser) return;
+
+    var mode = (typeof adminSettings !== "undefined" && adminSettings.candleMode) || "random";
+
+    // Only auto-generate if mode is random or schedule
+    if (mode === "locked") {
+      console.log("[MSG11] LOCKED mode - no auto generation");
+      return;
+    }
+
+    var now = Math.floor(Date.now() / 1000);
+    var candleTime = Math.floor(now / 60) * 60;
+
+    var openP = currentPrice;
+    var move = (Math.random() - 0.5) * 200;
+    var closeP = openP + move;
+    var highP = Math.max(openP, closeP) + Math.random() * 50;
+    var lowP = Math.min(openP, closeP) - Math.random() * 50;
+
+    try {
+      candleSeries.update({
+        time: candleTime,
+        open: openP,
+        high: highP,
+        low: lowP,
+        close: closeP
+      });
+
+      currentPrice = closeP;
+      window.currentPrice = closeP;
+      window.currentCandleTime = candleTime;
+      window.currentCandleOpen = closeP;
+
+      console.log("[MSG11] Auto candle generated:", openP.toFixed(2), "→", closeP.toFixed(2));
+    } catch(e) {
+      console.error("[MSG11] Auto candle error:", e.message);
+    }
+  }, 60000);
+
+  console.log("[MSG11] Auto candle generation started");
+}
+
+// ============================================================
+// 5. MULTI-USER TRADE ANALYSIS
+// ============================================================
+
+window.tradeAnalysis = {
+  totalCall: 0,
+  totalPut: 0,
+  callCount: 0,
+  putCount: 0,
+  callUsers: [],
+  putUsers: [],
+  suggestedDirection: "neutral"
+};
+
+async function analyzeActiveTrades() {
+  if (!window.currentUser) return;
+
+  try {
+    var q = query(
+      collection(db, "trades"),
+      where("status", "==", "pending")
+    );
+    var snap = await getDocs(q);
+
+    if (snap.empty) {
+      window.tradeAnalysis = {
+        totalCall: 0, totalPut: 0, callCount: 0, putCount: 0,
+        callUsers: [], putUsers: [], suggestedDirection: "neutral"
+      };
+      return;
+    }
+
+    var callTotal = 0, putTotal = 0, callCount = 0, putCount = 0;
+    var callUsers = [], putUsers = [];
+
+    snap.forEach(function(d) {
+      var t = d.data();
+      if (t.type === "call") {
+        callTotal += t.amount;
+        callCount++;
+        callUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
+      } else if (t.type === "put") {
+        putTotal += t.amount;
+        putCount++;
+        putUsers.push({ id: d.id, userId: t.userId, amount: t.amount });
+      }
+    });
+
+    window.tradeAnalysis = {
+      totalCall: callTotal,
+      totalPut: putTotal,
+      callCount: callCount,
+      putCount: putCount,
+      callUsers: callUsers,
+      putUsers: putUsers,
+      suggestedDirection: callTotal > putTotal ? "down" : (putTotal > callTotal ? "up" : "neutral")
+    };
+
+    if (callCount + putCount > 0) {
+      console.log(
+        "[Analyzer] CALL: $" + callTotal + " (" + callCount + " users) | " +
+        "PUT: $" + putTotal + " (" + putCount + " users) | " +
+        "Suggest: " + window.tradeAnalysis.suggestedDirection.toUpperCase()
+      );
+    }
+  } catch (err) {
+    console.error("[Analyzer] Error:", err.message);
+  }
+}
+
+function startTradeAnalysis() {
+  if (window.analyzerInterval) clearInterval(window.analyzerInterval);
+  window.analyzerInterval = setInterval(analyzeActiveTrades, 2000);
+  console.log("[MSG11] Trade analyzer started (2s interval)");
+}
+
+// ============================================================
+// 6. AUTO-DIRECTION BASED ON ANALYSIS
+// ============================================================
+
+function applyDirectionBias() {
+  if (typeof candleSeries === "undefined" || !candleSeries) return;
+
+  var analysis = window.tradeAnalysis;
+  if (!analysis) return;
+  if (analysis.callCount + analysis.putCount === 0) return;
+
+  var direction = analysis.suggestedDirection;
+  if (direction === "neutral") return;
+
+  // Apply gentle pressure
+  var bias = direction === "up" ? 1.5 : -1.5;
+  currentPrice = currentPrice + bias;
+  window.currentPrice = currentPrice;
+}
+
+setInterval(applyDirectionBias, 1000);
+
+// ============================================================
+// 7. IMPROVED processTradeResults — uses LIVE price
+// ============================================================
+
+async function processTradeResultsV2() {
+  if (typeof currentUser === "undefined" || !currentUser) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  if (trades.length === 0) return;
+
+  var now = Date.now();
+
+  for (var i = 0; i < trades.length; i++) {
+    var trade = trades[i];
+    if (trade.expiresAt > now || trade.status !== "pending") continue;
+
+    var entryPrice = Number(trade.entryPrice) || currentPrice;
+    var exitPrice = Number(currentPrice);
+    var diff = exitPrice - entryPrice;
+
+    var realResult = "loss";
+    if (trade.type === "call" && diff > 0) realResult = "win";
+    else if (trade.type === "put" && diff < 0) realResult = "win";
+
+    // Admin Win/Loss override (optional)
+    var winPercent = window.adminWinPercent || 80;
+    var useAdminOverride = (winPercent !== 100 && winPercent !== 0);
+
+    if (useAdminOverride) {
+      var r = Math.random() * 100;
+      if (r < winPercent) {
+        realResult = "win";
+      } else {
+        realResult = "loss";
+      }
+    }
+
+    console.log(
+      "[Trade Result V2] " + String(trade.type).toUpperCase() +
+      " | Entry: " + entryPrice.toFixed(2) +
+      " → Exit: " + exitPrice.toFixed(2) +
+      " | Diff: " + diff.toFixed(2) +
+      " | Real: " + (diff > 0 ? "UP" : (diff < 0 ? "DOWN" : "FLAT")) +
+      " | Result: " + realResult.toUpperCase() +
+      " | WinTarget: " + winPercent + "%"
+    );
+
+    var payoutRate = ((typeof adminPayout !== "undefined" ? adminPayout : 96) / 100) + 1;
+    var netProfit = realResult === "win" ? trade.amount * (payoutRate - 1) : 0;
+    var returnAmount = realResult === "win" ? trade.amount + netProfit : 0;
+
+    try {
+      await updateDoc(doc(db, "trades", trade.id), {
+        status: "completed",
+        result: realResult,
+        exitPrice: exitPrice,
+        profit: returnAmount,
+        netProfit: netProfit,
+        completedAt: new Date().toISOString(),
+        adminProcessed: true
+      });
+
+      if (realResult === "win") {
+        var userRef = doc(db, "users", currentUser.uid);
+        var userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          var userData = userDoc.data();
+          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+          var curBal = userData[balanceField] || 0;
+          var newBal = curBal + returnAmount;
+
+          await updateDoc(userRef, {
+            [balanceField]: newBal,
+            balance: newBal
+          });
+
+          userBalance = newBal;
+          window.userBalance = newBal;
+
+          if (balanceEl) balanceEl.textContent = newBal.toFixed(2);
+          if (balancePopupValue) balancePopupValue.textContent = newBal.toFixed(2);
+
+          if (typeof animateBalanceChange === "function") animateBalanceChange(returnAmount);
+          if (typeof showResultFlash === "function") showResultFlash("win");
+          if (typeof playSound === "function") playSound("win");
+
+          if (tradeMessage) {
+            tradeMessage.style.color = "#00c853";
+            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
+            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+          }
+        }
+      } else {
+        if (typeof showResultFlash === "function") showResultFlash("loss");
+        if (typeof playSound === "function") playSound("loss");
+
+        if (tradeMessage) {
+          tradeMessage.style.color = "#ff5252";
+          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+        }
+      }
+    } catch (err) {
+      console.error("[Trade Process V2 Error]", err.message);
+    }
+  }
+}
+
+// Override the old processTradeResults
+window.processTradeResults = processTradeResultsV2;
+
+// ============================================================
+// 8. INIT
+// ============================================================
+
+setTimeout(function() {
+  startLiveMovement();
+  startAutoCandleGeneration();
+  startTradeAnalysis();
+  console.log("[MSG11] All systems started");
+}, 4000);
+
+// Expose for debugging
+window.startLiveMovement = startLiveMovement;
+window.startAutoCandleGeneration = startAutoCandleGeneration;
+window.analyzeActiveTrades = analyzeActiveTrades;
+window.processTradeResultsV2 = processTradeResultsV2;
+window.tradeAnalysis = window.tradeAnalysis;
+
+console.log("===== MSG 11: Live Movement + Auto Candle + Multi-user Analysis loaded =====");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
