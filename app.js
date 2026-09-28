@@ -4762,3 +4762,408 @@ window.startTournamentListener = startTournamentListener;
 window.startMyTournamentListener = startMyTournamentListener;
 
 console.log('===== MSG 18: Tournament Full System loaded =====');
+/* ============================================================
+   MSG 20: REFERRAL SYSTEM
+   ============================================================ */
+
+// ============================================================
+// 1. STATE
+// ============================================================
+
+window.userReferralCode = null;
+window.userReferralCount = 0;
+window.userReferralEarned = 0;
+window.referralUnsub = null;
+
+// ============================================================
+// 2. GENERATE / GET REFERRAL CODE
+// ============================================================
+
+function generateReferralCode(uid, email) {
+  // Use first 6 chars of uid + random 2 digits, all uppercase
+  var base = (uid || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
+  if (!base) base = 'USER';
+  var rand = Math.floor(10 + Math.random() * 90);
+  return base + rand;
+}
+
+async function ensureUserReferralCode() {
+  if (!currentUser) return null;
+
+  try {
+    var userRef = doc(db, "users", currentUser.uid);
+    var userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) return null;
+
+    var data = userDoc.data();
+
+    // If already has a code, use it
+    if (data.referralCode) {
+      window.userReferralCode = data.referralCode;
+      return data.referralCode;
+    }
+
+    // Generate new code
+    var newCode = generateReferralCode(currentUser.uid, currentUser.email);
+
+    // Check uniqueness — retry if collision (max 5 tries)
+    var attempts = 0;
+    while (attempts < 5) {
+      var q = query(collection(db, "users"), where("referralCode", "==", newCode));
+      var snap = await getDocs(q);
+      if (snap.empty) break;
+      newCode = generateReferralCode(currentUser.uid, currentUser.email);
+      attempts++;
+    }
+
+    // Save
+    await updateDoc(userRef, { referralCode: newCode });
+    window.userReferralCode = newCode;
+    console.log('[Referral] Generated code:', newCode);
+    return newCode;
+
+  } catch (err) {
+    console.error('[Referral] Code error:', err.message);
+    return null;
+  }
+}
+
+// ============================================================
+// 3. BUILD REFERRAL LINK
+// ============================================================
+
+function buildReferralLink(code) {
+  if (!code) return '';
+  var baseUrl = window.location.origin + window.location.pathname;
+  return baseUrl + '?ref=' + code;
+}
+
+// ============================================================
+// 4. LOAD REFERRAL STATS
+// ============================================================
+
+async function loadReferralStats() {
+  if (!currentUser) return;
+
+  try {
+    // Count referrals
+    var q = query(
+      collection(db, "users"),
+      where("referredBy", "==", window.userReferralCode)
+    );
+    var snap = await getDocs(q);
+
+    window.userReferralCount = snap.size;
+
+    // Get total earned from user doc
+    var userDoc = await getDoc(doc(db, "users", currentUser.uid));
+    if (userDoc.exists()) {
+      var data = userDoc.data();
+      window.userReferralEarned = Number(data.referralEarned) || 0;
+    }
+
+    // Update UI
+    var countEl = document.getElementById('ref-count-value');
+    var earnedEl = document.getElementById('ref-earned-value');
+
+    if (countEl) countEl.textContent = String(window.userReferralCount);
+    if (earnedEl) earnedEl.textContent = '$' + window.userReferralEarned.toFixed(2);
+
+    console.log('[Referral] Stats: ' + window.userReferralCount + ' invited, $' + window.userReferralEarned + ' earned');
+
+  } catch (err) {
+    console.error('[Referral] Stats error:', err.message);
+  }
+}
+
+// ============================================================
+// 5. UPDATE UI
+// ============================================================
+
+function updateReferralUI() {
+  var codeEl = document.getElementById('ref-code-value');
+  var linkEl = document.getElementById('ref-link-value');
+
+  if (codeEl) codeEl.textContent = window.userReferralCode || '------';
+
+  var link = buildReferralLink(window.userReferralCode);
+  if (linkEl) linkEl.value = link || 'Loading...';
+
+  loadReferralStats();
+}
+
+// ============================================================
+// 6. COPY FUNCTIONS
+// ============================================================
+
+function copyToClipboard(text) {
+  if (!text) return false;
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        showCopyFeedback();
+      }).catch(function () {
+        fallbackCopy(text);
+      });
+      return true;
+    } else {
+      fallbackCopy(text);
+      return true;
+    }
+  } catch (e) {
+    fallbackCopy(text);
+    return true;
+  }
+}
+
+function fallbackCopy(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showCopyFeedback();
+  } catch (e) {
+    alert('Copy failed. Please copy manually:\n\n' + text);
+  }
+}
+
+function showCopyFeedback() {
+  // Simple haptic/sound
+  try { if (typeof playSound === 'function') playSound('click'); } catch (e) {}
+  // Alert fallback
+  // (We can add a toast later)
+}
+
+// ============================================================
+// 7. SHARE FUNCTIONS
+// ============================================================
+
+function shareViaWhatsApp() {
+  var link = buildReferralLink(window.userReferralCode);
+  var text = encodeURIComponent('🎁 Join Quotex Clone and get $1000 free demo balance!\n\nUse my referral link:\n' + link);
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+
+function shareViaTelegram() {
+  var link = buildReferralLink(window.userReferralCode);
+  var text = encodeURIComponent('🎁 Join Quotex Clone and get $1000 free demo balance!');
+  window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + text, '_blank');
+}
+
+function shareNative() {
+  var link = buildReferralLink(window.userReferralCode);
+  var text = 'Join Quotex Clone and get $1000 free demo balance!';
+
+  if (navigator.share) {
+    navigator.share({
+      title: 'Quotex Clone',
+      text: text,
+      url: link
+    }).catch(function () {
+      // User cancelled
+    });
+  } else {
+    // Fallback — copy link
+    copyToClipboard(link);
+    alert('Link copied! Share it with your friends.');
+  }
+}
+
+// ============================================================
+// 8. OPEN / CLOSE POPUP
+// ============================================================
+
+async function openReferralPopup() {
+  var popup = document.getElementById('referral-popup');
+  var overlay = document.getElementById('referral-popup-overlay');
+  if (!popup) return;
+
+  popup.classList.remove('hidden');
+  if (overlay) overlay.onclick = function () { closeReferralPopup(); };
+
+  // Ensure code + load data
+  if (!window.userReferralCode) {
+    await ensureUserReferralCode();
+  }
+  updateReferralUI();
+}
+
+function closeReferralPopup() {
+  var popup = document.getElementById('referral-popup');
+  if (!popup) return;
+  popup.classList.add('hidden');
+}
+
+// ============================================================
+// 9. HANDLE ?ref= CODE ON SIGNUP
+// ============================================================
+
+function getRefCodeFromURL() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var ref = params.get('ref');
+    if (ref) return String(ref).toUpperCase().trim();
+  } catch (e) {}
+  return null;
+}
+
+async function applyReferralOnSignup(newUserId, newUserEmail) {
+  var refCode = getRefCodeFromURL();
+  if (!refCode) return;
+
+  try {
+    // Find referrer
+    var q = query(collection(db, "users"), where("referralCode", "==", refCode));
+    var snap = await getDocs(q);
+
+    if (snap.empty) {
+      console.log('[Referral] Invalid referral code:', refCode);
+      return;
+    }
+
+    var referrerDoc = snap.docs[0];
+    var referrerId = referrerDoc.id;
+    var referrerData = referrerDoc.data();
+
+    // Don't allow self-referral
+    if (referrerId === newUserId) {
+      console.log('[Referral] Self-referral not allowed');
+      return;
+    }
+
+    // Mark new user as referred
+    await updateDoc(doc(db, "users", newUserId), {
+      referredBy: refCode,
+      referredAt: new Date().toISOString()
+    });
+
+    // Credit referrer with $5 bonus
+    var bonus = 5;
+    var currentReal = Number(referrerData.realBalance) || 0;
+    var currentEarned = Number(referrerData.referralEarned) || 0;
+
+    await updateDoc(doc(db, "users", referrerId), {
+      realBalance: currentReal + bonus,
+      referralEarned: currentEarned + bonus,
+      lastReferralAt: new Date().toISOString()
+    });
+
+    console.log('[Referral] ✅ Applied: referrer ' + referrerId + ' earned $' + bonus);
+
+  } catch (err) {
+    console.error('[Referral] Apply error:', err.message);
+  }
+}
+
+// ============================================================
+// 10. INIT
+// ============================================================
+
+function initReferral() {
+  // Bind sidebar button
+  var btn = document.getElementById('referral-btn');
+  if (btn && btn.dataset.boundRef !== '1') {
+    btn.dataset.boundRef = '1';
+    btn.onclick = openReferralPopup;
+    console.log('[Referral] Sidebar button bound');
+  }
+
+  // Bind close button
+  var closeBtn = document.getElementById('referral-popup-close');
+  if (closeBtn && closeBtn.dataset.boundRefClose !== '1') {
+    closeBtn.dataset.boundRefClose = '1';
+    closeBtn.onclick = closeReferralPopup;
+  }
+
+  // Bind copy code
+  var copyCodeBtn = document.getElementById('ref-copy-code');
+  if (copyCodeBtn && copyCodeBtn.dataset.boundRefCopy !== '1') {
+    copyCodeBtn.dataset.boundRefCopy = '1';
+    copyCodeBtn.onclick = function () {
+      copyToClipboard(window.userReferralCode || '');
+      copyCodeBtn.textContent = '✅ Copied!';
+      setTimeout(function () {
+        copyCodeBtn.textContent = '📋 Copy Code';
+      }, 1500);
+    };
+  }
+
+  // Bind copy link
+  var copyLinkBtn = document.getElementById('ref-copy-link');
+  if (copyLinkBtn && copyLinkBtn.dataset.boundRefLink !== '1') {
+    copyLinkBtn.dataset.boundRefLink = '1';
+    copyLinkBtn.onclick = function () {
+      var link = buildReferralLink(window.userReferralCode);
+      copyToClipboard(link);
+      copyLinkBtn.textContent = '✅';
+      setTimeout(function () {
+        copyLinkBtn.textContent = 'Copy';
+      }, 1500);
+    };
+  }
+
+  // Bind share buttons
+  var waBtn = document.getElementById('ref-share-whatsapp');
+  if (waBtn && waBtn.dataset.boundRefWa !== '1') {
+    waBtn.dataset.boundRefWa = '1';
+    waBtn.onclick = shareViaWhatsApp;
+  }
+
+  var tgBtn = document.getElementById('ref-share-telegram');
+  if (tgBtn && tgBtn.dataset.boundRefTg !== '1') {
+    tgBtn.dataset.boundRefTg = '1';
+    tgBtn.onclick = shareViaTelegram;
+  }
+
+  var nativeBtn = document.getElementById('ref-share-native');
+  if (nativeBtn && nativeBtn.dataset.boundRefNative !== '1') {
+    nativeBtn.dataset.boundRefNative = '1';
+    nativeBtn.onclick = shareNative;
+  }
+
+  console.log('[Referral] Initialized');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initReferral);
+} else {
+  initReferral();
+}
+setTimeout(initReferral, 1500);
+setTimeout(initReferral, 3500);
+
+// ============================================================
+// 11. ON USER LOGIN — Ensure code, apply ref from URL
+// ============================================================
+
+setInterval(async function () {
+  if (currentUser && !window.userReferralCode) {
+    console.log('[Referral] User logged in - ensuring code');
+    await ensureUserReferralCode();
+  }
+}, 4000);
+
+// Also on load
+setTimeout(async function () {
+  if (currentUser && !window.userReferralCode) {
+    await ensureUserReferralCode();
+  }
+}, 5000);
+
+// ============================================================
+// 12. EXPOSE FOR DEBUG
+// ============================================================
+
+window.openReferralPopup = openReferralPopup;
+window.closeReferralPopup = closeReferralPopup;
+window.ensureUserReferralCode = ensureUserReferralCode;
+window.applyReferralOnSignup = applyReferralOnSignup;
+window.getRefCodeFromURL = getRefCodeFromURL;
+
+console.log('===== MSG 20: Referral System loaded =====');
