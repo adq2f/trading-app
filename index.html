@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b1220">
   <title>Quotex Clone</title>
-  <link rel="stylesheet" href="style.css">
+
+  <!-- Inter Font (MSG 15) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=15">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
@@ -39,7 +45,7 @@
   <!-- ========== ট্রেডিং পেজ ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== বাম সাইডবার (Quotex-এর মতো) ===== -->
+    <!-- ===== বাম সাইডবার ===== -->
     <aside class="left-sidebar">
 
       <!-- প্রোফাইল -->
@@ -57,11 +63,12 @@
       <!-- সিগন্যাল -->
       <button class="side-icon" id="signals-btn" title="Signals">📡</button>
 
-      <!-- নিচে: লগআউট -->
-      <!-- Chat -->
+      <!-- Chat (MSG 14) -->
       <button class="side-icon" id="chat-btn" title="Chat">💬</button>
+
+      <!-- লগআউট -->
       <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
-      
+
     </aside>
 
     <!-- ===== মূল কনটেন্ট ===== -->
@@ -80,6 +87,7 @@
           </button>
         </div>
       </header>
+
       <!-- ===== চার্ট সেকশন ===== -->
       <section class="chart-section">
 
@@ -91,15 +99,6 @@
               <option value="BTCUSDT">BTC/USDT</option>
               <option value="ETHUSDT">ETH/USDT</option>
               <option value="BNBUSDT">BNB/USDT</option>
-              <option value="SOLUSDT">SOL/USDT</option>
-              <option value="XRPUSDT">XRP/USDT</option>
-              <option value="ADAUSDT">ADA/USDT</option>
-              <option value="DOGEUSDT">DOGE/USDT</option>
-              <option value="MATICUSDT">MATIC/USDT</option>
-              <option value="DOTUSDT">DOT/USDT</option>
-              <option value="LINKUSDT">LINK/USDT</option>
-              <option value="AVAXUSDT">AVAX/USDT</option>
-              <option value="LTCUSDT">LTC/USDT</option>
             </select>
             <span class="asset-arrow">▾</span>
           </div>
@@ -112,7 +111,7 @@
         <!-- চার্ট + বাম দিকে ড্রয়িং টুলবার -->
         <div class="chart-main">
 
-          <!-- ড্রয়িং টুলবার (উল্লম্ব) -->
+          <!-- ড্রয়িং টুলবার -->
           <div class="drawing-toolbar" id="drawing-toolbar">
             <button class="drawing-btn active" data-tool="cursor" title="Cursor">✥</button>
             <button class="drawing-btn" data-tool="TrendLine" title="Trend Line">╱</button>
@@ -143,25 +142,10 @@
               <span id="trade-info-text">-</span>
             </div>
           </div>
-            <div id="chart"></div>
-            <canvas id="drawing-canvas"></canvas>
-
-            <!-- Top-left countdown timer (Quotex-style) -->
-            <div id="top-countdown-timer" class="top-countdown-timer hidden">
-              <span id="countdown-symbol">-</span>
-              <span id="countdown-time">00:00</span>
-            </div>
-
-            <!-- Entry/Exit indicator badge -->
-            <div id="trade-info-badge" class="trade-info-badge hidden">
-              <span id="trade-info-arrow">▲</span>
-              <span id="trade-info-text">-</span>
-            </div>
-          </div>
 
         </div>
 
-        <!-- টাইমফ্রেম (৫ সেকেন্ড থেকে ৪ ঘণ্টা) -->
+        <!-- টাইমফ্রেম -->
         <div class="chart-timeframe">
           <button class="tf-btn" data-tf="5s">5s</button>
           <button class="tf-btn" data-tf="10s">10s</button>
@@ -189,7 +173,7 @@
           </div>
         </div>
 
-        <!-- এক্সপায়ারি টাইম (৫ সেকেন্ড থেকে ১ ঘণ্টা) -->
+        <!-- এক্সপায়ারি টাইম -->
         <div class="trade-row">
           <label class="trade-label">সময়</label>
           <div class="time-buttons">
@@ -224,6 +208,7 @@
         <p id="trade-message"></p>
 
       </section>
+
       <!-- ===== ট্যাব + ট্রেড লিস্ট ===== -->
       <section class="trades-section">
 
@@ -246,30 +231,7 @@
       </section>
 
     </main>
-    <!-- main-content শেষ -->
 
-  </div>
-  <!-- dashboard-page শেষ -->
-
-  <!-- ========== চ্যাট পপআপ (User side) ========== -->
-  <div id="chat-popup" class="popup hidden">
-    <div class="popup-overlay" id="chat-popup-overlay"></div>
-
-    <div class="popup-content">
-      <div class="popup-header">
-        <h3>Support Chat</h3>
-        <button id="chat-popup-close" class="popup-close">✕</button>
-      </div>
-
-      <div class="user-chat-messages" id="user-chat-messages">
-        <p class="empty-text">Send a message to admin...</p>
-      </div>
-
-      <div class="user-chat-input-row">
-        <input id="user-chat-input" class="user-chat-input" type="text" placeholder="Type a message...">
-        <button id="user-chat-send" class="user-chat-send-btn" type="button">Send</button>
-      </div>
-    </div>
   </div>
 
   <!-- ========== ব্যালেন্স পপআপ ========== -->
@@ -282,33 +244,24 @@
         <button id="balance-popup-close" class="popup-close">✕</button>
       </div>
 
-      <!-- ডেমো / রিয়েল টগল -->
       <div class="account-toggle-popup">
         <button class="acc-btn-popup active" data-acc="demo">ডেমো</button>
         <button class="acc-btn-popup" data-acc="real">রিয়েল</button>
       </div>
 
-      <!-- ব্যালেন্স ডিসপ্লে -->
       <div class="popup-balance">
         <div class="popup-balance-label">বর্তমান ব্যালেন্স</div>
         <div class="popup-balance-value">$<span id="balance-popup-value">0.00</span></div>
-      <!-- অ্যাকশন বাটন -->
-      <div class="popup-actions">
-        <button id="deposit-btn" class="action-btn deposit">
-          ＋ ডিপোজিট
-        </button>
-        <button id="withdraw-btn" class="action-btn withdraw">
-          ↗ উইথড্র
-        </button>
       </div>
 
-      <!-- ট্রানজেকশন হিস্ট্রি লিংক -->
-      <button class="popup-link" id="tx-history-btn">
-        📋 ট্রানজেকশন হিস্ট্রি
-      </button>
+      <div class="popup-actions">
+        <button id="deposit-btn" class="action-btn deposit">＋ ডিপোজিট</button>
+        <button id="withdraw-btn" class="action-btn withdraw">↗ উইথড্র</button>
+      </div>
+
+      <button class="popup-link" id="tx-history-btn">📋 ট্রানজেকশন হিস্ট্রি</button>
     </div>
   </div>
-
 
   <!-- ========== অ্যাকাউন্ট সুইচ পপআপ ========== -->
   <div id="account-popup" class="popup hidden">
@@ -339,7 +292,6 @@
       </button>
     </div>
   </div>
-
 
   <!-- ========== ডিপোজিট পপআপ ========== -->
   <div id="deposit-popup" class="popup hidden">
@@ -381,7 +333,6 @@
     </div>
   </div>
 
-
   <!-- ========== উইথড্র পপআপ ========== -->
   <div id="withdraw-popup" class="popup hidden">
     <div class="popup-overlay" id="withdraw-popup-overlay"></div>
@@ -420,7 +371,31 @@
     </div>
   </div>
 
+  <!-- ========== চ্যাট পপআপ (MSG 14 User Chat) ========== -->
+  <div id="chat-popup" class="popup hidden">
+    <div class="popup-overlay" id="chat-popup-overlay"></div>
 
-  <script type="module" src="app.js"></script>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Support Chat</h3>
+        <button id="chat-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <div class="user-chat-messages" id="user-chat-messages">
+        <p class="empty-text">Send a message to admin...</p>
+      </div>
+
+      <div class="user-chat-input-row">
+        <input id="user-chat-input" class="user-chat-input" type="text" placeholder="Type a message...">
+        <button id="user-chat-send" class="user-chat-send-btn" type="button">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <script type="module" src="app.js?v=15"></script>
+
 </body>
 </html>
