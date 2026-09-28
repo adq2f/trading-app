@@ -2140,6 +2140,342 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 console.log("Part 7A (Dynamic Market Load) loaded");
+/* ============================================================
+   PART 7B: CANDLE RENDER FROM FIRESTORE
+   (Admin-er save kora candle user site-e load)
+   ============================================================ */
+
+window.userCandles = [];
+window.userCandlesUnsub = null;
+window.candleModeGlobal = "locked";
+
+/**
+ * Admin-er candle Firestore theke load kore
+ */
+async function loadAdminCandlesFromFirestore(marketId) {
+  if (!marketId) {
+    console.log("[Candles] No marketId provided");
+    return [];
+  }
+
+  try {
+    const candlesRef = collection(db, "markets", marketId, "candles");
+    const snap = await getDocs(candlesRef);
+
+    if (snap.empty) {
+      console.log("[Candles] No candles in Firestore for market: " + marketId);
+      return [];
+    }
+
+    const candles = [];
+    snap.forEach(function(docSnap) {
+      const c = docSnap.data();
+      candles.push({
+        id: docSnap.id,
+        number: c.number || 0,
+        date: c.date || "",
+        startTime: c.startTime || c.time || "",
+        endTime: c.endTime || "",
+        timeframe: c.timeframe || "1m",
+        open: Number(c.open) || 0,
+        high: Number(c.high) || 0,
+        low: Number(c.low) || 0,
+        close: Number(c.close) || 0,
+        color: c.color || "green",
+        direction: c.direction || "up",
+        size: c.size || "medium",
+        wickLength: Number(c.wickLength) || 20,
+        bodySize: Number(c.bodySize) || 60,
+        status: c.status || "pending"
+      });
+    });
+
+    candles.sort(function(a, b) {
+      return (a.number || 0) - (b.number || 0);
+    });
+
+    console.log("[Candles] Loaded " + candles.length + " admin candles from Firestore");
+    return candles;
+
+  } catch (err) {
+    console.error("[Candles] Load error:", err.message);
+    return [];
+  }
+}
+
+/**
+ * Admin candle → LightweightCharts format
+ * Time conversion: date + startTime → Unix timestamp (seconds)
+ */
+function convertAdminCandleToChart(candle, baseIndex) {
+  try {
+    // Date + Time → Unix timestamp
+    const dateStr = candle.date || "2026-01-01";
+    const timeStr = candle.startTime || "00:00:00";
+    const dateTimeStr = dateStr + "T" + timeStr + "Z";
+    let timestamp = Math.floor(new Date(dateTimeStr).getTime() / 1000);
+
+    // If invalid, use fallback (incremental)
+    if (isNaN(timestamp) || timestamp <= 0) {
+      timestamp = Math.floor(Date.now() / 1000) - (baseIndex * 60);
+    }
+
+    return {
+      time: timestamp,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close
+    };
+
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Admin candles render kore chart-e
+ */
+function renderAdminCandlesOnChart(candles) {
+  if (!candleSeries) {
+    console.warn("[Candles] candleSeries not initialized");
+    return;
+  }
+
+  if (!candles || candles.length === 0) {
+    console.log("[Candles] No candles to render");
+    return;
+  }
+
+  const chartData = [];
+  candles.forEach(function(c, i) {
+    const chartCandle = convertAdminCandleToChart(c, i);
+    if (chartCandle && chartCandle.open > 0) {
+      chartData.push(chartCandle);
+    }
+  });
+
+  if (chartData.length === 0) {
+    console.warn("[Candles] No valid chart data after conversion");
+    return;
+  }
+
+  // Sort by time (ascending)
+  chartData.sort(function(a, b) { return a.time - b.time; });
+
+  // Remove duplicates (same time)
+  const uniqueData = [];
+  let lastTime = 0;
+  chartData.forEach(function(c) {
+    if (c.time > lastTime) {
+      uniqueData.push(c);
+      lastTime = c.time;
+    }
+  });
+
+  try {
+    candleSeries.setData(uniqueData);
+    chart.timeScale().fitContent();
+
+    // Update current price
+    const lastCandle = uniqueData[uniqueData.length - 1];
+    if (lastCandle) {
+      currentPrice = lastCandle.close;
+      prevPrice = currentPrice;
+      if (currentPriceEl) {
+        currentPriceEl.textContent = currentPrice.toFixed(2);
+      }
+    }
+
+    console.log("[Candles] Rendered " + uniqueData.length + " candles on chart");
+  } catch (err) {
+    console.error("[Candles] Render error:", err.message);
+  }
+}
+
+/**
+ * Real-time listener for admin candles
+ */
+function listenAdminCandles(marketId) {
+  if (window.userCandlesUnsub) {
+    window.userCandlesUnsub();
+    window.userCandlesUnsub = null;
+  }
+
+  if (!marketId) {
+    console.log("[Candles] No marketId - listener not started");
+    return;
+  }
+
+  try {
+    const candlesRef = collection(db, "markets", marketId, "candles");
+
+    window.userCandlesUnsub = onSnapshot(candlesRef, function(snap) {
+      const candles = [];
+      snap.forEach(function(docSnap) {
+        const c = docSnap.data();
+        candles.push({
+          id: docSnap.id,
+          number: c.number || 0,
+          date: c.date || "",
+          startTime: c.startTime || c.time || "",
+          endTime: c.endTime || "",
+          timeframe: c.timeframe || "1m",
+          open: Number(c.open) || 0,
+          high: Number(c.high) || 0,
+          low: Number(c.low) || 0,
+          close: Number(c.close) || 0,
+          color: c.color || "green",
+          direction: c.direction || "up"
+        });
+      });
+
+      candles.sort(function(a, b) {
+        return (a.number || 0) - (b.number || 0);
+      });
+
+      window.userCandles = candles;
+      renderAdminCandlesOnChart(candles);
+      console.log("[Candles] Real-time update: " + candles.length + " candles");
+    }, function(err) {
+      console.error("[Candles] Listener error:", err.message);
+    });
+
+    console.log("[Candles] Listener started for market: " + marketId);
+
+  } catch (err) {
+    console.error("[Candles] Listen error:", err.message);
+  }
+}
+
+/**
+ * Smart candle loader: Firestore first, Binance fallback
+ */
+async function loadUserCandlesSmart() {
+  const marketId = window.selectedMarketId;
+
+  if (marketId) {
+    console.log("[Candles] Loading admin candles for market: " + marketId);
+
+    const adminCandles = await loadAdminCandlesFromFirestore(marketId);
+
+    if (adminCandles.length > 0) {
+      // Render admin candles
+      renderAdminCandlesOnChart(adminCandles);
+
+      // Start real-time listener
+      listenAdminCandles(marketId);
+      console.log("[Candles] Using ADMIN candles (" + adminCandles.length + ")");
+      return;
+    } else {
+      console.log("[Candles] No admin candles - falling back to Binance");
+    }
+  } else {
+    console.log("[Candles] No marketId - using Binance fallback");
+  }
+
+  // Fallback: Binance API
+  if (window.userCandlesUnsub) {
+    window.userCandlesUnsub();
+    window.userCandlesUnsub = null;
+  }
+
+  if (typeof loadCandles === "function") {
+    await loadCandles();
+  }
+}
+
+/**
+ * Init on market change
+ */
+function onMarketChanged() {
+  console.log("[Candles] Market changed - reloading candles");
+  loadUserCandlesSmart();
+}
+
+// ============================================================
+// BIND: Market change handler override
+// ============================================================
+
+// Wait for Part 7A to load, then override bindMarketChangeHandler
+setTimeout(function() {
+  const sel = document.getElementById("asset-select");
+  if (!sel) {
+    console.warn("[Candles] asset-select not found");
+    return;
+  }
+
+  // Remove old handlers by cloning
+  const newSel = sel.cloneNode(true);
+  sel.parentNode.replaceChild(newSel, sel);
+
+  // Bind new handler
+  newSel.addEventListener("change", async function() {
+    const selectedOpt = newSel.selectedOptions[0];
+    selectedAsset = newSel.value;
+    window.selectedMarketId = selectedOpt ? (selectedOpt.dataset.marketId || null) : null;
+
+    console.log("[Candles] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
+
+    // Update payout labels
+    if (typeof updatePayoutLabelsFromMarket === "function") {
+      updatePayoutLabelsFromMarket();
+    }
+
+    // Load candles: Firestore first
+    await loadUserCandlesSmart();
+
+    // Restart live price (for fallback Binance mode)
+    if (window.selectedMarketId === null && typeof startLivePrice === "function" && currentUser) {
+      startLivePrice();
+    }
+  });
+
+  console.log("[Candles] Market change handler re-bound (Part 7B)");
+}, 3500);
+
+// ============================================================
+// INIT: Load candles on user login
+// ============================================================
+
+(function() {
+  let lastLoginState = false;
+
+  setInterval(function() {
+    const nowLoggedIn = !!window.currentUser;
+
+    // User just logged in
+    if (nowLoggedIn && !lastLoginState) {
+      console.log("[Candles] User logged in - loading candles");
+      setTimeout(function() {
+        loadUserCandlesSmart();
+      }, 3000);
+    }
+
+    // User just logged out
+    if (!nowLoggedIn && lastLoginState) {
+      console.log("[Candles] User logged out - stopping listeners");
+      if (window.userCandlesUnsub) {
+        window.userCandlesUnsub();
+        window.userCandlesUnsub = null;
+      }
+    }
+
+    lastLoginState = nowLoggedIn;
+  }, 2000);
+})();
+
+// Also init on DOMContentLoaded (if user already logged in)
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (window.currentUser) {
+      console.log("[Candles] DOMContentLoaded - user already logged in, loading candles");
+      loadUserCandlesSmart();
+    }
+  }, 5000);
+});
+
+console.log("Part 7B (Candle Render from Firestore) loaded");
 console.log("📊 যা এখন কাজ করবে:");
 console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
 console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
