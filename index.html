@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=20">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
@@ -44,18 +44,21 @@
   <!-- ========== ট্রেডিং পেজ ========== -->
   <div id="dashboard-page" class="hidden">
 
+    <!-- ===== বাম সাইডবার ===== -->
     <aside class="left-sidebar">
       <button class="side-icon" id="profile-btn" title="Profile">👤</button>
       <button class="side-icon acc-toggle" id="account-toggle" title="Account">💼</button>
       <button class="side-icon" id="market-btn" title="Market">📊</button>
       <button class="side-icon" id="tournament-btn" title="Tournament">🏆</button>
-      <button class="side-icon" id="signals-btn" title="Signals">📡</button>
+      <button class="side-icon" id="referral-btn" title="Refer & Earn">🎁</button>
       <button class="side-icon" id="chat-btn" title="Chat">💬</button>
       <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
     </aside>
 
+    <!-- ===== মূল কনটেন্ট ===== -->
     <main class="main-content">
 
+      <!-- হেডার -->
       <header class="top-bar">
         <div class="top-left">
           <span class="brand-logo">Q</span>
@@ -69,6 +72,7 @@
         </div>
       </header>
 
+      <!-- ===== চার্ট সেকশন ===== -->
       <section class="chart-section">
 
         <div class="chart-header">
@@ -149,6 +153,7 @@
 
       </section>
 
+      <!-- ===== ট্রেড প্যানেল ===== -->
       <section class="trade-panel">
 
         <div class="trade-row">
@@ -193,6 +198,7 @@
 
       </section>
 
+      <!-- ===== ট্যাব + ট্রেড লিস্ট ===== -->
       <section class="trades-section">
 
         <div class="tabs">
@@ -419,6 +425,69 @@
     </div>
   </div>
 
+  <!-- ========== MSG 20: Referral Popup ========== -->
+  <div id="referral-popup" class="popup hidden">
+    <div class="popup-overlay" id="referral-popup-overlay"></div>
+
+    <div class="popup-content ref-popup-content">
+      <div class="popup-header">
+        <h3>🎁 Refer & Earn</h3>
+        <button id="referral-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <div class="ref-hero">
+        <div class="ref-hero-icon">🎁</div>
+        <div class="ref-hero-title">Invite Friends, Earn Rewards</div>
+        <div class="ref-hero-subtitle">Get $5 for every friend who joins</div>
+      </div>
+
+      <div class="ref-code-box">
+        <div class="ref-code-label">Your Referral Code</div>
+        <div class="ref-code-value" id="ref-code-value">------</div>
+        <button class="ref-copy-btn" id="ref-copy-code" type="button">📋 Copy Code</button>
+      </div>
+
+      <div class="ref-link-box">
+        <input type="text" id="ref-link-value" value="Loading..." readonly>
+        <button class="ref-link-copy" id="ref-copy-link" type="button">Copy</button>
+      </div>
+
+      <div class="ref-stats">
+        <div class="ref-stat">
+          <div class="ref-stat-label">Total Invited</div>
+          <div class="ref-stat-value" id="ref-count-value">0</div>
+        </div>
+        <div class="ref-stat">
+          <div class="ref-stat-label">Total Earned</div>
+          <div class="ref-stat-value blue" id="ref-earned-value">$0.00</div>
+        </div>
+      </div>
+
+      <div class="ref-share-row">
+        <button class="ref-share-btn ref-share-whatsapp" id="ref-share-whatsapp" type="button">
+          <span class="icon">💬</span>
+          <span>WhatsApp</span>
+        </button>
+        <button class="ref-share-btn ref-share-telegram" id="ref-share-telegram" type="button">
+          <span class="icon">✈️</span>
+          <span>Telegram</span>
+        </button>
+        <button class="ref-share-btn ref-share-native" id="ref-share-native" type="button">
+          <span class="icon">📤</span>
+          <span>Share</span>
+        </button>
+      </div>
+
+      <div class="ref-note">
+        <strong>How it works:</strong><br>
+        1. Share your referral link with friends<br>
+        2. They sign up using your code/link<br>
+        3. You get <span class="ref-bonus">$5 bonus</span> per successful referral<br>
+        4. Bonus is added to your <span class="ref-bonus">Real Balance</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== MSG 16: Bottom Navigation ========== -->
   <nav class="bottom-nav hidden" id="bottomNav">
     <button class="bottom-nav-btn active" data-nav="trade" type="button">
@@ -448,7 +517,7 @@
     </button>
   </nav>
 
-  <script type="module" src="app.js?v=18"></script>
+  <script type="module" src="app.js?v=20"></script>
 
 </body>
 </html>
