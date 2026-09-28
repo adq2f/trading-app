@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=18">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
@@ -44,7 +44,6 @@
   <!-- ========== ট্রেডিং পেজ ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== বাম সাইডবার ===== -->
     <aside class="left-sidebar">
       <button class="side-icon" id="profile-btn" title="Profile">👤</button>
       <button class="side-icon acc-toggle" id="account-toggle" title="Account">💼</button>
@@ -55,10 +54,8 @@
       <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
     </aside>
 
-    <!-- ===== মূল কনটেন্ট ===== -->
     <main class="main-content">
 
-      <!-- হেডার -->
       <header class="top-bar">
         <div class="top-left">
           <span class="brand-logo">Q</span>
@@ -72,7 +69,6 @@
         </div>
       </header>
 
-      <!-- ===== চার্ট সেকশন ===== -->
       <section class="chart-section">
 
         <div class="chart-header">
@@ -110,26 +106,22 @@
             <div id="chart"></div>
             <canvas id="drawing-canvas"></canvas>
 
-            <!-- MSG 10: Top-left countdown timer -->
             <div id="top-countdown-timer" class="top-countdown-timer hidden">
               <span id="countdown-symbol">-</span>
               <span id="countdown-time">00:00</span>
             </div>
 
-            <!-- MSG 10: Trade info badge -->
             <div id="trade-info-badge" class="trade-info-badge hidden">
               <span id="trade-info-arrow">▲</span>
               <span id="trade-info-text">-</span>
             </div>
 
-            <!-- MSG 15: Time Labels -->
             <div class="chart-time-labels">
               <span id="timeLeft">--:--</span>
               <span id="timeCenter">LIVE</span>
               <span id="timeRight">--:--</span>
             </div>
 
-            <!-- MSG 16: Entry/Exit Price Labels -->
             <div id="entryLabel" class="entry-exit-label entry hidden">
               <span class="label-arrow">▲</span>
               <span class="label-price">ENTRY: --</span>
@@ -157,7 +149,6 @@
 
       </section>
 
-      <!-- ===== ট্রেড প্যানেল ===== -->
       <section class="trade-panel">
 
         <div class="trade-row">
@@ -202,7 +193,6 @@
 
       </section>
 
-      <!-- ===== ট্যাব + ট্রেড লিস্ট ===== -->
       <section class="trades-section">
 
         <div class="tabs">
@@ -364,7 +354,7 @@
     </div>
   </div>
 
-  <!-- ========== চ্যাট পপআপ (MSG 14 User Chat) ========== -->
+  <!-- ========== চ্যাট পপআপ ========== -->
   <div id="chat-popup" class="popup hidden">
     <div class="popup-overlay" id="chat-popup-overlay"></div>
 
@@ -385,7 +375,51 @@
     </div>
   </div>
 
-  <!-- ========== MSG 16: Bottom Navigation (Mobile) ========== -->
+  <!-- ========== MSG 18: Tournament Popup ========== -->
+  <div id="tournament-popup" class="popup hidden">
+    <div class="popup-overlay" id="tournament-popup-overlay"></div>
+
+    <div class="popup-content" style="max-width: 440px;">
+      <div class="popup-header">
+        <h3>🏆 Tournaments</h3>
+        <button id="tournament-popup-close" class="popup-close">✕</button>
+      </div>
+
+      <div class="tournament-tabs">
+        <button class="tour-tab-btn active" data-tour-tab="available" type="button">Available</button>
+        <button class="tour-tab-btn" data-tour-tab="my" type="button">My</button>
+        <button class="tour-tab-btn" data-tour-tab="finished" type="button">Finished</button>
+      </div>
+
+      <div id="tour-list-available" class="tour-list">
+        <p class="empty-text">Loading tournaments...</p>
+      </div>
+
+      <div id="tour-list-my" class="tour-list hidden">
+        <p class="empty-text">You haven't joined any tournament</p>
+      </div>
+
+      <div id="tour-list-finished" class="tour-list hidden">
+        <p class="empty-text">No finished tournaments</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MSG 18: Tournament Detail Popup ========== -->
+  <div id="tournament-detail-popup" class="popup hidden">
+    <div class="popup-overlay" id="tournament-detail-overlay"></div>
+
+    <div class="popup-content" style="max-width: 440px;">
+      <div class="popup-header">
+        <h3 id="tour-detail-title">Tournament</h3>
+        <button id="tournament-detail-close" class="popup-close">✕</button>
+      </div>
+
+      <div id="tour-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ========== MSG 16: Bottom Navigation ========== -->
   <nav class="bottom-nav hidden" id="bottomNav">
     <button class="bottom-nav-btn active" data-nav="trade" type="button">
       <span class="nav-icon">📈</span>
@@ -414,10 +448,7 @@
     </button>
   </nav>
 
-  <!-- ============================================================
-       SCRIPTS
-       ============================================================ -->
-  <script type="module" src="app.js?v=16"></script>
+  <script type="module" src="app.js?v=18"></script>
 
 </body>
 </html>
