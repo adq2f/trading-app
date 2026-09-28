@@ -2490,6 +2490,54 @@ window.loadUserCandlesSmart = loadUserCandlesSmart;
 window.onMarketChanged = onMarketChanged;
 
 console.log("Part 7B (Candle Render from Firestore) loaded");
+/* ============================================================
+   GLOBAL EXPOSE (Debug + Cross-module access)
+   ============================================================ */
+
+// Expose Auth state (module -> window)
+setInterval(function() {
+  window.currentUser = currentUser;
+  window.userBalance = userBalance;
+  window.selectedAsset = selectedAsset;
+  window.accountType = accountType;
+}, 1000);
+
+// Expose Part 7A functions
+window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
+window.populateAssetSelect = populateAssetSelect;
+window.listenUserMarkets = listenUserMarkets;
+window.bindMarketChangeHandler = bindMarketChangeHandler;
+window.initUserMarkets = initUserMarkets;
+window.updatePayoutLabelsFromMarket = updatePayoutLabelsFromMarket;
+
+// Expose Part 7B functions
+window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
+window.convertAdminCandleToChart = convertAdminCandleToChart;
+window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
+window.listenAdminCandles = listenAdminCandles;
+window.loadUserCandlesSmart = loadUserCandlesSmart;
+window.onMarketChanged = onMarketChanged;
+
+// Expose core functions (for testing)
+window.loadCandles = loadCandles;
+window.startLivePrice = startLivePrice;
+window.stopLivePrice = stopLivePrice;
+window.placeTrade = placeTrade;
+window.checkExpiredTrades = checkExpiredTrades;
+window.checkExpiredTradesAdmin = checkExpiredTradesAdmin;
+window.listenAdminSettings = listenAdminSettings;
+window.updatePayoutLabels = updatePayoutLabels;
+window.applyMarketForce = applyMarketForce;
+window.startAutoModeDrift = startAutoModeDrift;
+
+// Expose chart state
+setInterval(function() {
+  window.chart = chart;
+  window.candleSeries = candleSeries;
+}, 500);
+
+console.log("✅ All Part 7A + 7B functions exposed to window");
+console.log("✅ Auth state synced (window.currentUser)");
 console.log("📊 যা এখন কাজ করবে:");
 console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
 console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
