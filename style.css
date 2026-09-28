@@ -1881,3 +1881,316 @@ select {
   transition: height 0.3s ease;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
+/* ============================================
+   MSG 16 — DESIGN PART 3+4
+   Entry/Exit Labels + Bottom Nav + Modals
+   ============================================ */
+
+/* ===== Entry/Exit Price Labels on Chart ===== */
+.entry-exit-label {
+  position: absolute;
+  right: 60px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  animation: labelPulse 1.5s ease-in-out infinite;
+}
+
+.entry-exit-label.entry {
+  background: linear-gradient(135deg, #1f6feb 0%, #1554c4 100%);
+  color: #fff;
+  border: 1px solid #3b82f6;
+}
+
+.entry-exit-label.exit {
+  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
+  color: #0b1220;
+  border: 1px solid #fbbf24;
+}
+
+.entry-exit-label .label-arrow {
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+.entry-exit-label .label-price {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes labelPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* ===== Bottom Navigation Bar (Quotex-style) ===== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 58px;
+  background: linear-gradient(180deg, #0d1522 0%, #0a0f1a 100%);
+  border-top: 1px solid #1f2a3d;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+  padding: 0 4px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+  transition: transform 0.3s ease;
+}
+
+.bottom-nav.hidden {
+  transform: translateY(100%);
+}
+
+.bottom-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  color: #6b7a90;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+  max-width: 80px;
+}
+
+.bottom-nav-btn .nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-btn .nav-label {
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+
+.bottom-nav-btn:active {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.bottom-nav-btn.active {
+  color: #2196f3;
+}
+
+.bottom-nav-btn.active .nav-icon {
+  transform: translateY(-2px);
+}
+
+.bottom-nav-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: #2196f3;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 8px #2196f3;
+}
+
+/* Bottom nav এ badge (notification) */
+.bottom-nav-btn .nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ff5252;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ===== Body padding so content not hidden behind nav ===== */
+body.has-bottom-nav #dashboard-page {
+  padding-bottom: 70px;
+}
+
+/* ===== Desktop এ bottom nav দেখাব না ===== */
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+  body.has-bottom-nav #dashboard-page {
+    padding-bottom: 0;
+  }
+}
+
+/* ===== Modal Improvement (Quotex-style) ===== */
+.popup-content {
+  border: 1px solid #2a3648 !important;
+  background: linear-gradient(160deg, #0f1828 0%, #0b1220 100%) !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.popup-header {
+  border-bottom: 1px solid #1a2436;
+  padding-bottom: 12px;
+  margin-bottom: 14px !important;
+}
+
+.popup-header h3 {
+  font-size: 17px !important;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+/* Modal hint (small helper text below title) */
+.popup-hint {
+  font-size: 11px;
+  color: #6b7a90;
+  margin-top: -6px;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+/* ===== Better Primary Button (Quotex-style) ===== */
+.primary-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease !important;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
+}
+
+.primary-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.primary-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.5s, height 0.5s;
+}
+
+.primary-btn:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* ===== Better Tab Buttons ===== */
+.tab-btn {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #1a2333 0%, #0d1522 100%) !important;
+}
+
+/* ===== Amount +/- Buttons — Modern ===== */
+.amount-btn {
+  font-size: 26px !important;
+  font-weight: 400 !important;
+  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%) !important;
+  border: 1px solid #2a3648 !important;
+  transition: all 0.15s ease;
+}
+
+.amount-btn:hover {
+  background: #1f2a3d !important;
+  border-color: #3b82f6 !important;
+}
+
+.amount-btn:active {
+  transform: scale(0.92);
+}
+
+/* ===== Trade Amount Input — Cleaner ===== */
+.amount-input-wrap input {
+  background: linear-gradient(145deg, #0b1220 0%, #0a0f1a 100%) !important;
+  border: 1px solid #2a3648 !important;
+  letter-spacing: -0.02em;
+  transition: all 0.2s ease;
+}
+
+.amount-input-wrap input:focus {
+  border-color: #2196f3 !important;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+}
+
+/* ===== Chart Time Labels — Better visibility ===== */
+.chart-time-labels {
+  background: linear-gradient(180deg, transparent 0%, rgba(11, 18, 32, 0.5) 100%);
+  border-top: 1px solid #1a2436 !important;
+  margin-top: 0 !important;
+  padding: 6px 14px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.chart-time-labels span {
+  color: #8b98ab;
+  transition: color 0.2s ease;
+}
+
+.chart-time-labels #timeCenter {
+  color: #00c853 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Mobile optimization ===== */
+@media (max-width: 768px) {
+  .bottom-nav {
+    height: 62px;
+  }
+
+  .bottom-nav-btn .nav-icon {
+    font-size: 22px;
+  }
+
+  .bottom-nav-btn .nav-label {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 380px) {
+  .bottom-nav-btn {
+    padding: 4px 2px;
+  }
+  .bottom-nav-btn .nav-icon {
+    font-size: 20px;
+  }
+  .bottom-nav-btn .nav-label {
+    font-size: 8px;
+  }
+}
