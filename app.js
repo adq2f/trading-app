@@ -4185,3 +4185,474 @@ window.initBottomNav = initBottomNav;
 window.updateNavBadge = updateNavBadge;
 
 console.log('===== MSG 16: Entry/Exit Labels + Bottom Nav loaded =====');
+/* ============================================================
+   MSG 18: TOURNAMENT SYSTEM (Full)
+   ============================================================ */
+
+// ============================================================
+// 1. STATE
+// ============================================================
+
+window.tournaments = [];
+window.myTournaments = [];
+window.tourListUnsub = null;
+window.myTourListUnsub = null;
+window.tourDetailUnsub = null;
+window.tourCurrentDetailId = null;
+window.tourCountdownInterval = null;
+
+// ============================================================
+// 2. OPEN / CLOSE POPUP
+// ============================================================
+
+function openTournamentPopup() {
+  var popup = document.getElementById('tournament-popup');
+  var overlay = document.getElementById('tournament-popup-overlay');
+  if (!popup) return;
+
+  popup.classList.remove('hidden');
+  if (overlay) overlay.onclick = function () { closeTournamentPopup(); };
+
+  startTournamentListener();
+  startMyTournamentListener();
+}
+
+function closeTournamentPopup() {
+  var popup = document.getElementById('tournament-popup');
+  if (!popup) return;
+  popup.classList.add('hidden');
+}
+
+function openTournamentDetail(tourId) {
+  window.tourCurrentDetailId = tourId;
+  var popup = document.getElementById('tournament-detail-popup');
+  var overlay = document.getElementById('tournament-detail-overlay');
+  if (!popup) return;
+
+  popup.classList.remove('hidden');
+  if (overlay) overlay.onclick = function () { closeTournamentDetail(); };
+
+  startTourDetailListener(tourId);
+}
+
+function closeTournamentDetail() {
+  var popup = document.getElementById('tournament-detail-popup');
+  if (!popup) return;
+  popup.classList.add('hidden');
+  if (window.tourDetailUnsub) {
+    try { window.tourDetailUnsub(); } catch (e) {}
+    window.tourDetailUnsub = null;
+  }
+  window.tourCurrentDetailId = null;
+}
+
+// ============================================================
+// 3. LISTEN AVAILABLE TOURNAMENTS
+// ============================================================
+
+function startTournamentListener() {
+  if (window.tourListUnsub) {
+    try { window.tourListUnsub(); } catch (e) {}
+  }
+
+  try {
+    var q = query(
+      collection(db, "tournaments"),
+      where("status", "in", ["upcoming", "live"])
+    );
+
+    window.tourListUnsub = onSnapshot(q, function (snap) {
+      var tours = [];
+      snap.forEach(function (d) {
+        tours.push({ id: d.id, ...d.data() });
+      });
+
+      // Sort: live first, then upcoming by start time
+      tours.sort(function (a, b) {
+        if (a.status === 'live' && b.status !== 'live') return -1;
+        if (a.status !== 'live' && b.status === 'live') return 1;
+        return (a.startTime || 0) - (b.startTime || 0);
+      });
+
+      window.tournaments = tours;
+      renderAvailableTournaments(tours);
+    }, function (err) {
+      console.error('[Tournament] List error:', err.message);
+    });
+  } catch (err) {
+    console.error('[Tournament] Listen error:', err.message);
+  }
+}
+
+// ============================================================
+// 4. LISTEN MY TOURNAMENTS
+// ============================================================
+
+function startMyTournamentListener() {
+  if (!currentUser) return;
+
+  if (window.myTourListUnsub) {
+    try { window.myTourListUnsub(); } catch (e) {}
+  }
+
+  try {
+    var q = query(
+      collection(db, "tournamentEntries"),
+      where("userId", "==", currentUser.uid)
+    );
+
+    window.myTourListUnsub = onSnapshot(q, function (snap) {
+      var entries = [];
+      snap.forEach(function (d) {
+        entries.push({ id: d.id, ...d.data() });
+      });
+      window.myTournaments = entries;
+      renderMyTournaments(entries);
+    }, function (err) {
+      console.error('[Tournament] My entries error:', err.message);
+    });
+  } catch (err) {
+    console.error('[Tournament] My listen error:', err.message);
+  }
+}
+
+// ============================================================
+// 5. RENDER AVAILABLE
+// ============================================================
+
+function renderAvailableTournaments(tours) {
+  var container = document.getElementById('tour-list-available');
+  if (!container) return;
+
+  if (!tours || tours.length === 0) {
+    container.innerHTML = '<p class="empty-text">No tournaments available</p>';
+    return;
+  }
+
+  var myIds = {};
+  window.myTournaments.forEach(function (m) {
+    if (m.tournamentId) myIds[m.tournamentId] = true;
+  });
+
+  container.innerHTML = '';
+  tours.forEach(function (t) {
+    container.appendChild(buildTourCard(t, myIds[t.id] === true));
+  });
+}
+
+function buildTourCard(t, isJoined) {
+  var div = document.createElement('div');
+  var statusClass = t.status === 'live' ? 'live' : (t.status === 'upcoming' ? 'upcoming' : 'finished');
+  div.className = 'tour-card ' + statusClass;
+
+  var statusBadgeText = t.status === 'live' ? 'LIVE' : (t.status === 'upcoming' ? 'UPCOMING' : 'FINISHED');
+
+  var entryFee = Number(t.entryFee) || 0;
+  var prizePool = Number(t.prizePool) || (entryFee * 10);
+  var maxPlayers = Number(t.maxPlayers) || 100;
+  var currentPlayers = Number(t.currentPlayers) || 0;
+
+  var actionHTML = '';
+  if (isJoined) {
+    actionHTML =
+      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Leaderboard</button>';
+  } else if (t.status === 'upcoming') {
+    actionHTML =
+      '<button class="tour-btn join" data-tid="' + t.id + '" data-action="join">Join $' + entryFee.toFixed(2) + '</button>' +
+      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">Details</button>';
+  } else if (t.status === 'live') {
+    actionHTML =
+      '<button class="tour-btn join" data-tid="' + t.id + '" data-action="join" style="opacity:.6;">Join (Live)</button>' +
+      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View</button>';
+  } else {
+    actionHTML =
+      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Results</button>';
+  }
+
+  div.innerHTML =
+    '<div class="tour-card-header">' +
+      '<div class="tour-card-title">🏆 ' + escapeHtml(t.name || 'Tournament') + '</div>' +
+      '<span class="tour-status-badge ' + statusClass + '">' + statusBadgeText + '</span>' +
+    '</div>' +
+    '<div class="tour-card-body">' +
+      '<div class="tour-stat">' +
+        '<span class="tour-stat-label">Entry Fee</span>' +
+        '<span class="tour-stat-value gold">$' + entryFee.toFixed(2) + '</span>' +
+      '</div>' +
+      '<div class="tour-stat">' +
+        '<span class="tour-stat-label">Prize Pool</span>' +
+        '<span class="tour-stat-value green">$' + prizePool.toFixed(2) + '</span>' +
+      '</div>' +
+      '<div class="tour-stat">' +
+        '<span class="tour-stat-label">Players</span>' +
+        '<span class="tour-stat-value blue">' + currentPlayers + ' / ' + maxPlayers + '</span>' +
+      '</div>' +
+      '<div class="tour-stat">' +
+        '<span class="tour-stat-label">' + (t.status === 'upcoming' ? 'Starts In' : 'Ends') + '</span>' +
+        '<span class="tour-stat-value"><span class="tour-countdown" data-tid="' + t.id + '">--:--</span></span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="tour-card-actions">' + actionHTML + '</div>';
+
+  return div;
+}
+
+// ============================================================
+// 6. RENDER MY TOURNAMENTS
+// ============================================================
+
+function renderMyTournaments(entries) {
+  var container = document.getElementById('tour-list-my');
+  if (!container) return;
+
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '<p class="empty-text">You haven\'t joined any tournament</p>';
+    return;
+  }
+
+  container.innerHTML = '';
+  entries.forEach(function (e) {
+    var t = window.tournaments.find(function (x) { return x.id === e.tournamentId; });
+    if (!t) return;
+
+    var profit = Number(e.profit) || 0;
+    var div = document.createElement('div');
+    div.className = 'tour-card ' + (t.status === 'live' ? 'live' : (t.status === 'upcoming' ? 'upcoming' : 'finished'));
+
+    var rank = e.rank || '-';
+    var profitClass = profit >= 0 ? 'green' : 'negative';
+
+    div.innerHTML =
+      '<div class="tour-card-header">' +
+        '<div class="tour-card-title">🏆 ' + escapeHtml(t.name || '') + '</div>' +
+        '<span class="tour-status-badge ' + (t.status === 'live' ? 'live' : t.status) + '">' + t.status.toUpperCase() + '</span>' +
+      '</div>' +
+      '<div class="tour-card-body">' +
+        '<div class="tour-stat">' +
+          '<span class="tour-stat-label">My Rank</span>' +
+          '<span class="tour-stat-value blue">#' + rank + '</span>' +
+        '</div>' +
+        '<div class="tour-stat">' +
+          '<span class="tour-stat-label">My Profit</span>' +
+          '<span class="tour-stat-value ' + (profit >= 0 ? 'green' : '') + '">' + (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tour-card-actions">' +
+        '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Leaderboard</button>' +
+      '</div>';
+
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// 7. JOIN TOURNAMENT
+// ============================================================
+
+async function joinTournament(tourId) {
+  if (!currentUser) { alert('Login required'); return; }
+
+  var t = window.tournaments.find(function (x) { return x.id === tourId; });
+  if (!t) { alert('Tournament not found'); return; }
+
+  // Already joined?
+  var alreadyJoined = window.myTournaments.some(function (m) {
+    return m.tournamentId === tourId;
+  });
+  if (alreadyJoined) { alert('Already joined'); return; }
+
+  if (t.status === 'finished') { alert('Tournament finished'); return; }
+
+  var entryFee = Number(t.entryFee) || 0;
+
+  if (userBalance < entryFee) {
+    alert('Insufficient balance. Need $' + entryFee.toFixed(2));
+    return;
+  }
+
+  if (!confirm('Join "' + t.name + '"?\nEntry Fee: $' + entryFee.toFixed(2) + '\n\nYour balance: $' + userBalance.toFixed(2))) {
+    return;
+  }
+
+  try {
+    var balanceField = accountType === 'demo' ? 'demoBalance' : 'realBalance';
+    var newBalance = userBalance - entryFee;
+
+    // Deduct balance
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      [balanceField]: newBalance,
+      balance: newBalance
+    });
+
+    userBalance = newBalance;
+    window.userBalance = newBalance;
+    if (balanceEl) balanceEl.textContent = userBalance.toFixed(2);
+    if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+
+    // Create entry
+    var entryId = currentUser.uid + '_' + tourId;
+    await setDoc(doc(db, "tournamentEntries", entryId), {
+      tournamentId: tourId,
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      entryFee: entryFee,
+      profit: 0,
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      rank: 0,
+      accountType: accountType,
+      joinedAt: new Date().toISOString()
+    });
+
+    // Increment player count
+    await updateDoc(doc(db, "tournaments", tourId), {
+      currentPlayers: (Number(t.currentPlayers) || 0) + 1
+    });
+
+    console.log('[Tournament] Joined:', tourId, 'Fee:', entryFee);
+
+    if (typeof playSound === 'function') playSound('click');
+    alert('✅ Joined tournament!\n\nGood luck!');
+
+    // Switch to My tab
+    var myTab = document.querySelector('.tour-tab-btn[data-tour-tab="my"]');
+    if (myTab) myTab.click();
+
+  } catch (err) {
+    console.error('[Tournament] Join error:', err.message);
+    alert('Error: ' + err.message);
+  }
+}
+
+// ============================================================
+// 8. LEADERBOARD (Detail Popup)
+// ============================================================
+
+function startTourDetailListener(tourId) {
+  if (window.tourDetailUnsub) {
+    try { window.tourDetailUnsub(); } catch (e) {}
+  }
+
+  try {
+    var q = query(
+      collection(db, "tournamentEntries"),
+      where("tournamentId", "==", tourId)
+    );
+
+    window.tourDetailUnsub = onSnapshot(q, function (snap) {
+      var entries = [];
+      snap.forEach(function (d) {
+        entries.push({ id: d.id, ...d.data() });
+      });
+
+      entries.sort(function (a, b) {
+        return (Number(b.profit) || 0) - (Number(a.profit) || 0);
+      });
+
+      entries.forEach(function (e, i) {
+        e._rank = i + 1;
+      });
+
+      renderTournamentDetail(tourId, entries);
+    }, function (err) {
+      console.error('[Tournament] Detail error:', err.message);
+    });
+  } catch (err) {
+    console.error('[Tournament] Detail listen error:', err.message);
+  }
+}
+
+function renderTournamentDetail(tourId, entries) {
+  var t = window.tournaments.find(function (x) { return x.id === tourId; });
+  if (!t) return;
+
+  var titleEl = document.getElementById('tour-detail-title');
+  if (titleEl) titleEl.textContent = '🏆 ' + (t.name || 'Tournament');
+
+  var bodyEl = document.getElementById('tour-detail-body');
+  if (!bodyEl) return;
+
+  var entryFee = Number(t.entryFee) || 0;
+  var prizePool = Number(t.prizePool) || (entryFee * entries.length);
+
+  var totalProfit = 0;
+  entries.forEach(function (e) { totalProfit += Number(e.profit) || 0; });
+
+  var lbHTML = '';
+  if (entries.length === 0) {
+    lbHTML = '<p class="empty-text">No players yet. Be the first!</p>';
+  } else {
+    lbHTML = entries.slice(0, 50).map(function (e) {
+      var rank = e._rank;
+      var rankClass = rank === 1 ? 'gold' : (rank === 2 ? 'silver' : (rank === 3 ? 'bronze' : ''));
+      var isMe = currentUser && e.userId === currentUser.uid;
+      var profit = Number(e.profit) || 0;
+      var pClass = profit < 0 ? 'negative' : '';
+
+      return '<div class="tour-lb-row' + (isMe ? ' me' : '') + '">' +
+        '<div class="tour-lb-rank ' + rankClass + '">' + rank + '</div>' +
+        '<div class="tour-lb-name">' + (isMe ? '👤 You' : escapeHtml((e.userEmail || '').split('@')[0])) + '</div>' +
+        '<div class="tour-lb-profit ' + pClass + '">' + (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  bodyEl.innerHTML =
+    '<div class="tour-detail-section">' +
+      '<h4>Overview</h4>' +
+      '<div class="tour-detail-row"><span class="label">Status</span><span class="value">' + (t.status || 'upcoming').toUpperCase() + '</span></div>' +
+      '<div class="tour-detail-row"><span class="label">Entry Fee</span><span class="value gold">$' + entryFee.toFixed(2) + '</span></div>' +
+      '<div class="tour-detail-row"><span class="label">Prize Pool</span><span class="value green">$' + prizePool.toFixed(2) + '</span></div>' +
+      '<div class="tour-detail-row"><span class="label">Players</span><span class="value blue">' + entries.length + ' / ' + (Number(t.maxPlayers) || '∞') + '</span></div>' +
+    '</div>' +
+    '<div class="tour-detail-section">' +
+      '<h4>Leaderboard</h4>' +
+      '<div class="tour-leaderboard">' + lbHTML + '</div>' +
+    '</div>';
+}
+
+// ============================================================
+// 9. COUNTDOWN UPDATER
+// ============================================================
+
+function updateTourCountdowns() {
+  var els = document.querySelectorAll('.tour-countdown');
+  els.forEach(function (el) {
+    var tid = el.dataset.tid;
+    var t = window.tournaments.find(function (x) { return x.id === tid; });
+    if (!t) return;
+
+    var target = t.status === 'live' ? (t.endTime || 0) : (t.startTime || 0);
+    if (!target) { el.textContent = '--:--'; return; }
+
+    var remain = Math.max(0, Math.floor((target - Date.now()) / 1000));
+    if (remain === 0) { el.textContent = t.status === 'live' ? 'ENDING' : 'STARTING'; return; }
+
+    var h = Math.floor(remain / 3600);
+    var m = Math.floor((remain % 3600) / 60);
+    var s = remain % 60;
+
+    if (h > 0) el.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
+    else el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  });
+}
+
+setInterval(updateTourCountdowns, 1000);
+
+// ============================================================
+// 10. TABS INSIDE POPUP
+// ============================================================
+
+function initTournamentTabs() {
+  var tabs = document.querySelectorAll('.tour-tab-btn');
+  tabs.forEach(function (btn) {
+    if (btn.dataset.boundTourTab === '1') return;
+    btn.dataset.boundTourTab = '1';
+
+    btn.addEventListener('click', function () {
+      tabs.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      var tab = btn.dataset.tourTab;
+      ['available', 'my
