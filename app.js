@@ -3994,3 +3994,194 @@ console.log("✅ APP.JS FINAL EXPOSE COMPLETE");
 })();
 
 console.log("===== MSG 15: Time Labels + Chart Resize loaded =====");
+/* ============================================================
+   MSG 16: Entry/Exit Labels + Bottom Navigation
+   ============================================================ */
+
+// ============================================================
+// 1. ENTRY/EXIT PRICE LABELS ON CHART
+// ============================================================
+
+window.__msg16EntryExit = {
+  entryLabel: null,
+  exitLabel: null,
+  entryPrice: null,
+  exitPrice: null
+};
+
+function updateEntryExitLabels() {
+  var entryEl = document.getElementById('entryLabel');
+  var exitEl = document.getElementById('exitLabel');
+  if (!entryEl && !exitEl) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+
+  if (trades.length === 0) {
+    if (entryEl) entryEl.classList.add('hidden');
+    if (exitEl) exitEl.classList.add('hidden');
+    return;
+  }
+
+  // Find most recent trade
+  var latest = trades[0];
+  for (var i = 1; i < trades.length; i++) {
+    if (trades[i].expiresAt > latest.expiresAt) latest = trades[i];
+  }
+
+  var wrap = document.getElementById('chart-wrapper');
+  if (!wrap) return;
+  var wrapH = wrap.clientHeight;
+
+  // Entry label position — try using chart's coordinate system
+  var entryY = 0;
+  var exitY = 0;
+
+  try {
+    if (window.candleSeries && typeof window.candleSeries.priceToCoordinate === 'function') {
+      var ey = window.candleSeries.priceToCoordinate(Number(latest.entryPrice));
+      if (ey !== null && ey !== undefined) entryY = ey;
+    }
+  } catch (e) {}
+
+  // Exit label — current price position
+  try {
+    if (window.candleSeries && typeof window.candleSeries.priceToCoordinate === 'function') {
+      var xy = window.candleSeries.priceToCoordinate(Number(window.currentPrice || currentPrice));
+      if (xy !== null && xy !== undefined) exitY = xy;
+    }
+  } catch (e) {}
+
+  // Clamp within chart
+  entryY = Math.max(20, Math.min(wrapH - 40, entryY));
+  exitY = Math.max(20, Math.min(wrapH - 40, exitY));
+
+  if (entryEl) {
+    entryEl.classList.remove('hidden');
+    entryEl.style.top = entryY + 'px';
+    var entryText = entryEl.querySelector('.label-price');
+    if (entryText) {
+      entryText.textContent = 'ENTRY: $' + Number(latest.entryPrice).toFixed(2);
+    }
+    var entryArrow = entryEl.querySelector('.label-arrow');
+    if (entryArrow) {
+      entryArrow.textContent = latest.type === 'call' ? '▲' : '▼';
+    }
+  }
+
+  if (exitEl) {
+    exitEl.classList.remove('hidden');
+    exitEl.style.top = exitY + 'px';
+    var exitText = exitEl.querySelector('.label-price');
+    if (exitText) {
+      exitText.textContent = 'EXIT: $' + Number(window.currentPrice || currentPrice).toFixed(2);
+    }
+    var exitArrow = exitEl.querySelector('.label-arrow');
+    if (exitArrow) {
+      exitArrow.textContent = latest.type === 'call' ? '▼' : '▲';
+    }
+  }
+}
+
+// Update labels every 300ms
+setInterval(updateEntryExitLabels, 300);
+
+console.log('[MSG16] Entry/Exit labels system started');
+
+// ============================================================
+// 2. BOTTOM NAVIGATION CONTROLLER
+// ============================================================
+
+function initBottomNav() {
+  var nav = document.getElementById('bottomNav');
+  if (!nav) {
+    console.warn('[MSG16] Bottom nav element not found');
+    return;
+  }
+
+  // Show bottom nav on mobile only (CSS handles display)
+  document.body.classList.add('has-bottom-nav');
+  nav.classList.remove('hidden');
+
+  // Bind buttons
+  nav.querySelectorAll('.bottom-nav-btn').forEach(function (btn) {
+    if (btn.dataset.boundNav === '1') return;
+    btn.dataset.boundNav = '1';
+
+    btn.addEventListener('click', function () {
+      var action = btn.dataset.nav;
+
+      // Update active state
+      nav.querySelectorAll('.bottom-nav-btn').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      // Scroll to relevant section or open popup
+      if (action === 'trade') {
+        var tradePanel = document.querySelector('.trade-panel');
+        if (tradePanel) tradePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (action === 'active') {
+        var tradesSection = document.querySelector('.trades-section');
+        if (tradesSection) tradesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Switch to active tab
+        var activeTab = document.querySelector('.tab-btn[data-tab="active"]');
+        if (activeTab) activeTab.click();
+      } else if (action === 'history') {
+        var tradesSection2 = document.querySelector('.trades-section');
+        if (tradesSection2) tradesSection2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var historyTab = document.querySelector('.tab-btn[data-tab="history"]');
+        if (historyTab) historyTab.click();
+      } else if (action === 'chat') {
+        if (typeof openUserChat === 'function') openUserChat();
+      } else if (action === 'profile') {
+        if (typeof balanceChip !== 'undefined' && balanceChip) {
+          balanceChip.click();
+        }
+      }
+    });
+  });
+
+  console.log('[MSG16] Bottom nav initialized');
+}
+
+// Init after DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBottomNav);
+} else {
+  initBottomNav();
+}
+setTimeout(initBottomNav, 1500);
+setTimeout(initBottomNav, 3000);
+
+// ============================================================
+// 3. UPDATE NAV BADGE — active trades count
+// ============================================================
+
+function updateNavBadge() {
+  var badge = document.getElementById('navActiveBadge');
+  if (!badge) return;
+
+  var trades = (typeof activeTradesLocal !== "undefined" && Array.isArray(activeTradesLocal))
+    ? activeTradesLocal : [];
+  var count = trades.length;
+
+  if (count > 0) {
+    badge.classList.remove('hidden');
+    badge.textContent = String(count);
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+setInterval(updateNavBadge, 1000);
+
+// ============================================================
+// 4. EXPOSE FOR DEBUG
+// ============================================================
+
+window.updateEntryExitLabels = updateEntryExitLabels;
+window.initBottomNav = initBottomNav;
+window.updateNavBadge = updateNavBadge;
+
+console.log('===== MSG 16: Entry/Exit Labels + Bottom Nav loaded =====');
