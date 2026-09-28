@@ -1904,5 +1904,4 @@ setTimeout(function() {
 window.db = db;
 window.auth = auth;
 console.log('[Firebase] db + auth exposed to window');
-
-console.log('admin.js FULLY loaded - Part 3 to 6E-2');
+console.log('admin.js FULLY loaded - Part 3 to 6E-3');
