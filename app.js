@@ -2138,6 +2138,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }, 2500);
 });
+// Expose Part 7A functions to window
+window.loadUserMarketsFromFirestore = loadUserMarketsFromFirestore;
+window.populateAssetSelect = populateAssetSelect;
+window.listenUserMarkets = listenUserMarkets;
+window.bindMarketChangeHandler = bindMarketChangeHandler;
+window.initUserMarkets = initUserMarkets;
+window.updatePayoutLabelsFromMarket = updatePayoutLabelsFromMarket;
 
 console.log("Part 7A (Dynamic Market Load) loaded");
 /* ============================================================
@@ -2474,6 +2481,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }, 5000);
 });
+// Expose Part 7B functions to window
+window.loadAdminCandlesFromFirestore = loadAdminCandlesFromFirestore;
+window.convertAdminCandleToChart = convertAdminCandleToChart;
+window.renderAdminCandlesOnChart = renderAdminCandlesOnChart;
+window.listenAdminCandles = listenAdminCandles;
+window.loadUserCandlesSmart = loadUserCandlesSmart;
+window.onMarketChanged = onMarketChanged;
 
 console.log("Part 7B (Candle Render from Firestore) loaded");
 console.log("📊 যা এখন কাজ করবে:");
