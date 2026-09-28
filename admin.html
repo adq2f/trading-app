@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Admin Panel - Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css?v=14">
+  <link rel="stylesheet" href="admin.css?v=18">
 
-  <!-- Eruda Mobile Console -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>
     if (window.innerWidth < 900) {
@@ -16,9 +15,6 @@
 </head>
 <body>
 
-  <!-- ============================================================
-       HEADER
-       ============================================================ -->
   <header class="admin-header">
     <div class="admin-header-left">
       <h1 class="admin-logo">Quotex <span>Admin</span></h1>
@@ -29,9 +25,6 @@
     </div>
   </header>
 
-  <!-- ============================================================
-       LOGIN SCREEN
-       ============================================================ -->
   <div id="login-screen" class="login-screen">
     <div class="login-box">
       <h2 class="login-title">Admin Login</h2>
@@ -42,15 +35,12 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       MAIN PANEL
-       ============================================================ -->
   <div id="admin-panel" class="admin-panel" style="display:none;">
 
-    <!-- TABS -->
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="markets" type="button">Markets</button>
       <button class="admin-tab" data-tab="candles" type="button">Candle Scheduler</button>
+      <button class="admin-tab" data-tab="tournaments" type="button">Tournaments</button>
       <button class="admin-tab" data-tab="users" type="button">Users</button>
       <button class="admin-tab" data-tab="trades" type="button">Trades</button>
       <button class="admin-tab" data-tab="deposits" type="button">Deposits</button>
@@ -59,9 +49,7 @@
       <button class="admin-tab" data-tab="settings" type="button">Settings</button>
     </nav>
 
-    <!-- ============================================================
-         TAB: MARKETS
-         ============================================================ -->
+    <!-- TAB: MARKETS -->
     <section id="tab-markets" class="admin-tab-content active">
       <h2 class="section-title">Markets</h2>
       <div class="market-form">
@@ -75,12 +63,9 @@
       <div id="market-list" class="market-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: CANDLE SCHEDULER
-         ============================================================ -->
+    <!-- TAB: CANDLE SCHEDULER (আগের মতো) -->
     <section id="tab-candles" class="admin-tab-content">
 
-      <!-- PART 6E-1: CANDLE MODE SWITCH -->
       <div class="candle-mode-section">
         <div class="candle-mode-title">Candle Mode</div>
         <div class="candle-mode-buttons">
@@ -106,7 +91,6 @@
         </div>
       </div>
 
-      <!-- Market + Timeframe Select -->
       <div class="candle-controls">
         <select id="candle-market-select" class="admin-input">
           <option value="">Select Market</option>
@@ -120,7 +104,6 @@
         </select>
       </div>
 
-      <!-- Bulk Generate -->
       <div class="bulk-generate">
         <h3 class="subsection-title">Bulk Generate</h3>
         <input id="bulk-date" class="admin-input" type="date">
@@ -136,7 +119,6 @@
         <button id="bulk-generate-btn" class="admin-btn primary" type="button">Generate</button>
       </div>
 
-      <!-- Candle Action Buttons -->
       <div class="candle-actions">
         <button id="add-candle-btn" class="admin-btn" type="button">+ Add Candle</button>
         <button id="save-candles-btn" class="admin-btn primary" type="button">Save to Firestore</button>
@@ -144,14 +126,12 @@
         <button id="refresh-candles" class="admin-btn" type="button">Refresh</button>
       </div>
 
-      <!-- Export / Import -->
       <div class="candle-io">
         <button id="export-candles-btn" class="admin-btn" type="button">Export JSON</button>
         <button id="import-candles-btn" class="admin-btn" type="button">Import JSON</button>
         <input id="import-candles-file" type="file" accept=".json" style="display:none;">
       </div>
 
-      <!-- Playback Controls -->
       <div class="playback-controls">
         <h3 class="subsection-title">Playback</h3>
         <button id="play-btn" class="admin-btn primary" type="button">Play</button>
@@ -163,7 +143,6 @@
         <span id="playback-status" class="playback-status">Idle</span>
       </div>
 
-      <!-- Auto Mode -->
       <div class="auto-mode-section">
         <h3 class="subsection-title">Auto Mode</h3>
         <button id="auto-mode-toggle" class="admin-btn" type="button">Auto Mode: OFF</button>
@@ -171,7 +150,6 @@
         <button id="save-auto-interval" class="admin-btn" type="button">Save Interval</button>
       </div>
 
-      <!-- Candle Table -->
       <div class="candle-table-wrap">
         <h3 class="subsection-title">Candle List</h3>
         <table class="candle-table">
@@ -192,13 +170,11 @@
         </table>
       </div>
 
-      <!-- Preview Chart -->
       <div class="candle-preview-wrap">
         <h3 class="subsection-title">Preview</h3>
         <div id="candle-preview" class="candle-preview"></div>
       </div>
 
-      <!-- Direction Timeline -->
       <div class="direction-timeline-wrap">
         <h3 class="subsection-title">Direction Timeline</h3>
         <div id="direction-timeline" class="direction-timeline"></div>
@@ -207,40 +183,72 @@
     </section>
 
     <!-- ============================================================
-         TAB: USERS
+         TAB: TOURNAMENTS (MSG 18 - NEW!)
          ============================================================ -->
+    <section id="tab-tournaments" class="admin-tab-content">
+      <h2 class="section-title">🏆 Tournaments</h2>
+
+      <!-- CREATE FORM -->
+      <div class="settings-group" style="margin-bottom: 16px;">
+        <label class="settings-label">Tournament Name</label>
+        <input id="tour-name" class="admin-input" type="text" placeholder="e.g. Daily Contest">
+
+        <label class="settings-label">Entry Fee ($)</label>
+        <input id="tour-entry-fee" class="admin-input" type="number" placeholder="10" value="10" min="0">
+
+        <label class="settings-label">Prize Pool ($)</label>
+        <input id="tour-prize-pool" class="admin-input" type="number" placeholder="100" value="100" min="0">
+
+        <label class="settings-label">Max Players</label>
+        <input id="tour-max-players" class="admin-input" type="number" placeholder="50" value="50" min="1">
+
+        <label class="settings-label">Start In (minutes from now)</label>
+        <input id="tour-start-in" class="admin-input" type="number" placeholder="60" value="60" min="1">
+
+        <label class="settings-label">Duration (minutes)</label>
+        <input id="tour-duration" class="admin-input" type="number" placeholder="60" value="60" min="1">
+
+        <label class="settings-label">Status</label>
+        <select id="tour-status" class="admin-input">
+          <option value="upcoming">Upcoming</option>
+          <option value="live">Live</option>
+        </select>
+
+        <button id="tour-create-btn" class="admin-btn primary" type="button">＋ Create Tournament</button>
+      </div>
+
+      <!-- TOURNAMENT LIST -->
+      <h3 class="subsection-title" style="margin-top: 20px;">All Tournaments</h3>
+      <div id="admin-tour-list" class="tour-admin-list">
+        <p class="loading-text">Loading...</p>
+      </div>
+    </section>
+
+    <!-- TAB: USERS -->
     <section id="tab-users" class="admin-tab-content">
       <h2 class="section-title">Users</h2>
       <div id="users-list" class="users-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: TRADES
-         ============================================================ -->
+    <!-- TAB: TRADES -->
     <section id="tab-trades" class="admin-tab-content">
       <h2 class="section-title">Trades</h2>
       <div id="trades-list" class="trades-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: DEPOSITS
-         ============================================================ -->
+    <!-- TAB: DEPOSITS -->
     <section id="tab-deposits" class="admin-tab-content">
       <h2 class="section-title">Deposits</h2>
       <div id="deposits-list" class="deposits-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: WITHDRAWALS
-         ============================================================ -->
+    <!-- TAB: WITHDRAWALS -->
     <section id="tab-withdrawals" class="admin-tab-content">
       <h2 class="section-title">Withdrawals</h2>
       <div id="withdrawals-list" class="withdrawals-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: CHAT
-         ============================================================ -->
+    <!-- TAB: CHAT -->
     <section id="tab-chat" class="admin-tab-content">
       <h2 class="section-title">Chat with Users</h2>
 
@@ -264,9 +272,7 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         TAB: SETTINGS
-         ============================================================ -->
+    <!-- TAB: SETTINGS -->
     <section id="tab-settings" class="admin-tab-content">
       <h2 class="section-title">Settings</h2>
 
@@ -384,8 +390,7 @@
 
   </div>
 
-  <!-- SCRIPTS -->
-  <script type="module" src="admin.js?v=14"></script>
+  <script type="module" src="admin.js?v=18"></script>
 
 </body>
 </html>
