@@ -1,5 +1,5 @@
 // Admin Panel - admin.js
-// Part 3 to 6E-2 Complete (Clean + MSG 2 Fix)
+// Part 3 to 6E-3 Fix Complete
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
@@ -137,23 +137,60 @@ if (adminLogoutBtn) {
   });
 }
 
+/* ============================================================
+   AUTH STATE LISTENER (NULL-SAFE) - Fix for classList error
+   ============================================================ */
+
 onAuthStateChanged(auth, async (user) => {
+  // Safe element references (supports both naming conventions)
+  const loginEl = document.getElementById("login-screen") || document.getElementById("admin-login");
+  const panelEl = document.getElementById("admin-panel") || document.getElementById("admin-dashboard");
+  const emailInputEl = document.getElementById("login-email") || document.getElementById("admin-email");
+  const passInputEl = document.getElementById("login-password") || document.getElementById("admin-password");
+  const emailDisplayEl = document.getElementById("admin-user-email") || document.getElementById("admin-email-display");
+  const logoutBtnEl = document.getElementById("admin-logout-btn") || document.getElementById("admin-logout");
+
+  function showLogin() {
+    if (loginEl) {
+      loginEl.classList.remove("hidden");
+      loginEl.style.display = "";
+    }
+    if (panelEl) {
+      panelEl.classList.add("hidden");
+      panelEl.style.display = "none";
+    }
+    if (emailInputEl) emailInputEl.value = "";
+    if (passInputEl) passInputEl.value = "";
+  }
+
+  function showPanel() {
+    if (loginEl) {
+      loginEl.classList.add("hidden");
+      loginEl.style.display = "none";
+    }
+    if (panelEl) {
+      panelEl.classList.remove("hidden");
+      panelEl.style.display = "";
+    }
+  }
+
   if (user) {
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (!userDoc.exists() || userDoc.data().role !== "admin") {
-        adminLogin.classList.remove("hidden");
-        adminDashboard.classList.add("hidden");
-        adminMessage.style.color = "#ff5252";
-        adminMessage.textContent = "Not an admin";
+        showLogin();
+        if (adminMessage) {
+          adminMessage.style.color = "#ff5252";
+          adminMessage.textContent = "Not an admin";
+        }
         await signOut(auth);
         return;
       }
       currentAdmin = user;
       window.currentAdmin = user;
-      adminLogin.classList.add("hidden");
-      adminDashboard.classList.remove("hidden");
-      adminEmailDisplay.textContent = user.email;
+      showPanel();
+      if (emailDisplayEl) emailDisplayEl.textContent = user.email;
+
       loadStats();
       loadUsers();
       loadTrades();
@@ -162,16 +199,13 @@ onAuthStateChanged(auth, async (user) => {
       loadMarkets();
       loadSettings();
     } catch (err) {
-      console.error(err);
+      console.error("[Auth] Error:", err);
       await signOut(auth);
     }
   } else {
     currentAdmin = null;
     window.currentAdmin = null;
-    adminLogin.classList.remove("hidden");
-    adminDashboard.classList.add("hidden");
-    adminEmailInput.value = "";
-    adminPasswordInput.value = "";
+    showLogin();
     if (usersUnsub) usersUnsub();
     if (tradesUnsub) tradesUnsub();
     if (depositsUnsub) depositsUnsub();
@@ -1771,6 +1805,7 @@ window.updateCandleModeButtons = function(mode) {
     return;
   }
   buttons.forEach(function(btn) {
+    if (!btn) return;
     if (btn.getAttribute('data-mode') === mode) {
       btn.classList.add('active');
     } else {
@@ -1904,4 +1939,4 @@ setTimeout(function() {
 window.db = db;
 window.auth = auth;
 console.log('[Firebase] db + auth exposed to window');
-console.log('admin.js FULLY loaded - Part 3 to 6E-3');
+console.log('admin.js FULLY loaded - Part 3 to 6E-3-Fix');
