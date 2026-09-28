@@ -277,6 +277,56 @@
 
       <div class="settings-group">
         <label class="settings-label">Mid-Reversal Rate (%)</label>
+              <div class="settings-group">
+        <label class="settings-label">Auto 24/7 Generation</label>
+        <button id="auto-24h-toggle" class="admin-btn primary" type="button">Auto 24/7: OFF</button>
+      </div>
+
+      <div class="settings-group" style="margin-top: 20px;">
+        <label class="settings-label" style="color: #ffb300; font-size: 14px;">🎨 Future Candle Designer</label>
+
+        <label class="settings-label">Market</label>
+        <select id="designer-market-select" class="admin-input">
+          <option value="">-- Select Market --</option>
+        </select>
+
+        <label class="settings-label">Direction</label>
+        <select id="designer-direction" class="admin-input">
+          <option value="up">UP (Green)</option>
+          <option value="down">DOWN (Red)</option>
+          <option value="neutral">NEUTRAL (Doji)</option>
+        </select>
+
+        <label class="settings-label">Candle Type</label>
+        <select id="designer-type" class="admin-input">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+          <option value="doji">Doji</option>
+        </select>
+
+        <label class="settings-label">Body Size (px)</label>
+        <input id="designer-body" class="admin-input" type="number" value="60" min="5" max="200">
+
+        <label class="settings-label">Wick Length (px)</label>
+        <input id="designer-wick" class="admin-input" type="number" value="20" min="0" max="150">
+
+        <label class="settings-label">Open Price</label>
+        <input id="designer-open" class="admin-input" type="number" step="0.01" value="50000">
+
+        <label class="settings-label">Close Price</label>
+        <input id="designer-close" class="admin-input" type="number" step="0.01" value="50100">
+
+        <label class="settings-label">High Price</label>
+        <input id="designer-high" class="admin-input" type="number" step="0.01" value="50150">
+
+        <label class="settings-label">Low Price</label>
+        <input id="designer-low" class="admin-input" type="number" step="0.01" value="49950">
+
+        <button id="designer-save-btn" class="admin-btn primary" type="button">Save Candle Designer</button>
+        <button id="designer-apply-btn" class="admin-btn" type="button">Apply to Next Candle</button>
+        <button id="designer-reset-btn" class="admin-btn danger" type="button">Reset Designer</button>
+      </div>
         <input id="reversal-rate-input" class="admin-input" type="number" placeholder="15" min="0" max="100" value="15">
         <button id="save-reversal-rate" class="admin-btn primary" type="button">Save Reversal Rate</button>
       </div>
