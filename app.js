@@ -2145,7 +2145,20 @@ window.listenUserMarkets = listenUserMarkets;
 window.bindMarketChangeHandler = bindMarketChangeHandler;
 window.initUserMarkets = initUserMarkets;
 window.updatePayoutLabelsFromMarket = updatePayoutLabelsFromMarket;
-
+// === EXPOSE FIREBASE FUNCTIONS TO WINDOW ===
+window.db = db;
+window.auth = auth;
+window.getDocs = getDocs;
+window.collection = collection;
+window.doc = doc;
+window.setDoc = setDoc;
+window.updateDoc = updateDoc;
+window.query = query;
+window.where = where;
+window.onSnapshot = onSnapshot;
+window.addDoc = addDoc;
+window.getDoc = getDoc;
+console.log("✅ Firebase functions exposed to window");
 console.log("Part 7A (Dynamic Market Load) loaded");
 /* ============================================================
    PART 7B: CANDLE RENDER FROM FIRESTORE
