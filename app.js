@@ -1901,6 +1901,245 @@ setInterval(async () => {
 // ============================================
 
 console.log("🎉 Admin Control Integration সম্পূর্ণ!");
+/* ============================================================
+   PART 7A: DYNAMIC MARKET LOAD
+   (Firestore theke admin-er market load)
+   ============================================================ */
+
+window.userMarkets = [];
+window.marketsUnsub = null;
+window.selectedMarketId = null;
+
+/**
+ * Firestore theke enabled markets load kore
+ */
+async function loadUserMarketsFromFirestore() {
+  try {
+    const snap = await getDocs(collection(db, "markets"));
+    const markets = [];
+    snap.forEach(function(docSnap) {
+      const m = docSnap.data();
+      if (m.enabled === true) {
+        markets.push({
+          id: docSnap.id,
+          name: m.name || "Unknown",
+          symbol: m.symbol || "",
+          basePrice: m.basePrice || 50000,
+          payout: m.payout || 85,
+          winRate: m.winRate || 50,
+          candleMode: m.candleMode || "locked",
+          currentCandleIndex: m.currentCandleIndex || 0
+        });
+      }
+    });
+    markets.sort(function(a, b) {
+      return (a.name || "").localeCompare(b.name || "");
+    });
+    console.log("[Markets] Loaded " + markets.length + " user markets");
+    return markets;
+  } catch (err) {
+    console.error("[Markets] Load error:", err.message);
+    return [];
+  }
+}
+
+/**
+ * asset-select element-e markets populate kore
+ */
+function populateAssetSelect(markets) {
+  const sel = document.getElementById("asset-select");
+  if (!sel) {
+    console.warn("[Markets] asset-select not found");
+    return;
+  }
+
+  if (!markets || markets.length === 0) {
+    // No markets - show placeholder
+    sel.innerHTML = '<option value="">-- No Markets Available --</option>';
+    console.log("[Markets] No enabled markets to populate");
+    return;
+  }
+
+  const currentValue = sel.value;
+  sel.innerHTML = "";
+
+  markets.forEach(function(m) {
+    const opt = document.createElement("option");
+    opt.value = m.symbol;
+    opt.textContent = m.name + (m.payout ? " +" + m.payout + "%" : "");
+    opt.dataset.marketId = m.id;
+    opt.dataset.basePrice = m.basePrice;
+    opt.dataset.payout = m.payout;
+    opt.dataset.winRate = m.winRate;
+    sel.appendChild(opt);
+  });
+
+  // Try to restore previous selection
+  let found = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === currentValue) {
+      sel.value = currentValue;
+      found = true;
+      break;
+    }
+  }
+
+  // If previous not found, select first
+  if (!found && sel.options.length > 0) {
+    sel.selectedIndex = 0;
+  }
+
+  // Update global selectedAsset
+  if (sel.value) {
+    selectedAsset = sel.value;
+    window.selectedMarketId = sel.options[sel.selectedIndex]?.dataset.marketId || null;
+  }
+
+  console.log("[Markets] Populated " + markets.length + " markets. Selected: " + selectedAsset);
+}
+
+/**
+ * Real-time listener — admin market add korle auto update
+ */
+function listenUserMarkets() {
+  if (window.marketsUnsub) {
+    window.marketsUnsub();
+    window.marketsUnsub = null;
+  }
+
+  try {
+    window.marketsUnsub = onSnapshot(collection(db, "markets"), function(snap) {
+      const markets = [];
+      snap.forEach(function(docSnap) {
+        const m = docSnap.data();
+        if (m.enabled === true) {
+          markets.push({
+            id: docSnap.id,
+            name: m.name || "Unknown",
+            symbol: m.symbol || "",
+            basePrice: m.basePrice || 50000,
+            payout: m.payout || 85,
+            winRate: m.winRate || 50,
+            candleMode: m.candleMode || "locked",
+            currentCandleIndex: m.currentCandleIndex || 0
+          });
+        }
+      });
+      markets.sort(function(a, b) {
+        return (a.name || "").localeCompare(b.name || "");
+      });
+
+      window.userMarkets = markets;
+      populateAssetSelect(markets);
+
+      // Update payout labels on CALL/PUT buttons
+      if (typeof updatePayoutLabelsFromMarket === "function") {
+        updatePayoutLabelsFromMarket();
+      }
+
+      console.log("[Markets] Real-time update: " + markets.length + " markets");
+    }, function(err) {
+      console.error("[Markets] Listener error:", err.message);
+    });
+  } catch (err) {
+    console.error("[Markets] Listen error:", err.message);
+  }
+}
+
+/**
+ * Payout labels update based on selected market
+ */
+function updatePayoutLabelsFromMarket() {
+  const sel = document.getElementById("asset-select");
+  if (!sel || !sel.selectedOptions || sel.selectedOptions.length === 0) return;
+
+  const selectedOpt = sel.selectedOptions[0];
+  const payout = selectedOpt.dataset.payout || 85;
+
+  document.querySelectorAll(".btn-payout").forEach(function(el) {
+    el.textContent = "+" + payout + "%";
+  });
+}
+
+/**
+ * Market change handler — select change hole candle reload
+ */
+function bindMarketChangeHandler() {
+  const sel = document.getElementById("asset-select");
+  if (!sel || sel.dataset.boundUserMarket === "1") return;
+
+  sel.dataset.boundUserMarket = "1";
+
+  sel.addEventListener("change", async function() {
+    const sel2 = document.getElementById("asset-select");
+    if (!sel2) return;
+
+    selectedAsset = sel2.value;
+    const selectedOpt = sel2.selectedOptions[0];
+    if (selectedOpt) {
+      window.selectedMarketId = selectedOpt.dataset.marketId || null;
+    }
+
+    console.log("[Markets] User selected: " + selectedAsset + " (id: " + window.selectedMarketId + ")");
+
+    updatePayoutLabelsFromMarket();
+
+    // Reload candles + restart live price
+    if (typeof loadCandles === "function") {
+      await loadCandles();
+    }
+    if (typeof startLivePrice === "function" && currentUser) {
+      startLivePrice();
+    }
+  });
+
+  console.log("[Markets] Market change handler bound");
+}
+
+/**
+ * Init — Auth state er sathe bind
+ */
+function initUserMarkets() {
+  console.log("[Markets] Initializing user markets...");
+
+  // Bind change handler
+  bindMarketChangeHandler();
+
+  // Load initial markets
+  loadUserMarketsFromFirestore().then(function(markets) {
+    populateAssetSelect(markets);
+    updatePayoutLabelsFromMarket();
+  });
+
+  // Start real-time listener
+  listenUserMarkets();
+}
+
+// Auto-init when user logs in
+(function() {
+  var origAuthWatch = setInterval(function() {
+    if (window.currentUser && !window.marketsUnsub) {
+      console.log("[Markets] User logged in - initializing markets");
+      initUserMarkets();
+    }
+    if (!window.currentUser && window.marketsUnsub) {
+      window.marketsUnsub();
+      window.marketsUnsub = null;
+      console.log("[Markets] User logged out - listener stopped");
+    }
+  }, 2000);
+})();
+
+// Also init on load (in case user is already logged in)
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (window.currentUser) {
+      initUserMarkets();
+    }
+  }, 2500);
+});
+
+console.log("Part 7A (Dynamic Market Load) loaded");
 console.log("📊 যা এখন কাজ করবে:");
 console.log("   1. Win Rate — Admin থেকে সেট → ট্রেডে প্রয়োগ");
 console.log("   2. Payout % — Admin থেকে সেট → জিতলে সেই %");
