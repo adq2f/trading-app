@@ -2194,3 +2194,303 @@ body.has-bottom-nav #dashboard-page {
     font-size: 8px;
   }
 }
+/* ============================================
+   MSG 17 — DESIGN PART 5
+   Trade List + Timer Grid (Quotex-style)
+   ============================================ */
+
+/* ===== Trade List — Modern Cards ===== */
+.trade-item {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%) !important;
+  border: 1px solid #1f2a3d;
+  border-left-width: 4px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.25s ease;
+}
+
+.trade-item:hover {
+  transform: translateX(2px);
+  border-color: #2a3648;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.trade-item.call {
+  border-left-color: #00c853 !important;
+  background: linear-gradient(135deg, #0f2418 0%, #0f1828 100%) !important;
+}
+
+.trade-item.put {
+  border-left-color: #ff5252 !important;
+  background: linear-gradient(135deg, #2a1014 0%, #0f1828 100%) !important;
+}
+
+.trade-item.win {
+  border-left-color: #00c853 !important;
+  background: linear-gradient(135deg, #0a2818 0%, #0f1828 100%) !important;
+}
+
+.trade-item.loss {
+  border-left-color: #ff5252 !important;
+  background: linear-gradient(135deg, #2a1014 0%, #0f1828 100%) !important;
+}
+
+/* Trade type badge */
+.trade-item .trade-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.8px;
+  width: fit-content;
+}
+
+.trade-item.call .trade-type {
+  background: rgba(0, 200, 83, 0.15);
+  color: #00c853;
+}
+
+.trade-item.put .trade-type {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+}
+
+.trade-item .trade-time {
+  font-size: 11px !important;
+  color: #8b98ab;
+  line-height: 1.6;
+}
+
+.trade-item .trade-time strong {
+  color: #e6edf3;
+}
+
+/* Trade result pill */
+.trade-result {
+  padding: 6px 12px !important;
+  border-radius: 20px;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  min-width: 80px;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.trade-result.win {
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.2) 0%, rgba(0, 168, 68, 0.15) 100%);
+  color: #00c853;
+  border: 1px solid rgba(0, 200, 83, 0.4);
+  box-shadow: 0 0 12px rgba(0, 200, 83, 0.2);
+}
+
+.trade-result.loss {
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.2) 0%, rgba(211, 47, 47, 0.15) 100%);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.4);
+}
+
+.trade-result.pending {
+  background: linear-gradient(135deg, rgba(255, 179, 0, 0.15) 0%, rgba(245, 124, 0, 0.1) 100%);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+  animation: pendingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { 
+    opacity: 1; 
+    box-shadow: 0 0 0 rgba(255, 179, 0, 0);
+  }
+  50% { 
+    opacity: 0.85;
+    box-shadow: 0 0 12px rgba(255, 179, 0, 0.3);
+  }
+}
+
+/* ===== Timer Grid — Quotex Style ===== */
+.time-buttons {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  overflow: visible !important;
+}
+
+.time-btn {
+  flex: unset !important;
+  min-width: unset !important;
+  padding: 11px 4px !important;
+  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%) !important;
+  border: 1px solid #2a3648 !important;
+  border-radius: 10px !important;
+  color: #8b98ab;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.time-btn:hover {
+  border-color: #3b82f6 !important;
+  color: #e6edf3;
+  transform: translateY(-1px);
+}
+
+.time-btn.active {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%) !important;
+  border-color: #3b82f6 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+.time-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #fff;
+  animation: activePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes activePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.8); }
+}
+
+/* ===== Amount buttons — Better spacing ===== */
+.amount-input-wrap input {
+  font-size: 22px !important;
+  padding: 14px !important;
+}
+
+/* ===== Tabs — Modern look ===== */
+.tabs {
+  background: linear-gradient(135deg, #0a0f1a 0%, #0d1522 100%) !important;
+  border: 1px solid #1a2436 !important;
+  padding: 5px !important;
+  border-radius: 12px !important;
+}
+
+.tab-btn {
+  padding: 11px !important;
+  font-size: 13px !important;
+  border-radius: 9px !important;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #1a2333 0%, #141d2e 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tab-btn.active::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, #2196f3, #00c853);
+  border-radius: 2px 2px 0 0;
+}
+
+.tab-btn span {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%) !important;
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+  box-shadow: 0 2px 6px rgba(0, 200, 83, 0.3);
+}
+
+/* ===== Empty state ===== */
+.empty-text {
+  color: #6b7a90 !important;
+  font-size: 13px !important;
+  padding: 40px 20px !important;
+  text-align: center;
+  position: relative;
+}
+
+.empty-text::before {
+  content: '📊';
+  display: block;
+  font-size: 32px;
+  margin-bottom: 10px;
+  opacity: 0.5;
+}
+
+/* ===== Timer Display (big-timer) — Better ===== */
+.big-timer {
+  font-family: 'Inter', monospace !important;
+  font-size: 42px !important;
+  font-weight: 800 !important;
+  letter-spacing: 4px !important;
+  background: linear-gradient(135deg, #0a0f1a 0%, #0d1522 100%) !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box;
+  position: relative;
+  text-shadow: 0 0 24px rgba(88, 166, 255, 0.6);
+}
+
+.big-timer::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(135deg, #1f6feb, #00c853, #1f6feb);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: timerGradient 3s linear infinite;
+}
+
+@keyframes timerGradient {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50% { filter: hue-rotate(30deg); }
+}
+
+/* ===== Mobile Refinement for Timer Grid ===== */
+@media (max-width: 400px) {
+  .time-buttons {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+  }
+  .time-btn {
+    padding: 10px 2px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .time-buttons {
+    grid-template-columns: repeat(8, 1fr) !important;
+  }
+}
+
+/* ===== Trade item — Better responsive ===== */
+@media (max-width: 500px) {
+  .trade-item {
+    padding: 10px 12px !important;
+  }
+  .trade-result {
+    min-width: 70px;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+  }
+}
