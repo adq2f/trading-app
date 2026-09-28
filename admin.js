@@ -1990,4 +1990,262 @@ setTimeout(function() {
 window.db = db;
 window.auth = auth;
 console.log('[Firebase] db + auth exposed to window');
-console.log('admin.js FULLY loaded - Part 3 to 6E-3-Fix3');
+/* ============================================================
+   PART 6F: EXPORT / IMPORT JSON
+   ============================================================ */
+
+window.exportCandles = function() {
+  console.log('[Export] Starting...');
+  
+  // Check if candles exist
+  if (!window.candleList || window.candleList.length === 0) {
+    alert('No candles to export. Generate or load candles first.');
+    return;
+  }
+  
+  try {
+    // Build export object
+    const exportData = {
+      version: '6F',
+      exportedAt: new Date().toISOString(),
+      marketId: window.currentMarketId || 'unknown',
+      candleCount: window.candleList.length,
+      candleMode: window.candleMode || 'locked',
+      candles: window.candleList.map(function(c, i) {
+        return {
+          number: i + 1,
+          date: c.date || '',
+          time: c.time || '',
+          endTime: c.endTime || '',
+          timeframe: c.timeframe || '1m',
+          open: Number(c.open) || 0,
+          high: Number(c.high) || 0,
+          low: Number(c.low) || 0,
+          close: Number(c.close) || 0,
+          color: c.color || 'green',
+          direction: c.direction || (Number(c.close) >= Number(c.open) ? 'up' : 'down'),
+          size: c.size || 'medium',
+          wick: Number(c.wick) || 20,
+          body: Number(c.body) || 60,
+          up: Number(c.up) || 0,
+          down: Number(c.down) || 0
+        };
+      })
+    };
+    
+    // Convert to JSON string
+    const jsonStr = JSON.stringify(exportData, null, 2);
+    
+    // Create blob
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create download link
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = 'candles_' + (window.currentMarketId || 'export') + '_' + timestamp + '.json';
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('[Export] Exported ' + exportData.candleCount + ' candles to ' + filename);
+    alert('Exported ' + exportData.candleCount + ' candles!\n\nFile: ' + filename);
+    
+  } catch (err) {
+    console.error('[Export] Error:', err);
+    alert('Export failed: ' + err.message);
+  }
+};
+
+window.importCandles = function() {
+  console.log('[Import] Opening file picker...');
+  
+  // Find or create file input
+  let fileInput = document.getElementById('import-candles-file');
+  if (!fileInput) {
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'import-candles-file';
+    fileInput.accept = '.json,application/json';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+    console.log('[Import] Created hidden file input');
+  }
+  
+  // Bind change event
+  fileInput.onchange = async function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      console.log('[Import] No file selected');
+      return;
+    }
+    
+    console.log('[Import] File selected: ' + file.name + ' (' + file.size + ' bytes)');
+    
+    try {
+      // Read file
+      const text = await file.text();
+      console.log('[Import] File read, length: ' + text.length);
+      
+      // Parse JSON
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        throw new Error('Invalid JSON file: ' + parseErr.message);
+      }
+      
+      // Validate structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid file format: not an object');
+      }
+      
+      if (!Array.isArray(data.candles)) {
+        throw new Error('Invalid file: missing "candles" array');
+      }
+      
+      if (data.candles.length === 0) {
+        throw new Error('File contains 0 candles');
+      }
+      
+      console.log('[Import] Validated: ' + data.candles.length + ' candles');
+      
+      // Confirm with user
+      const confirmMsg = 'Import ' + data.candles.length + ' candles?\n\n' +
+        'From: ' + (data.marketId || 'unknown') + '\n' +
+        'Exported: ' + (data.exportedAt || 'unknown') + '\n\n' +
+        'This will REPLACE current ' + (window.candleList ? window.candleList.length : 0) + ' candles.';
+      
+      if (!confirm(confirmMsg)) {
+        console.log('[Import] Cancelled by user');
+        return;
+      }
+      
+      // Validate and build new candle list
+      const validCandles = [];
+      let invalidCount = 0;
+      
+      for (let i = 0; i < data.candles.length; i++) {
+        const c = data.candles[i];
+        if (!c || typeof c !== 'object') {
+          invalidCount++;
+          continue;
+        }
+        
+        // Open/close/high/low must be numbers (or parseable)
+        const open = Number(c.open);
+        const close = Number(c.close);
+        const high = Number(c.high);
+        const low = Number(c.low);
+        
+        if (isNaN(open) || isNaN(close) || isNaN(high) || isNaN(low)) {
+          invalidCount++;
+          continue;
+        }
+        
+        validCandles.push({
+          number: validCandles.length + 1,
+          date: c.date || '',
+          time: c.time || '',
+          endTime: c.endTime || '',
+          timeframe: c.timeframe || '1m',
+          open: open.toFixed(2),
+          high: high.toFixed(2),
+          low: low.toFixed(2),
+          close: close.toFixed(2),
+          color: c.color || (close >= open ? 'green' : 'red'),
+          direction: c.direction || (close >= open ? 'up' : 'down'),
+          size: c.size || 'medium',
+          wick: Number(c.wick) || 20,
+          body: Number(c.body) || 60,
+          up: Number(c.up) || 0,
+          down: Number(c.down) || 0
+        });
+      }
+      
+      if (validCandles.length === 0) {
+        throw new Error('No valid candles found. All ' + invalidCount + ' entries were invalid.');
+      }
+      
+      console.log('[Import] Validated: ' + validCandles.length + ' valid, ' + invalidCount + ' invalid');
+      
+      // Apply
+      window.candleList = validCandles;
+      window.candleCounter = validCandles.length;
+      renderCandleTable();
+      
+      // Update market select if available
+      if (data.marketId && data.marketId !== 'unknown') {
+        const sel = document.getElementById('candle-market-select');
+        if (sel) {
+          // Try to find the market in options
+          let found = false;
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === data.marketId) {
+              sel.value = data.marketId;
+              window.currentMarketId = data.marketId;
+              found = true;
+              break;
+            }
+          }
+          if (found) {
+            console.log('[Import] Auto-selected market: ' + data.marketId);
+          }
+        }
+      }
+      
+      const successMsg = 'Imported ' + validCandles.length + ' candles!\n\n' +
+        (invalidCount > 0 ? 'Skipped ' + invalidCount + ' invalid entries.\n\n' : '') +
+        'Click "Save to Firestore" to persist them.';
+      
+      alert(successMsg);
+      console.log('[Import] Success: ' + validCandles.length + ' candles loaded');
+      
+    } catch (err) {
+      console.error('[Import] Error:', err);
+      alert('Import failed:\n\n' + err.message);
+    } finally {
+      // Reset file input so same file can be re-selected
+      fileInput.value = '';
+    }
+  };
+  
+  // Open file picker
+  fileInput.click();
+};
+
+function bindExportImport() {
+  const exportBtn = document.getElementById('export-candles-btn');
+  if (exportBtn && exportBtn.dataset.bound !== '1') {
+    exportBtn.dataset.bound = '1';
+    exportBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('[Export] Button clicked');
+      window.exportCandles();
+    };
+    console.log('[Export] Button bound');
+  }
+  
+  const importBtn = document.getElementById('import-candles-btn');
+  if (importBtn && importBtn.dataset.bound !== '1') {
+    importBtn.dataset.bound = '1';
+    importBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('[Import] Button clicked');
+      window.importCandles();
+    };
+    console.log('[Import] Button bound');
+  }
+}
+
+bindExportImport();
+document.addEventListener('DOMContentLoaded', bindExportImport);
+setTimeout(bindExportImport, 800);
+setTimeout(bindExportImport, 2500);
+
+console.log('Part 6F (Export/Import JSON) loaded');
+console.log('admin.js FULLY loaded - Part 3 to 6F');
