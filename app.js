@@ -4193,129 +4193,6 @@ console.log('===== MSG 16: Entry/Exit Labels + Bottom Nav loaded =====');
 // 1. STATE
 // ============================================================
 
-window.tournaments = [];
-window.myTournaments = [];
-window.tourListUnsub = null;
-window.myTourListUnsub = null;
-window.tourDetailUnsub = null;
-window.tourCurrentDetailId = null;
-window.tourCountdownInterval = null;
-
-// ============================================================
-// 2. OPEN / CLOSE POPUP
-// ============================================================
-
-function openTournamentPopup() {
-  var popup = document.getElementById('tournament-popup');
-  var overlay = document.getElementById('tournament-popup-overlay');
-  if (!popup) return;
-
-  popup.classList.remove('hidden');
-  if (overlay) overlay.onclick = function () { closeTournamentPopup(); };
-
-  startTournamentListener();
-  startMyTournamentListener();
-}
-
-function closeTournamentPopup() {
-  var popup = document.getElementById('tournament-popup');
-  if (!popup) return;
-  popup.classList.add('hidden');
-}
-
-function openTournamentDetail(tourId) {
-  window.tourCurrentDetailId = tourId;
-  var popup = document.getElementById('tournament-detail-popup');
-  var overlay = document.getElementById('tournament-detail-overlay');
-  if (!popup) return;
-
-  popup.classList.remove('hidden');
-  if (overlay) overlay.onclick = function () { closeTournamentDetail(); };
-
-  startTourDetailListener(tourId);
-}
-
-function closeTournamentDetail() {
-  var popup = document.getElementById('tournament-detail-popup');
-  if (!popup) return;
-  popup.classList.add('hidden');
-  if (window.tourDetailUnsub) {
-    try { window.tourDetailUnsub(); } catch (e) {}
-    window.tourDetailUnsub = null;
-  }
-  window.tourCurrentDetailId = null;
-}
-
-// ============================================================
-// 3. LISTEN AVAILABLE TOURNAMENTS
-// ============================================================
-
-function startTournamentListener() {
-  if (window.tourListUnsub) {
-    try { window.tourListUnsub(); } catch (e) {}
-  }
-
-  try {
-    var q = query(
-      collection(db, "tournaments"),
-      where("status", "in", ["upcoming", "live"])
-    );
-
-    window.tourListUnsub = onSnapshot(q, function (snap) {
-      var tours = [];
-      snap.forEach(function (d) {
-        tours.push({ id: d.id, ...d.data() });
-      });
-
-      // Sort: live first, then upcoming by start time
-      tours.sort(function (a, b) {
-        if (a.status === 'live' && b.status !== 'live') return -1;
-        if (a.status !== 'live' && b.status === 'live') return 1;
-        return (a.startTime || 0) - (b.startTime || 0);
-      });
-
-      window.tournaments = tours;
-      renderAvailableTournaments(tours);
-    }, function (err) {
-      console.error('[Tournament] List error:', err.message);
-    });
-  } catch (err) {
-    console.error('[Tournament] Listen error:', err.message);
-  }
-}
-
-// ============================================================
-// 4. LISTEN MY TOURNAMENTS
-// ============================================================
-
-function startMyTournamentListener() {
-  if (!currentUser) return;
-
-  if (window.myTourListUnsub) {
-    try { window.myTourListUnsub(); } catch (e) {}
-  }
-
-  try {
-    var q = query(
-      collection(db, "tournamentEntries"),
-      where("userId", "==", currentUser.uid)
-    );
-
-    window.myTourListUnsub = onSnapshot(q, function (snap) {
-      var entries = [];
-      snap.forEach(function (d) {
-        entries.push({ id: d.id, ...d.data() });
-      });
-      window.myTournaments = entries;
-      renderMyTournaments(entries);
-    }, function (err) {
-      console.error('[Tournament] My entries error:', err.message);
-    });
-  } catch (err) {
-    console.error('[Tournament] My listen error:', err.message);
-  }
-}
-
 // ============================================================
 // 5. RENDER AVAILABLE
 // ============================================================
@@ -4352,121 +4229,6 @@ function buildTourCard(t, isJoined) {
   var maxPlayers = Number(t.maxPlayers) || 100;
   var currentPlayers = Number(t.currentPlayers) || 0;
 
-  var actionHTML = '';
-  if (isJoined) {
-    actionHTML =
-      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Leaderboard</button>';
-  } else if (t.status === 'upcoming') {
-    actionHTML =
-      '<button class="tour-btn join" data-tid="' + t.id + '" data-action="join">Join $' + entryFee.toFixed(2) + '</button>' +
-      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">Details</button>';
-  } else if (t.status === 'live') {
-    actionHTML =
-      '<button class="tour-btn join" data-tid="' + t.id + '" data-action="join" style="opacity:.6;">Join (Live)</button>' +
-      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View</button>';
-  } else {
-    actionHTML =
-      '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Results</button>';
-  }
-
-  div.innerHTML =
-    '<div class="tour-card-header">' +
-      '<div class="tour-card-title">🏆 ' + escapeHtml(t.name || 'Tournament') + '</div>' +
-      '<span class="tour-status-badge ' + statusClass + '">' + statusBadgeText + '</span>' +
-    '</div>' +
-    '<div class="tour-card-body">' +
-      '<div class="tour-stat">' +
-        '<span class="tour-stat-label">Entry Fee</span>' +
-        '<span class="tour-stat-value gold">$' + entryFee.toFixed(2) + '</span>' +
-      '</div>' +
-      '<div class="tour-stat">' +
-        '<span class="tour-stat-label">Prize Pool</span>' +
-        '<span class="tour-stat-value green">$' + prizePool.toFixed(2) + '</span>' +
-      '</div>' +
-      '<div class="tour-stat">' +
-        '<span class="tour-stat-label">Players</span>' +
-        '<span class="tour-stat-value blue">' + currentPlayers + ' / ' + maxPlayers + '</span>' +
-      '</div>' +
-      '<div class="tour-stat">' +
-        '<span class="tour-stat-label">' + (t.status === 'upcoming' ? 'Starts In' : 'Ends') + '</span>' +
-        '<span class="tour-stat-value"><span class="tour-countdown" data-tid="' + t.id + '">--:--</span></span>' +
-      '</div>' +
-    '</div>' +
-    '<div class="tour-card-actions">' + actionHTML + '</div>';
-
-  return div;
-}
-
-// ============================================================
-// 6. RENDER MY TOURNAMENTS
-// ============================================================
-
-function renderMyTournaments(entries) {
-  var container = document.getElementById('tour-list-my');
-  if (!container) return;
-
-  if (!entries || entries.length === 0) {
-    container.innerHTML = '<p class="empty-text">You haven\'t joined any tournament</p>';
-    return;
-  }
-
-  container.innerHTML = '';
-  entries.forEach(function (e) {
-    var t = window.tournaments.find(function (x) { return x.id === e.tournamentId; });
-    if (!t) return;
-
-    var profit = Number(e.profit) || 0;
-    var div = document.createElement('div');
-    div.className = 'tour-card ' + (t.status === 'live' ? 'live' : (t.status === 'upcoming' ? 'upcoming' : 'finished'));
-
-    var rank = e.rank || '-';
-    var profitClass = profit >= 0 ? 'green' : 'negative';
-
-    div.innerHTML =
-      '<div class="tour-card-header">' +
-        '<div class="tour-card-title">🏆 ' + escapeHtml(t.name || '') + '</div>' +
-        '<span class="tour-status-badge ' + (t.status === 'live' ? 'live' : t.status) + '">' + t.status.toUpperCase() + '</span>' +
-      '</div>' +
-      '<div class="tour-card-body">' +
-        '<div class="tour-stat">' +
-          '<span class="tour-stat-label">My Rank</span>' +
-          '<span class="tour-stat-value blue">#' + rank + '</span>' +
-        '</div>' +
-        '<div class="tour-stat">' +
-          '<span class="tour-stat-label">My Profit</span>' +
-          '<span class="tour-stat-value ' + (profit >= 0 ? 'green' : '') + '">' + (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2) + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="tour-card-actions">' +
-        '<button class="tour-btn view" data-tid="' + t.id + '" data-action="view">View Leaderboard</button>' +
-      '</div>';
-
-    container.appendChild(div);
-  });
-}
-
-// ============================================================
-// 7. JOIN TOURNAMENT
-// ============================================================
-
-async function joinTournament(tourId) {
-  if (!currentUser) { alert('Login required'); return; }
-
-  var t = window.tournaments.find(function (x) { return x.id === tourId; });
-  if (!t) { alert('Tournament not found'); return; }
-
-  // Already joined?
-  var alreadyJoined = window.myTournaments.some(function (m) {
-    return m.tournamentId === tourId;
-  });
-  if (alreadyJoined) { alert('Already joined'); return; }
-
-  if (t.status === 'finished') { alert('Tournament finished'); return; }
-
-  var entryFee = Number(t.entryFee) || 0;
-
-  if (userBalance < entryFee) {
-    alert('Insufficient balance. Need $' + entryFee.toFixed(2));
     return;
   }
 
@@ -4655,4 +4417,112 @@ function initTournamentTabs() {
       btn.classList.add('active');
 
       var tab = btn.dataset.tourTab;
-      ['available', 'my
+      ['available', 'my', 'finished'].forEach(function (name) {
+        var el = document.getElementById('tour-list-' + name);
+        if (el) el.classList.toggle('hidden', name !== tab);
+      });
+    });
+  });
+}
+
+// ============================================================
+// 11. EVENT DELEGATION — Tour Card Buttons
+// ============================================================
+
+function initTournamentEvents() {
+  var popup = document.getElementById('tournament-popup');
+  if (!popup || popup.dataset.eventsBound === '1') return;
+  popup.dataset.eventsBound = '1';
+
+  popup.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+
+    var tid = btn.dataset.tid;
+    var action = btn.dataset.action;
+    if (!tid) return;
+
+    if (action === 'join') joinTournament(tid);
+    else if (action === 'view') openTournamentDetail(tid);
+  });
+}
+
+// ============================================================
+// 12. HELPERS
+// ============================================================
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ============================================================
+// 13. BIND TO SIDEBAR BUTTON
+// ============================================================
+
+function bindTournamentButton() {
+  var btn = document.getElementById('tournament-btn');
+  if (!btn || btn.dataset.boundTour === '1') return;
+  btn.dataset.boundTour = '1';
+  btn.onclick = openTournamentPopup;
+  console.log('[Tournament] Sidebar button bound');
+}
+
+function bindTournamentCloseButtons() {
+  var btn1 = document.getElementById('tournament-popup-close');
+  if (btn1 && btn1.dataset.boundTourClose !== '1') {
+    btn1.dataset.boundTourClose = '1';
+    btn1.onclick = closeTournamentPopup;
+  }
+  var btn2 = document.getElementById('tournament-detail-close');
+  if (btn2 && btn2.dataset.boundTourClose !== '1') {
+    btn2.dataset.boundTourClose = '1';
+    btn2.onclick = closeTournamentDetail;
+  }
+}
+
+// ============================================================
+// 14. INIT
+// ============================================================
+
+function initTournament() {
+  bindTournamentButton();
+  bindTournamentCloseButtons();
+  initTournamentTabs();
+  initTournamentEvents();
+  console.log('[MSG18] Tournament system initialized');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTournament);
+} else {
+  initTournament();
+}
+setTimeout(initTournament, 1500);
+setTimeout(initTournament, 3500);
+
+// Also start listener when user logs in
+setInterval(function () {
+  if (currentUser && !window.tourListUnsub) {
+    startTournamentListener();
+    startMyTournamentListener();
+  }
+}, 3000);
+
+// ============================================================
+// 15. EXPOSE FOR DEBUG
+// ============================================================
+
+window.openTournamentPopup = openTournamentPopup;
+window.closeTournamentPopup = closeTournamentPopup;
+window.openTournamentDetail = openTournamentDetail;
+window.closeTournamentDetail = closeTournamentDetail;
+window.joinTournament = joinTournament;
+window.startTournamentListener = startTournamentListener;
+window.startMyTournamentListener = startMyTournamentListener;
+
+console.log('===== MSG 18: Tournament Full System loaded =====');
