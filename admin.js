@@ -2488,5 +2488,285 @@ function initDebugSystem() {
 
 initDebugSystem();
 
+
 console.log('Part Debug-1 (Auto Error System) loaded');
+/* ============================================================
+   PART DEBUG-2: TEST MENU (window.runTests)
+   ============================================================ */
+
+window.testResults = {
+  total: 0,
+  pass: 0,
+  fail: 0,
+  warn: 0,
+  tests: []
+};
+
+window.recordTest = function(name, status, details) {
+  window.testResults.total++;
+  if (status === 'pass') window.testResults.pass++;
+  else if (status === 'fail') window.testResults.fail++;
+  else window.testResults.warn++;
+  window.testResults.tests.push({
+    name: name,
+    status: status,
+    details: details || ''
+  });
+};
+
+window.runTests = function() {
+  console.log('===== RUN TESTS START =====');
+  if (window.addDebugLog) window.addDebugLog('info', '===== RUN TESTS START =====');
+
+  window.testResults = { total: 0, pass: 0, fail: 0, warn: 0, tests: [] };
+
+  // -------- 1. ELEMENT CHECK --------
+  console.log('--- ELEMENTS CHECK ---');
+  var requiredIds = [
+    'login-screen', 'admin-panel',
+    'login-email', 'login-password', 'login-btn', 'login-error',
+    'admin-user-email', 'admin-logout-btn',
+    'candle-market-select', 'candle-timeframe',
+    'bulk-date', 'bulk-time', 'bulk-count', 'bulk-base',
+    'bulk-up', 'bulk-down', 'bulk-neutral', 'bulk-wick', 'bulk-body',
+    'bulk-generate-btn',
+    'add-candle-btn', 'save-candles-btn', 'clear-candles-btn', 'refresh-candles',
+    'export-candles-btn', 'import-candles-btn',
+    'play-btn', 'pause-btn', 'skip-btn', 'back-btn', 'reset-btn',
+    'playback-speed', 'playback-status',
+    'auto-mode-toggle', 'auto-interval-input', 'save-auto-interval',
+    'candle-table-body', 'candle-preview', 'direction-timeline',
+    'candle-mode-info', 'win-rate-input', 'save-win-rate',
+    'payout-input', 'save-payout',
+    'users-list', 'trades-list', 'deposits-list', 'withdrawals-list'
+  ];
+
+  var missingIds = [];
+  requiredIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      window.recordTest('Element #' + id, 'pass');
+    } else {
+      window.recordTest('Element #' + id, 'fail', 'MISSING');
+      missingIds.push(id);
+    }
+  });
+
+  if (missingIds.length === 0) {
+    console.log('[ELEMENTS] All ' + requiredIds.length + ' elements found ✓');
+  } else {
+    console.warn('[ELEMENTS] Missing: ' + missingIds.join(', '));
+  }
+
+  // -------- 2. MODE BUTTONS --------
+  console.log('--- MODE BUTTONS CHECK ---');
+  var modeBtns = document.querySelectorAll('.mode-btn[data-mode]');
+  if (modeBtns.length === 4) {
+    window.recordTest('4 Mode Buttons', 'pass');
+  } else {
+    window.recordTest('4 Mode Buttons', 'fail', 'Found: ' + modeBtns.length);
+  }
+
+  // -------- 3. FUNCTION CHECK --------
+  console.log('--- FUNCTIONS CHECK ---');
+  var requiredFns = [
+    'addDebugLog', 'toggleDebugPanel',
+    'exportCandles', 'importCandles',
+    'setCandleMode', 'bindCandleModeButtons', 'initCandleModeUI',
+    'saveCandleModeToFirestore', 'loadCandleModeFromFirestore',
+    'updateCandleModeButtons', 'updateCandleModeInfo',
+    'renderCandleTable', 'renderCandlePreview', 'renderDirectionTimeline',
+    'addCandle', 'clearCandles', 'saveAllCandles', 'loadCandlesFromFirestore',
+    'bulkGenerateCandles',
+    'playbackPlay', 'playbackPause', 'playbackSkip', 'playbackBack',
+    'playbackReset', 'playbackSetSpeed', 'highlightActiveRow',
+    'startAutoMode', 'stopAutoMode', 'toggleAutoMode',
+    'setAutoModeInterval', 'autoGenerateOneCandle',
+    'timeframeToSeconds', 'calcCandleTime'
+  ];
+
+  var missingFns = [];
+  requiredFns.forEach(function(fn) {
+    if (typeof window[fn] === 'function') {
+      window.recordTest('Function ' + fn, 'pass');
+    } else {
+      window.recordTest('Function ' + fn, 'fail', 'MISSING');
+      missingFns.push(fn);
+    }
+  });
+
+  if (missingFns.length === 0) {
+    console.log('[FUNCTIONS] All ' + requiredFns.length + ' functions loaded ✓');
+  } else {
+    console.warn('[FUNCTIONS] Missing: ' + missingFns.join(', '));
+  }
+
+  // -------- 4. STATE CHECK --------
+  console.log('--- STATE CHECK ---');
+  var stateChecks = [
+    { name: 'window.adminSettings', val: window.adminSettings, type: 'object' },
+    { name: 'window.candleList', val: window.candleList, type: 'object' },
+    { name: 'window.candleMode', val: window.candleMode, type: 'string' },
+    { name: 'window.currentMarketId', val: window.currentMarketId, type: 'string_or_null' },
+    { name: 'window.autoModeInterval', val: window.autoModeInterval, type: 'number' },
+    { name: 'window.playbackSpeed', val: window.playbackSpeed, type: 'number' },
+    { name: 'window.debugLogs', val: window.debugLogs, type: 'object' }
+  ];
+
+  stateChecks.forEach(function(c) {
+    if (c.val === undefined) {
+      window.recordTest('State ' + c.name, 'warn', 'undefined');
+    } else {
+      window.recordTest('State ' + c.name, 'pass', typeof c.val);
+    }
+  });
+
+  // -------- 5. FIREBASE CONFIG --------
+  console.log('--- FIREBASE CHECK ---');
+  if (typeof window.db !== 'undefined' && window.db) {
+    window.recordTest('Firebase db exposed', 'pass');
+  } else {
+    window.recordTest('Firebase db exposed', 'fail', 'window.db is undefined');
+  }
+  if (typeof window.auth !== 'undefined' && window.auth) {
+    window.recordTest('Firebase auth exposed', 'pass');
+  } else {
+    window.recordTest('Firebase auth exposed', 'fail', 'window.auth is undefined');
+  }
+
+  // -------- 6. RENDER TEST --------
+  console.log('--- RENDER TEST ---');
+  try {
+    var testList = [
+      { number: 1, date: '2026-09-28', time: '10:00:00', open: '50000.00', high: '50100.00', low: '49900.00', close: '50050.00', direction: 'up', color: 'green', timeframe: '1m', up: 5, down: 5 },
+      { number: 2, date: '2026-09-28', time: '10:01:00', open: '50050.00', high: '50150.00', low: '50000.00', close: '50100.00', direction: 'up', color: 'green', timeframe: '1m', up: 5, down: 5 },
+      { number: 3, date: '2026-09-28', time: '10:02:00', open: '50100.00', high: '50120.00', low: '49980.00', close: '49990.00', direction: 'down', color: 'red', timeframe: '1m', up: 5, down: 5 }
+    ];
+    var savedList = window.candleList;
+    var savedCounter = window.candleCounter;
+
+    window.candleList = testList;
+    window.candleCounter = 3;
+
+    if (typeof window.renderCandleTable === 'function') {
+      window.renderCandleTable();
+      var tbody = document.getElementById('candle-table-body');
+      if (tbody && tbody.innerHTML.indexOf('50000') !== -1) {
+        window.recordTest('Render Table', 'pass');
+      } else {
+        window.recordTest('Render Table', 'fail', 'Table empty');
+      }
+    }
+
+    if (typeof window.renderCandlePreview === 'function') {
+      window.renderCandlePreview();
+      var preview = document.getElementById('candle-preview');
+      if (preview && preview.innerHTML.indexOf('pv-candle') !== -1) {
+        window.recordTest('Render Preview', 'pass');
+      } else {
+        window.recordTest('Render Preview', 'fail', 'No candles');
+      }
+    }
+
+    if (typeof window.renderDirectionTimeline === 'function') {
+      window.renderDirectionTimeline();
+      var timeline = document.getElementById('direction-timeline');
+      if (timeline && timeline.innerHTML.indexOf('tl-block') !== -1) {
+        window.recordTest('Render Timeline', 'pass');
+      } else {
+        window.recordTest('Render Timeline', 'fail', 'No blocks');
+      }
+    }
+
+    // Restore
+    window.candleList = savedList;
+    window.candleCounter = savedCounter;
+    if (typeof window.renderCandleTable === 'function') window.renderCandleTable();
+  } catch (err) {
+    window.recordTest('Render Test', 'fail', err.message);
+  }
+
+  // -------- FINAL SUMMARY --------
+  console.log('===== RUN TESTS END =====');
+  var summary = 'PASS: ' + window.testResults.pass +
+    ' | FAIL: ' + window.testResults.fail +
+    ' | WARN: ' + window.testResults.warn +
+    ' | TOTAL: ' + window.testResults.total;
+
+  console.log(summary);
+  if (window.addDebugLog) {
+    if (window.testResults.fail > 0) {
+      window.addDebugLog('error', '[Tests] ' + summary);
+    } else {
+      window.addDebugLog('success', '[Tests] ' + summary);
+    }
+  }
+
+  // Alert user
+  var alertMsg = 'TEST RESULTS\n\n' +
+    'Total: ' + window.testResults.total + '\n' +
+    'Pass: ' + window.testResults.pass + '\n' +
+    'Fail: ' + window.testResults.fail + '\n' +
+    'Warn: ' + window.testResults.warn + '\n\n';
+
+  if (window.testResults.fail === 0) {
+    alertMsg += 'ALL TESTS PASSED!';
+  } else {
+    alertMsg += 'Check Debug Panel for failures.';
+    var fails = window.testResults.tests.filter(function(t) { return t.status === 'fail'; });
+    fails.forEach(function(f) {
+      if (window.addDebugLog) window.addDebugLog('error', '[FAIL] ' + f.name + ' - ' + f.details);
+    });
+  }
+
+  alert(alertMsg);
+
+  return window.testResults;
+};
+
+// ============ TEST BUTTON IN DEBUG PANEL ============
+
+window.addTestButtonToPanel = function() {
+  var panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  if (document.getElementById('debug-run-tests-btn')) return;
+
+  var header = panel.querySelector('div');
+  if (!header) return;
+
+  var testBtn = document.createElement('button');
+  testBtn.id = 'debug-run-tests-btn';
+  testBtn.textContent = 'Run Tests';
+  testBtn.style.cssText = 'background:linear-gradient(135deg,#00c853 0%,#00a844 100%);color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;margin-right:4px;cursor:pointer;font-weight:bold;';
+
+  testBtn.onclick = function() {
+    window.runTests();
+  };
+
+  // Insert before Copy button
+  var copyBtn = document.getElementById('debug-copy-btn');
+  if (copyBtn && copyBtn.parentNode) {
+    copyBtn.parentNode.insertBefore(testBtn, copyBtn);
+  } else {
+    header.appendChild(testBtn);
+  }
+};
+
+// Re-add test button whenever panel is created
+var _origCreateDebugPanel = window.createDebugPanel;
+window.createDebugPanel = function() {
+  if (_origCreateDebugPanel) _origCreateDebugPanel();
+  setTimeout(window.addTestButtonToPanel, 100);
+};
+
+// Try adding button on init
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(window.addTestButtonToPanel, 1500);
+});
+
+setTimeout(function() {
+  window.addTestButtonToPanel();
+}, 2500);
+
+console.log('Part Debug-2 (Test Menu) loaded');
 console.log('admin.js FULLY loaded - Part 3 to Debug-1');
