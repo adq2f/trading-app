@@ -2891,13 +2891,8 @@ function startLiveMovement() {
   window.liveMovementInterval = setInterval(function() {
     if (typeof candleSeries === "undefined" || !candleSeries) return;
     if (typeof currentPrice === "undefined" || currentPrice === null) return;
-    if (isNaN(Number(currentPrice))) return;                          // ← এই line যোগ করুন
+    if (isNaN(Number(currentPrice))) return;
 
-  window.liveMovementInterval = setInterval(function() {
-    if (typeof candleSeries === "undefined" || !candleSeries) return;
-    if (typeof currentPrice === "undefined") return;
-
-    var speed = window.liveSpeed || 500;
     var drift = (Math.random() - 0.5) * 30;
 
     // Direction bias from adminForceMarket
@@ -2922,7 +2917,6 @@ function startLiveMovement() {
     var candleTime = Math.floor(now / 60) * 60;
 
     if (candleTime > window.currentCandleTime) {
-      // New minute started
       window.currentCandleTime = candleTime;
       window.currentCandleOpen = currentPrice;
     }
