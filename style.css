@@ -24,7 +24,7 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   padding: 0;
-  padding-bottom: 56px;
+  padding-bottom: 60px;
 }
 
 .hidden {
@@ -344,13 +344,13 @@ input, select {
   font-size: 11px;
 }
 
-/* ===== CHART WRAPPER (Bigger - Quotex-style) ===== */
+/* ===== CHART WRAPPER (Balanced - Quotex-style) ===== */
 .qx-chart-wrapper {
   position: relative;
   width: 100%;
-  height: 52vh;
-  min-height: 320px;
-  max-height: 480px;
+  height: 38vh;
+  min-height: 220px;
+  max-height: 340px;
   background: #0e1320;
   overflow: hidden;
   flex-shrink: 0;
@@ -459,14 +459,14 @@ input, select {
   backdrop-filter: blur(8px);
 }
 
-/* ===== TRADE PANEL (Quotex-style v23) ===== */
+/* ===== TRADE PANEL (Compact v23) ===== */
 .qx-trade-panel {
   background: #141a2a;
-  padding: 8px 12px 6px;
+  padding: 6px 10px 4px;
   border-top: 1px solid #1a2333;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -475,8 +475,8 @@ input, select {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 4px;
-  margin-bottom: 2px;
+  padding-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .qx-trade-symbol {
@@ -575,7 +575,7 @@ input, select {
 .qx-field-value {
   display: flex;
   align-items: center;
-  height: 38px;
+  height: 34px;
   background: #0e1320;
   border: 1px solid #2a3648;
   border-radius: 8px;
@@ -676,10 +676,10 @@ input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 10px;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.3px;
   transition: transform 0.1s;
