@@ -787,7 +787,11 @@ function convertTimeframe(tf) {
 
 // ===== Binance থেকে ক্যান্ডেল লোড =====
 async function loadCandles() {
+  console.log("[Candles] loadCandles() SHURU — asset:", selectedAsset, "timeframe:", selectedTimeframe);
   try {
+    console.log("[Candles] loadCandles() try block e dhuklo");
+    var isRealSymbol = /^(BTC|ETH|BNB|ADA|SOL|XRP|DOGE|MATIC|LTC|DOT)/i.test(selectedAsset);
+    console.log("[Candles] isRealSymbol check:", isRealSymbol);
     // FIX 1: Asset check
     if (!selectedAsset || typeof selectedAsset !== "string" || selectedAsset.length < 3) {
       console.warn("[Candles] Asset khali, BTCUSDT use kori");
@@ -2513,34 +2517,41 @@ function listenAdminCandles(marketId) {
 async function loadUserCandlesSmart() {
   const marketId = window.selectedMarketId;
 
+  console.log("[Candles] loadUserCandlesSmart() shuru, marketId:", marketId);
+
   if (marketId) {
     console.log("[Candles] Loading admin candles for market: " + marketId);
 
-    const adminCandles = await loadAdminCandlesFromFirestore(marketId);
+    try {
+      const adminCandles = await loadAdminCandlesFromFirestore(marketId);
 
-    if (adminCandles.length > 0) {
-      // Render admin candles
-      renderAdminCandlesOnChart(adminCandles);
-
-      // Start real-time listener
-      listenAdminCandles(marketId);
-      console.log("[Candles] Using ADMIN candles (" + adminCandles.length + ")");
-      return;
-    } else {
-      console.log("[Candles] No admin candles - falling back to Binance");
+      if (adminCandles.length > 0) {
+        // Admin candle ache — seta use kori
+        renderAdminCandlesOnChart(adminCandles);
+        listenAdminCandles(marketId);
+        console.log("[Candles] Using ADMIN candles (" + adminCandles.length + ")");
+        return;
+      } else {
+        console.log("[Candles] No admin candles - falling back to Binance");
+      }
+    } catch (err) {
+      console.error("[Candles] Admin load error:", err.message);
     }
   } else {
     console.log("[Candles] No marketId - using Binance fallback");
   }
 
-  // Fallback: Binance API
+  // ===== FIX: Always fallback to Binance =====
   if (window.userCandlesUnsub) {
     window.userCandlesUnsub();
     window.userCandlesUnsub = null;
   }
 
   if (typeof loadCandles === "function") {
+    console.log("[Candles] Calling loadCandles() (Binance fallback)");
     await loadCandles();
+  } else {
+    console.error("[Candles] loadCandles function nei!");
   }
 }
 
