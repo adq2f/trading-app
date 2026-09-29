@@ -5747,3 +5747,62 @@ console.log('===== MSG 21 NUL-SAFE: AddEventListener wrapper loaded =====');
 })();
 
 console.log('===== MSG 22: Bonus Banner + Chart Redesign loaded =====');
+/* ============================================================
+   MSG 23: TRADE PANEL CONTROLLERS
+   ============================================================ */
+
+// ===== 1. Pending Trade Toggle =====
+(function initPendingToggle() {
+  if (window.__pendingToggleInit) return;
+  window.__pendingToggleInit = true;
+
+  var toggle = document.getElementById('pending-toggle');
+  if (!toggle) {
+    console.log('[MSG23] Pending toggle not found');
+    return;
+  }
+
+  toggle.addEventListener('click', function () {
+    var isActive = toggle.classList.toggle('active');
+    window.pendingTradeEnabled = isActive;
+    console.log('[MSG23] Pending trade:', isActive ? 'ON' : 'OFF');
+  });
+
+  // Default ON
+  window.pendingTradeEnabled = true;
+  console.log('[MSG23] Pending trade toggle bound');
+})();
+
+// ===== 2. Trade Symbol Select Sync =====
+(function initTradeSymbolSync() {
+  if (window.__tradeSymbolSync) return;
+  window.__tradeSymbolSync = true;
+
+  var mainSelect = document.getElementById('asset-select');
+  var tradeSelect = document.getElementById('trade-symbol-select');
+
+  if (!mainSelect || !tradeSelect) {
+    console.log('[MSG23] Symbol selects not found');
+    return;
+  }
+
+  // Sync from trade select to main select
+  tradeSelect.addEventListener('change', function () {
+    mainSelect.value = tradeSelect.value;
+    // Trigger main select change
+    var event = new Event('change', { bubbles: true });
+    mainSelect.dispatchEvent(event);
+    console.log('[MSG23] Symbol synced from trade panel:', tradeSelect.value);
+  });
+
+  // Sync from main select to trade select
+  mainSelect.addEventListener('change', function () {
+    if (tradeSelect.value !== mainSelect.value) {
+      tradeSelect.value = mainSelect.value;
+    }
+  });
+
+  console.log('[MSG23] Symbol selects synced');
+})();
+
+console.log('===== MSG 23: Top Bar + Trade Panel Redesign loaded =====');
