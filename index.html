@@ -267,18 +267,45 @@
     </main>
 
   </div>
-<!-- ========== BALANCE POPUP ========== -->
+<!-- ========== BALANCE POPUP (Quotex-Style) ========== -->
   <div id="balance-popup" class="popup hidden">
     <div class="popup-overlay" id="balance-popup-overlay"></div>
     <div class="popup-content small">
       <div class="popup-header">
-        <h3>Balance</h3>
+        <h3>Account</h3>
         <button id="balance-popup-close" class="popup-close">✕</button>
       </div>
-      <div class="balance-popup-display">
-        <div class="balance-popup-label">Available Balance</div>
-        <div class="balance-popup-amount">$<span id="balance-popup-value">0.00</span></div>
+
+      <!-- Demo Account Option -->
+      <div class="qx-acc-option active" data-acc-type="demo">
+        <div class="qx-acc-radio"></div>
+        <div class="qx-acc-info">
+          <div class="qx-acc-title">Demo Account</div>
+          <div class="qx-acc-balance">$<span id="demo-balance-display">0.00</span></div>
+        </div>
+        <button class="qx-acc-edit" data-edit="demo" type="button">✎</button>
       </div>
+
+      <!-- Live Account Option -->
+      <div class="qx-acc-option" data-acc-type="real">
+        <div class="qx-acc-radio"></div>
+        <div class="qx-acc-info">
+          <div class="qx-acc-title">Live Account</div>
+          <div class="qx-acc-balance">$<span id="real-balance-display">0.00</span></div>
+        </div>
+        <button class="qx-acc-edit" data-edit="real" type="button">✎</button>
+      </div>
+
+      <!-- Edit Balance Input (hidden by default) -->
+      <div id="qx-balance-edit-box" class="qx-balance-edit-box hidden">
+        <label class="qx-edit-label">Set Balance ($)</label>
+        <input type="number" id="qx-balance-edit-input" class="qx-edit-input" placeholder="Enter amount" min="0" step="1">
+        <div class="qx-edit-actions">
+          <button id="qx-balance-edit-cancel" class="qx-edit-cancel" type="button">Cancel</button>
+          <button id="qx-balance-edit-save" class="qx-edit-save" type="button">Save</button>
+        </div>
+      </div>
+
       <button id="balance-popup-deposit" class="primary-btn" style="margin-top:14px;">Deposit</button>
       <button id="balance-popup-withdraw" class="secondary-btn">Withdraw</button>
     </div>
