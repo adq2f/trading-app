@@ -3,6 +3,48 @@
 // Part 1: Imports + Firebase + DOM + Globals + Sounds
 // ============================================
 
+// ===== GLOBAL NULL-GUARD (must run FIRST) =====
+(function() {
+  if (window.__globalNullSafe) return;
+  window.__globalNullSafe = true;
+
+  var origGetById = document.getElementById.bind(document);
+
+  document.getElementById = function(id) {
+    var el = origGetById(id);
+    if (!el) {
+      console.warn('[NULL-GUARD] Missing:', id);
+      return {
+        addEventListener: function() {},
+        removeEventListener: function() {},
+        classList: {
+          add: function() {}, remove: function() {},
+          toggle: function() {}, contains: function() { return false; }
+        },
+        style: {},
+        dataset: {},
+        setAttribute: function() {},
+        getAttribute: function() { return null; },
+        appendChild: function() {},
+        removeChild: function() {},
+        querySelector: function() { return null; },
+        querySelectorAll: function() { return []; },
+        innerHTML: '',
+        textContent: '',
+        value: '',
+        onclick: null,
+        remove: function() {},
+        focus: function() {},
+        blur: function() {},
+        _isNullGuard: true
+      };
+    }
+    return el;
+  };
+
+  console.log('[NULL-GUARD] Active - missing elements will be silently skipped');
+})();
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
   getAuth, 
