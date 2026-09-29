@@ -2885,3 +2885,65 @@ window.renderEntryLine = renderEntryLine;
 window.renderAllTradeMarkers = renderAllTradeMarkers;
 
 console.log("===== MSG 7 CLEAN LOADED =====");
+// ============================================
+// MSG 7 TEST: Tick Mark Debug
+// ============================================
+
+console.log("===== MSG 7 TEST STARTING =====");
+
+// ===== Test 1: Function ache ki na =====
+setTimeout(function() {
+  console.log("[TEST-1] renderTickMark:", typeof window.renderTickMark);
+  console.log("[TEST-2] renderAllTradeMarkers:", typeof window.renderAllTradeMarkers);
+  console.log("[TEST-3] chart:", typeof window.chart, window.chart ? "READY" : "NULL");
+  console.log("[TEST-4] candleSeries:", typeof window.candleSeries, window.candleSeries ? "READY" : "NULL");
+  console.log("[TEST-5] activeTradesLocal length:", activeTradesLocal ? activeTradesLocal.length : "undefined");
+}, 3000);
+
+// ===== Test 2: Manual Tick Mark Render =====
+setTimeout(function() {
+  console.log("[TEST-6] Manual render attempt...");
+  if (typeof window.renderTickMark === "function") {
+    try {
+      var testTime = new Date().toISOString();
+      window.renderTickMark("call", 85000, testTime);
+      console.log("[TEST-7] Manual renderTickMark called SUCCESS");
+    } catch(e) {
+      console.error("[TEST-8] Manual renderTickMark FAILED:", e.message);
+    }
+  } else {
+    console.error("[TEST-9] renderTickMark NOT A FUNCTION");
+  }
+}, 5000);
+
+// ===== Test 3: Chart Wrapper Check =====
+setTimeout(function() {
+  var chartWrap = document.getElementById("chart-wrapper");
+  console.log("[TEST-10] chart-wrapper:", chartWrap ? "FOUND" : "NOT FOUND");
+  if (chartWrap) {
+    console.log("[TEST-11] chart-wrapper width:", chartWrap.clientWidth);
+    console.log("[TEST-12] chart-wrapper height:", chartWrap.clientHeight);
+  }
+}, 6000);
+
+// ===== Test 4: Manually Trigger After 8s =====
+setTimeout(function() {
+  console.log("[TEST-13] Forcing render from activeTradesLocal...");
+  if (typeof activeTradesLocal !== "undefined" && activeTradesLocal.length > 0) {
+    activeTradesLocal.forEach(function(trade) {
+      console.log("[TEST-14] Trade found:", trade.type, trade.entryPrice);
+      if (typeof window.renderAllTradeMarkers === "function") {
+        try {
+          window.renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
+          console.log("[TEST-15] Manual render SUCCESS for", trade.type);
+        } catch(e) {
+          console.error("[TEST-16] Manual render FAILED:", e.message);
+        }
+      }
+    });
+  } else {
+    console.warn("[TEST-17] No active trades — trade place korun");
+  }
+}, 8000);
+
+console.log("===== MSG 7 TEST LOADED =====");
