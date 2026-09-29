@@ -1812,3 +1812,28 @@ input, select {
 .qx-bonus-banner.hidden {
   display: none !important;
 }
+/* ===== TIME LABELS ===== */
+.qx-time-labels {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7a90;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+  font-family: 'Inter', sans-serif;
+}
+
+.qx-time-label {
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.qx-time-label.active {
+  color: #58a6ff;
+  font-weight: 800;
+}
