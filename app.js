@@ -2591,3 +2591,178 @@ setTimeout(function() {
 }, 3000);
 
 console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
+// ============================================
+// BALANCE POPUP — QUOTEX STYLE (Demo/Live Select + Edit)
+// ============================================
+
+(function initQuotexBalancePopup() {
+  console.log("[QX-BAL] Initializing Quotex-style balance popup...");
+
+  function refreshBalanceDisplays() {
+    try {
+      var demoDisplay = document.getElementById("demo-balance-display");
+      var realDisplay = document.getElementById("real-balance-display");
+      if (!currentUser) return;
+
+      getDoc(doc(db, "users", currentUser.uid)).then(function(userDoc) {
+        if (userDoc.exists()) {
+          var data = userDoc.data();
+          var demoBal = data.demoBalance ?? data.balance ?? 1000;
+          var realBal = data.realBalance ?? 0;
+          if (demoDisplay) demoDisplay.textContent = Number(demoBal).toFixed(2);
+          if (realDisplay) realDisplay.textContent = Number(realBal).toFixed(2);
+        }
+      });
+    } catch(e) { console.error("[QX-BAL] refresh error:", e); }
+  }
+
+  // Active account option update
+  function updateActiveOption() {
+    document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
+      var type = opt.dataset.accType;
+      opt.classList.toggle("active", type === accountType);
+    });
+  }
+
+  // Click on Demo/Live option = switch account
+  document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
+    opt.addEventListener("click", function(e) {
+      if (e.target.closest(".qx-acc-edit")) return; // Edit button click ignore
+      var type = opt.dataset.accType;
+      console.log("[QX-BAL] Switching to:", type);
+      if (typeof switchAccount === "function") {
+        switchAccount(type);
+      }
+      updateActiveOption();
+    });
+  });
+
+  // Edit button click
+  document.querySelectorAll(".qx-acc-edit").forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var type = btn.dataset.edit;
+      console.log("[QX-BAL] Edit clicked for:", type);
+
+      var editBox = document.getElementById("qx-balance-edit-box");
+      var editInput = document.getElementById("qx-balance-edit-input");
+      if (!editBox || !editInput) return;
+
+      editBox.classList.remove("hidden");
+      editBox.dataset.editType = type;
+
+      // Current value load
+      if (currentUser) {
+        getDoc(doc(db, "users", currentUser.uid)).then(function(userDoc) {
+          if (userDoc.exists()) {
+            var data = userDoc.data();
+            var currentVal = type === "demo"
+              ? (data.demoBalance ?? data.balance ?? 1000)
+              : (data.realBalance ?? 0);
+            editInput.value = Number(currentVal).toFixed(2);
+            editInput.focus();
+          }
+        });
+      }
+    });
+  });
+
+  // Cancel edit
+  var cancelBtn = document.getElementById("qx-balance-edit-cancel");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", function() {
+      var editBox = document.getElementById("qx-balance-edit-box");
+      if (editBox) editBox.classList.add("hidden");
+    });
+  }
+
+  // Save edit
+  var saveBtn = document.getElementById("qx-balance-edit-save");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async function() {
+      var editBox = document.getElementById("qx-balance-edit-box");
+      var editInput = document.getElementById("qx-balance-edit-input");
+      if (!editBox || !editInput || !currentUser) return;
+
+      var type = editBox.dataset.editType;
+      var newVal = parseFloat(editInput.value);
+      if (isNaN(newVal) || newVal < 0) {
+        alert("Please enter a valid amount");
+        return;
+      }
+
+      try {
+        var field = type === "demo" ? "demoBalance" : "realBalance";
+        var updateData = {};
+        updateData[field] = newVal;
+        // balance field always mirrors active account
+        if (type === accountType) {
+          updateData.balance = newVal;
+          userBalance = newVal;
+          window.userBalance = newVal;
+          if (typeof safeSetTextById === "function") {
+            safeSetTextById("balance", userBalance.toFixed(2));
+          }
+        }
+        await updateDoc(doc(db, "users", currentUser.uid), updateData);
+        console.log("[QX-BAL] Balance updated:", type, "=", newVal);
+        refreshBalanceDisplays();
+        editBox.classList.add("hidden");
+      } catch(err) {
+        console.error("[QX-BAL] Save error:", err);
+        alert("Failed to save: " + err.message);
+      }
+    });
+  }
+
+  // Close button
+  var closeBtn = document.getElementById("balance-popup-close");
+  var popup = document.getElementById("balance-popup");
+  if (closeBtn && popup) {
+    closeBtn.addEventListener("click", function() {
+      popup.classList.add("hidden");
+    });
+  }
+
+  // Overlay click
+  var overlay = document.getElementById("balance-popup-overlay");
+  if (overlay && popup) {
+    overlay.addEventListener("click", function() {
+      popup.classList.add("hidden");
+    });
+  }
+
+  // Deposit / Withdraw buttons inside popup
+  var depBtn = document.getElementById("balance-popup-deposit");
+  var wdBtn = document.getElementById("balance-popup-withdraw");
+  if (depBtn && popup) {
+    depBtn.addEventListener("click", function() {
+      popup.classList.add("hidden");
+      var dp = document.getElementById("deposit-popup");
+      if (dp) dp.classList.remove("hidden");
+    });
+  }
+  if (wdBtn && popup) {
+    wdBtn.addEventListener("click", function() {
+      popup.classList.add("hidden");
+      var wp = document.getElementById("withdraw-popup");
+      if (wp) wp.classList.remove("hidden");
+    });
+  }
+
+  // Refresh display whenever popup opens
+  var chip = document.getElementById("balance-chip");
+  if (chip) {
+    chip.addEventListener("click", function() {
+      setTimeout(function() {
+        refreshBalanceDisplays();
+        updateActiveOption();
+        var editBox = document.getElementById("qx-balance-edit-box");
+        if (editBox) editBox.classList.add("hidden");
+      }, 100);
+    });
+  }
+
+  console.log("[QX-BAL] Quotex-style balance popup ready");
+})();
