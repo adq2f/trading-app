@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=21">
+  <link rel="stylesheet" href="style.css?v=22">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
@@ -60,6 +60,14 @@
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
 
+    <!-- ===== BONUS BANNER (MSG 22) ===== -->
+    <div class="qx-bonus-banner" id="bonus-banner">
+      <span class="qx-bonus-icon">🚀</span>
+      <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
+      <span class="qx-bonus-tag">50%</span>
+      <button class="qx-bonus-close" id="bonus-close">✕</button>
+    </div>
+
     <!-- ===== MAIN CHART AREA ===== -->
     <main class="qx-main">
 
@@ -81,7 +89,7 @@
           </div>
         </div>
 
-        <!-- Chart Wrapper (Quotex-style, full height) -->
+        <!-- Chart Wrapper -->
         <div class="qx-chart-wrapper" id="chart-wrapper">
           <div id="chart"></div>
           <canvas id="drawing-canvas"></canvas>
@@ -103,21 +111,21 @@
             <span class="label-price">EXIT: --</span>
           </div>
 
-          <!-- Timeframe badges on chart (bottom) -->
+          <!-- Chart menu (top-left) -->
+          <button class="qx-chart-menu" id="chart-menu-btn">⋯</button>
+
+          <!-- Timeframe badges (bottom-left) -->
           <div class="qx-chart-timeframe">
             <button class="qx-tf-btn active" data-tf="1m">1m</button>
             <button class="qx-tf-btn" data-tf="5m">5m</button>
             <button class="qx-tf-btn" data-tf="15m">15m</button>
             <button class="qx-tf-btn" data-tf="1h">1h</button>
           </div>
-
-          <!-- Chart control (top-right of chart) -->
-          <button class="qx-chart-menu" id="chart-menu-btn">⋯</button>
         </div>
 
       </section>
 
-      <!-- ===== TRADE PANEL (Quotex-style) ===== -->
+      <!-- ===== TRADE PANEL ===== -->
       <section class="qx-trade-panel">
 
         <!-- Timer + Investment Row -->
@@ -125,7 +133,7 @@
           <div class="qx-field-group">
             <label class="qx-field-label">Timer</label>
             <div class="qx-field-value qx-timer-value">
-              <span id="big-timer">00:01</span>
+              <span id="big-timer">01:00</span>
             </div>
           </div>
 
@@ -160,12 +168,11 @@
           </button>
         </div>
 
-        <!-- Trade Message -->
         <p id="trade-message"></p>
 
       </section>
 
-      <!-- ===== BOTTOM NAV (Quotex-style) ===== -->
+      <!-- ===== BOTTOM NAV ===== -->
       <nav class="qx-bottom-nav">
         <button class="qx-nav-btn" data-nav="history" type="button">
           <span class="qx-nav-icon">📷</span>
@@ -197,13 +204,11 @@
   <!-- ========== ACCOUNT POPUP ========== -->
   <div id="account-popup" class="popup hidden">
     <div class="popup-overlay" id="account-popup-overlay"></div>
-
     <div class="popup-content small">
       <div class="popup-header">
         <h3>Account</h3>
         <button id="account-popup-close" class="popup-close">✕</button>
       </div>
-
       <button class="account-option active" data-acc="demo">
         <span class="acc-icon">🎮</span>
         <div class="acc-info">
@@ -212,7 +217,6 @@
         </div>
         <span class="acc-check">✓</span>
       </button>
-
       <button class="account-option" data-acc="real">
         <span class="acc-icon">💰</span>
         <div class="acc-info">
@@ -227,17 +231,12 @@
   <!-- ========== DEPOSIT POPUP ========== -->
   <div id="deposit-popup" class="popup hidden">
     <div class="popup-overlay" id="deposit-popup-overlay"></div>
-
     <div class="popup-content">
       <div class="popup-header">
         <h3>Deposit</h3>
         <button id="deposit-popup-close" class="popup-close">✕</button>
       </div>
-
-      <p class="popup-note">
-        Send payment to any method below. Admin will approve.
-      </p>
-
+      <p class="popup-note">Send payment to any method below. Admin will approve.</p>
       <div class="payment-info">
         <div class="payment-row">
           <span class="payment-label">Bkash</span>
@@ -248,17 +247,14 @@
           <span class="payment-value">01800-000000</span>
         </div>
       </div>
-
       <div class="input-group">
         <label>Amount ($)</label>
         <input type="number" id="deposit-amount" placeholder="10" min="1">
       </div>
-
       <div class="input-group">
         <label>Transaction ID</label>
         <input type="text" id="deposit-txid" placeholder="TrxID">
       </div>
-
       <button id="deposit-submit" class="primary-btn">Submit Request</button>
       <p id="deposit-message"></p>
     </div>
@@ -267,22 +263,16 @@
   <!-- ========== WITHDRAW POPUP ========== -->
   <div id="withdraw-popup" class="popup hidden">
     <div class="popup-overlay" id="withdraw-popup-overlay"></div>
-
     <div class="popup-content">
       <div class="popup-header">
         <h3>Withdraw</h3>
         <button id="withdraw-popup-close" class="popup-close">✕</button>
       </div>
-
-      <p class="popup-note">
-        Send withdraw request. Admin will process in 24h.
-      </p>
-
+      <p class="popup-note">Send withdraw request. Admin will process in 24h.</p>
       <div class="input-group">
         <label>Amount ($)</label>
         <input type="number" id="withdraw-amount" placeholder="10" min="1">
       </div>
-
       <div class="input-group">
         <label>Method</label>
         <select id="withdraw-method">
@@ -291,12 +281,10 @@
           <option value="rocket">Rocket</option>
         </select>
       </div>
-
       <div class="input-group">
         <label>Account Number</label>
         <input type="text" id="withdraw-number" placeholder="01XXXXXXXXX">
       </div>
-
       <button id="withdraw-submit" class="primary-btn">Submit Request</button>
       <p id="withdraw-message"></p>
     </div>
@@ -305,17 +293,14 @@
   <!-- ========== CHAT POPUP ========== -->
   <div id="chat-popup" class="popup hidden">
     <div class="popup-overlay" id="chat-popup-overlay"></div>
-
     <div class="popup-content">
       <div class="popup-header">
         <h3>Support Chat</h3>
         <button id="chat-popup-close" class="popup-close">✕</button>
       </div>
-
       <div class="user-chat-messages" id="user-chat-messages">
         <p class="empty-text">Send a message to admin...</p>
       </div>
-
       <div class="user-chat-input-row">
         <input id="user-chat-input" class="user-chat-input" type="text" placeholder="Type a message...">
         <button id="user-chat-send" class="user-chat-send-btn" type="button">Send</button>
@@ -326,27 +311,22 @@
   <!-- ========== TOURNAMENT POPUP ========== -->
   <div id="tournament-popup" class="popup hidden">
     <div class="popup-overlay" id="tournament-popup-overlay"></div>
-
     <div class="popup-content" style="max-width: 440px;">
       <div class="popup-header">
         <h3>Tournaments</h3>
         <button id="tournament-popup-close" class="popup-close">✕</button>
       </div>
-
       <div class="tournament-tabs">
         <button class="tour-tab-btn active" data-tour-tab="available" type="button">Available</button>
         <button class="tour-tab-btn" data-tour-tab="my" type="button">My</button>
         <button class="tour-tab-btn" data-tour-tab="finished" type="button">Finished</button>
       </div>
-
       <div id="tour-list-available" class="tour-list">
         <p class="empty-text">Loading tournaments...</p>
       </div>
-
       <div id="tour-list-my" class="tour-list hidden">
         <p class="empty-text">You haven't joined any tournament</p>
       </div>
-
       <div id="tour-list-finished" class="tour-list hidden">
         <p class="empty-text">No finished tournaments</p>
       </div>
@@ -356,13 +336,11 @@
   <!-- ========== TOURNAMENT DETAIL POPUP ========== -->
   <div id="tournament-detail-popup" class="popup hidden">
     <div class="popup-overlay" id="tournament-detail-overlay"></div>
-
     <div class="popup-content" style="max-width: 440px;">
       <div class="popup-header">
         <h3 id="tour-detail-title">Tournament</h3>
         <button id="tournament-detail-close" class="popup-close">✕</button>
       </div>
-
       <div id="tour-detail-body"></div>
     </div>
   </div>
@@ -370,30 +348,25 @@
   <!-- ========== REFERRAL POPUP ========== -->
   <div id="referral-popup" class="popup hidden">
     <div class="popup-overlay" id="referral-popup-overlay"></div>
-
     <div class="popup-content ref-popup-content">
       <div class="popup-header">
         <h3>Refer & Earn</h3>
         <button id="referral-popup-close" class="popup-close">✕</button>
       </div>
-
       <div class="ref-hero">
         <div class="ref-hero-icon">🎁</div>
         <div class="ref-hero-title">Invite Friends, Earn Rewards</div>
         <div class="ref-hero-subtitle">Get $5 for every friend who joins</div>
       </div>
-
       <div class="ref-code-box">
         <div class="ref-code-label">Your Referral Code</div>
         <div class="ref-code-value" id="ref-code-value">------</div>
         <button class="ref-copy-btn" id="ref-copy-code" type="button">📋 Copy Code</button>
       </div>
-
       <div class="ref-link-box">
         <input type="text" id="ref-link-value" value="Loading..." readonly>
         <button class="ref-link-copy" id="ref-copy-link" type="button">Copy</button>
       </div>
-
       <div class="ref-stats">
         <div class="ref-stat">
           <div class="ref-stat-label">Total Invited</div>
@@ -404,7 +377,6 @@
           <div class="ref-stat-value blue" id="ref-earned-value">$0.00</div>
         </div>
       </div>
-
       <div class="ref-share-row">
         <button class="ref-share-btn ref-share-whatsapp" id="ref-share-whatsapp" type="button">
           <span class="icon">💬</span>
@@ -419,7 +391,6 @@
           <span>Share</span>
         </button>
       </div>
-
       <div class="ref-note">
         <strong>How it works:</strong><br>
         1. Share your referral link with friends<br>
@@ -430,73 +401,61 @@
     </div>
   </div>
 
-  <!-- ========== MORE MENU (Drawer) ========== -->
+  <!-- ========== MORE MENU ========== -->
   <div id="more-menu" class="more-menu hidden">
     <div class="more-menu-overlay" id="more-menu-overlay"></div>
-
     <div class="more-menu-panel">
       <div class="more-menu-header">
         <h3>More</h3>
         <button id="more-menu-close" class="more-menu-close">✕</button>
       </div>
-
       <div class="more-menu-list">
         <button class="more-menu-item" data-menu="market">
           <span class="menu-icon">📊</span>
           <span class="menu-text">Market</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="analytics">
           <span class="menu-icon">📈</span>
           <span class="menu-text">Analytics</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="signals">
           <span class="menu-icon">📡</span>
           <span class="menu-text">Signals</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="deposit">
           <span class="menu-icon">💵</span>
           <span class="menu-text">Deposit</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="withdraw">
           <span class="menu-icon">💸</span>
           <span class="menu-text">Withdrawal</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="trades">
           <span class="menu-icon">📋</span>
           <span class="menu-text">Trades</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="referral">
           <span class="menu-icon">🎁</span>
           <span class="menu-text">Refer & Earn</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item" data-menu="chat">
           <span class="menu-icon">💬</span>
           <span class="menu-text">Support</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <div class="more-menu-divider"></div>
-
         <button class="more-menu-item" data-menu="settings">
           <span class="menu-icon">⚙</span>
           <span class="menu-text">Settings</span>
           <span class="menu-arrow">›</span>
         </button>
-
         <button class="more-menu-item logout" data-menu="logout">
           <span class="menu-icon">⏻</span>
           <span class="menu-text">Logout</span>
@@ -505,7 +464,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=21"></script>
+  <script type="module" src="app.js?v=22"></script>
 
 </body>
 </html>
