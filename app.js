@@ -385,15 +385,51 @@ document.querySelectorAll(".time-btn").forEach(btn => {
   });
 });
 
-document.querySelectorAll(".qx-tf-btn").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    document.querySelectorAll(".qx-tf-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedTimeframe = btn.dataset.tf;
-    await loadCandles();
-    if (currentUser) startLivePrice();
+// ===== TIMEFRAME DROPDOWN (Quotex-style) =====
+(function initTfDropdown() {
+  var menuBtn = document.getElementById("chart-menu-btn");
+  var dropdown = document.getElementById("tf-dropdown");
+  var activeLabel = document.getElementById("qx-tf-active");
+  if (!dropdown) return;
+
+  // Toggle dropdown
+  if (menuBtn) {
+    menuBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle("active");
+    });
+  }
+
+  // Close on outside click
+  document.addEventListener("click", function(e) {
+    if (!dropdown.contains(e.target) && e.target !== menuBtn) {
+      dropdown.classList.remove("active");
+    }
   });
-});
+
+  // Timeframe item click
+  dropdown.querySelectorAll(".qx-tf-item").forEach(function(btn) {
+    btn.addEventListener("click", async function() {
+      dropdown.querySelectorAll(".qx-tf-item").forEach(function(b) {
+        b.classList.remove("active");
+      });
+      btn.classList.add("active");
+      var tf = btn.dataset.tf;
+      selectedTimeframe = tf;
+      if (activeLabel) activeLabel.textContent = tf;
+      if (typeof loadCandles === "function") {
+        await loadCandles();
+      }
+      if (currentUser && typeof startLivePrice === "function") {
+        startLivePrice();
+      }
+      dropdown.classList.remove("active");
+      console.log("[TF] Changed to:", tf);
+    });
+  });
+
+  console.log("[TF] Dropdown initialized");
+})();
 
 if (assetSelect) {
   assetSelect.addEventListener("change", async () => {
@@ -1989,3 +2025,237 @@ setInterval(function() {
     }).join("");
   } catch(e) {}
 }, 1000);
+// ============================================
+// MSG 4: TRADE LIST + TOAST + TRADES TAB
+// ============================================
+
+window.__toastTimeout = null;
+
+function showToast(text, type) {
+  try {
+    var existing = document.querySelector(".qx-toast");
+    if (existing) existing.remove();
+    if (window.__toastTimeout) clearTimeout(window.__toastTimeout);
+
+    var toast = document.createElement("div");
+    toast.className = "qx-toast " + (type || "opened");
+    toast.textContent = text;
+    document.body.appendChild(toast);
+
+    setTimeout(function() { toast.classList.add("show"); }, 50);
+
+    window.__toastTimeout = setTimeout(function() {
+      toast.classList.remove("show");
+      setTimeout(function() { if (toast.parentNode) toast.remove(); }, 400);
+    }, 3000);
+  } catch(e) { console.error("[Toast] Error:", e); }
+}
+
+function formatDateBadge(dateStr) {
+  try {
+    var d = dateStr ? new Date(dateStr) : new Date();
+    var months = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE",
+      "JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+    return d.getDate() + " " + months[d.getMonth()];
+  } catch(e) { return "TODAY"; }
+}
+
+function renderTradeCard(trade, isHistory) {
+  var card = document.createElement("div");
+  card.className = "qx-trade-card";
+
+  var symbol = trade.asset || "BTC/USDT";
+  var type = (trade.type || "").toUpperCase();
+  var entryPrice = Number(trade.entryPrice || 0).toFixed(2);
+
+  var timeStr = "--:--";
+  try {
+    var t = new Date(trade.createdAt || trade.entryTime);
+    timeStr = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+  } catch(e) {}
+
+  var rightHtml = "";
+  if (isHistory) {
+    card.classList.add(trade.result);
+    var pl = trade.result === "win"
+      ? "+$" + Number(trade.profit || 0).toFixed(2)
+      : "-$" + Number(trade.amount || 0).toFixed(2);
+    rightHtml = '<div class="qx-tc-pl ' + trade.result + '">' + pl + '</div>' +
+      '<div class="qx-tc-time">' + timeStr + '</div>';
+  } else {
+    var remaining = Math.max(0, Math.ceil((trade.expiresAt - Date.now()) / 1000));
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    var timerStr = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    rightHtml = '<div class="qx-tc-timer" data-expires="' + trade.expiresAt + '">' + timerStr + '</div>' +
+      '<div class="qx-tc-amount">$' + Number(trade.amount || 0).toFixed(2) + '</div>';
+  }
+
+  card.innerHTML =
+    '<div class="qx-tc-left">' +
+      '<div class="qx-tc-symbol">' + symbol +
+        '<span class="qx-tc-type-badge ' + trade.type + '">' + type + '</span>' +
+      '</div>' +
+      '<div class="qx-tc-time">Entry: $' + entryPrice + '</div>' +
+    '</div>' +
+    '<div class="qx-tc-right">' + rightHtml + '</div>';
+
+  return card;
+}
+
+setInterval(function() {
+  try {
+    var timers = document.querySelectorAll(".qx-tc-timer[data-expires]");
+    timers.forEach(function(el) {
+      var expires = parseInt(el.dataset.expires);
+      var remaining = Math.max(0, Math.ceil((expires - Date.now()) / 1000));
+      var m = Math.floor(remaining / 60);
+      var s = remaining % 60;
+      el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    });
+  } catch(e) {}
+}, 500);
+
+(function initTradesTabs() {
+  var tabs = document.querySelectorAll(".qx-trades-tab");
+  var activePane = document.getElementById("qx-trades-active-pane");
+  var historyPane = document.getElementById("qx-trades-history-pane");
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      tabs.forEach(function(t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      var which = tab.dataset.tradesTab;
+      if (activePane) activePane.classList.toggle("active", which === "active");
+      if (historyPane) historyPane.classList.toggle("active", which === "history");
+    });
+  });
+
+  console.log("[MSG4] Trades tabs initialized");
+})();
+
+function updateDateBadge() {
+  try {
+    var today = formatDateBadge(new Date().toISOString());
+
+    var dateLabel = document.getElementById("qx-date-label");
+    var dateCount = document.getElementById("qx-date-count");
+    if (dateLabel) dateLabel.textContent = today;
+    if (dateCount) dateCount.textContent = activeTradesLocal.length;
+
+    var hDateLabel = document.getElementById("qx-history-date-label");
+    var hDateCount = document.getElementById("qx-history-date-count");
+    if (hDateLabel) hDateLabel.textContent = today;
+
+    var badge = document.getElementById("trades-count-badge");
+    if (badge) badge.textContent = activeTradesLocal.length;
+  } catch(e) {}
+}
+setInterval(updateDateBadge, 1500);
+
+// ===== OVERRIDE loadActiveTrades (Quotex card render) =====
+(function patchLoadActiveTrades() {
+  if (typeof window.loadActiveTrades !== "function") return;
+
+  var _origLoadActiveTrades = window.loadActiveTrades;
+
+  window.loadActiveTrades = function() {
+    if (!currentUser) return;
+    var q = query(collection(db, "trades"),
+      where("userId", "==", currentUser.uid),
+      where("status", "==", "pending"));
+    if (activeTradesUnsub) { try { activeTradesUnsub(); } catch(e) {} }
+    activeTradesUnsub = onSnapshot(q, function(snapshot) {
+      activeTradesLocal = [];
+      if (activeTradesList) activeTradesList.innerHTML = "";
+      if (snapshot.empty) {
+        if (activeTradesList) activeTradesList.innerHTML = '<p class="empty-text">No active trades</p>';
+        if (activeCount) activeCount.textContent = "0";
+        if (bigTimer) bigTimer.classList.add("hidden");
+        updateTradeMarkers();
+        return;
+      }
+      snapshot.forEach(function(docSnap) {
+        var trade = Object.assign({ id: docSnap.id }, docSnap.data());
+        activeTradesLocal.push(trade);
+        if (activeTradesList) activeTradesList.appendChild(renderTradeCard(trade, false));
+      });
+      if (activeCount) activeCount.textContent = activeTradesLocal.length;
+      updateBigTimer();
+      updateTradeMarkers();
+    });
+  };
+  console.log("[MSG4] loadActiveTrades patched");
+})();
+
+// ===== OVERRIDE loadHistory (Quotex card render) =====
+(function patchLoadHistory() {
+  if (typeof window.loadHistory !== "function") return;
+  window.loadHistory = function() {
+    if (!currentUser) return;
+    var q = query(collection(db, "trades"),
+      where("userId", "==", currentUser.uid),
+      where("status", "==", "completed"));
+    if (historyUnsub) { try { historyUnsub(); } catch(e) {} }
+    historyUnsub = onSnapshot(q, function(snapshot) {
+      if (historyList) historyList.innerHTML = "";
+      if (snapshot.empty) {
+        if (historyList) historyList.innerHTML = '<p class="empty-text">No trade history yet</p>';
+        return;
+      }
+      var trades = [];
+      snapshot.forEach(function(docSnap) {
+        trades.push(Object.assign({ id: docSnap.id }, docSnap.data()));
+      });
+      trades.sort(function(a, b) {
+        return new Date(b.completedAt || 0) - new Date(a.completedAt || 0);
+      });
+      var hCount = document.getElementById("qx-history-date-count");
+      if (hCount) hCount.textContent = trades.length;
+      trades.slice(0, 30).forEach(function(trade) {
+        if (historyList) historyList.appendChild(renderTradeCard(trade, true));
+      });
+    });
+  };
+  console.log("[MSG4] loadHistory patched");
+})();
+
+// ===== OVERRIDE placeTrade → Toast =====
+(function patchPlaceTrade() {
+  if (typeof window.placeTrade !== "function") return;
+  var _origPlace = window.placeTrade;
+
+  window.placeTrade = async function(type) {
+    var before = activeTradesLocal.length;
+    await _origPlace(type);
+    setTimeout(function() {
+      if (activeTradesLocal.length > before) {
+        var last = activeTradesLocal[activeTradesLocal.length - 1];
+        if (last) {
+          var sym = last.asset || "BTC/USDT";
+          var price = Number(last.entryPrice || 0).toFixed(2);
+          showToast("Trade opened with price: " + price + " " + sym, "opened");
+        }
+      }
+    }, 700);
+  };
+  console.log("[MSG4] placeTrade wrapped");
+})();
+
+// ===== OVERRIDE showResultFlash → Toast =====
+(function patchResultToast() {
+  var _origFlash = window.showResultFlash;
+  window.showResultFlash = function(result) {
+    try { if (_origFlash) _origFlash(result); } catch(e) {}
+    if (result === "win") showToast("RESULT (P/L) + WIN", "win");
+    else if (result === "loss") showToast("RESULT (P/L) - LOSS", "loss");
+  };
+  console.log("[MSG4] Result toast wrapped");
+})();
+
+window.renderTradeCard = renderTradeCard;
+window.showToast = showToast;
+window.formatDateBadge = formatDateBadge;
+window.updateDateBadge = updateDateBadge;
+
+console.log("===== MSG 4: Trade List + Toast + Trades Tab LOADED =====");
