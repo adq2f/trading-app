@@ -3205,3 +3205,162 @@ input, select {
   font-weight: 800;
   cursor: pointer;
 }
+/* ============================================
+   MSG 7: TRADE MARKER + TICK MARK (Quotex-Style)
+   ============================================ */
+
+/* ===== TICK MARK (✓) on Candle ===== */
+.qx-tick-mark {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  z-index: 25;
+  pointer-events: none;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  animation: tickPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qx-tick-mark.call {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.qx-tick-mark.put {
+  background: linear-gradient(135deg, #ff3b30 0%, #d32f2f 100%);
+}
+
+.qx-tick-mark::after {
+  content: '✓';
+  line-height: 1;
+}
+
+@keyframes tickPop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* ===== DOT-DOT-DOT + ARROW ===== */
+.qx-dot-trail {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 24;
+  pointer-events: none;
+}
+
+.qx-dot-trail.call {
+  flex-direction: row;
+  padding-right: 6px;
+}
+
+.qx-dot-trail.put {
+  flex-direction: row;
+  padding-left: 6px;
+}
+
+.qx-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00c853;
+  opacity: 0.8;
+}
+
+.qx-dot-trail.put .qx-dot {
+  background: #ff5252;
+}
+
+.qx-dot:nth-child(1) { opacity: 0.3; width: 3px; height: 3px; }
+.qx-dot:nth-child(2) { opacity: 0.5; width: 4px; height: 4px; }
+.qx-dot:nth-child(3) { opacity: 0.7; width: 5px; height: 5px; }
+.qx-dot:nth-child(4) { opacity: 0.9; width: 5px; height: 5px; }
+
+/* ===== ENTRY PRICE LINE ===== */
+.qx-entry-line {
+  position: absolute;
+  left: 0;
+  right: 60px;
+  height: 0;
+  border-top: 1px dashed;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.qx-entry-line.call {
+  border-color: #00c853;
+}
+
+.qx-entry-line.put {
+  border-color: #ff5252;
+}
+
+.qx-entry-line::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: inherit;
+}
+
+/* ===== TIMER ON CHART ===== */
+.qx-chart-timer-live {
+  position: absolute;
+  top: 8px;
+  right: 60px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(20, 26, 42, 0.95);
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  z-index: 22;
+  backdrop-filter: blur(10px);
+}
+
+.qx-chart-timer-live.call {
+  border-color: #00c853;
+}
+
+.qx-chart-timer-live.put {
+  border-color: #ff5252;
+}
+
+.qx-chart-timer-live .qx-timer-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00c853;
+  box-shadow: 0 0 8px #00c853;
+  animation: qxTimerPulse 1.5s ease-in-out infinite;
+}
+
+.qx-chart-timer-live.put .qx-timer-pulse {
+  background: #ff5252;
+  box-shadow: 0 0 8px #ff5252;
+}
