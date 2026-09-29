@@ -1837,3 +1837,63 @@ input, select {
   color: #58a6ff;
   font-weight: 800;
 }
+/* ============================================
+   QUOTEX-STYLE CHART + CANDLE + TIME LABELS
+   ============================================ */
+
+.qx-chart-wrapper {
+  position: relative;
+}
+
+/* Watermark */
+.qx-chart-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 90px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.03);
+  letter-spacing: 8px;
+  pointer-events: none;
+  z-index: 1;
+  font-family: 'Inter', sans-serif;
+  user-select: none;
+}
+
+/* Smooth Chart */
+#chart {
+  width: 100%;
+  height: 100%;
+}
+
+/* Time Labels */
+.qx-time-labels {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7a90;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+  font-family: 'Inter', sans-serif;
+}
+
+.qx-time-label {
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.qx-time-label.active {
+  color: #58a6ff;
+  font-weight: 800;
+}
+
+/* Hide default time scale (Quotex-style) */
+#chart > div:last-child {
+  opacity: 0.3;
+}
