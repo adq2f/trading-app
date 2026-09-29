@@ -2756,3 +2756,217 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
 
   console.log("[QX-BAL] Quotex-style balance popup ready");
 })();
+// ============================================
+// MSG 7: TRADE MARKER + TICK MARK (Quotex-Style)
+// ============================================
+
+console.log("===== MSG 7: Trade Marker + Tick Mark STARTING =====");
+
+// ===== 1. TICK MARK (✓) RENDER ON CHART =====
+window.qxTickMarks = [];
+
+function renderTickMark(type, entryPrice, entryTime) {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap || !window.candleSeries || !window.chart) return;
+
+    // Purono tick mark remove (optional)
+    var oldMarks = chartWrap.querySelectorAll(".qx-tick-mark");
+    oldMarks.forEach(function(m) { m.remove(); });
+
+    var entryTimeSec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var xPos = window.chart.timeScale().timeToCoordinate(entryTimeSec);
+    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
+
+    if (xPos === null || yPos === null) {
+      console.warn("[TICK] Coordinate nei — retry 500ms");
+      setTimeout(function() {
+        renderTickMark(type, entryPrice, entryTime);
+      }, 500);
+      return;
+    }
+
+    var tick = document.createElement("div");
+    tick.className = "qx-tick-mark " + type;
+    tick.style.left = (xPos - 11) + "px";
+    // Call = candle er niche, Put = upore
+    tick.style.top = type === "call" ? (yPos + 20) + "px" : (yPos - 30) + "px";
+    chartWrap.appendChild(tick);
+
+    console.log("[TICK] Tick mark added:", type, "at", xPos, yPos);
+  } catch(e) {
+    console.error("[TICK] Error:", e);
+  }
+}
+
+// ===== 2. DOT-DOT-DOT + ARROW =====
+function renderDotTrail(type, entryPrice, entryTime) {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap || !window.candleSeries || !window.chart) return;
+
+    var entryTimeSec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var xPos = window.chart.timeScale().timeToCoordinate(entryTimeSec);
+    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
+
+    if (xPos === null || yPos === null) return;
+
+    var trail = document.createElement("div");
+    trail.className = "qx-dot-trail " + type;
+
+    // 4 ta dot
+    for (var i = 0; i < 4; i++) {
+      var dot = document.createElement("div");
+      dot.className = "qx-dot";
+      trail.appendChild(dot);
+    }
+
+    if (type === "call") {
+      trail.style.left = (xPos - 60) + "px";
+      trail.style.top = (yPos + 18) + "px";
+    } else {
+      trail.style.left = (xPos + 10) + "px";
+      trail.style.top = (yPos - 28) + "px";
+    }
+
+    chartWrap.appendChild(trail);
+    console.log("[TRAIL] Dot trail added:", type);
+  } catch(e) {
+    console.error("[TRAIL] Error:", e);
+  }
+}
+
+// ===== 3. ENTRY PRICE LINE =====
+function renderEntryLine(type, entryPrice) {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap || !window.candleSeries) return;
+
+    // Purono line remove
+    var oldLine = chartWrap.querySelector(".qx-entry-line");
+    if (oldLine) oldLine.remove();
+
+    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
+    if (yPos === null || yPos === undefined) return;
+
+    var line = document.createElement("div");
+    line.className = "qx-entry-line " + type;
+    line.style.top = yPos + "px";
+    chartWrap.appendChild(line);
+
+    console.log("[LINE] Entry line added at y:", yPos);
+  } catch(e) {
+    console.error("[LINE] Error:", e);
+  }
+}
+
+// ===== 4. TIMER ON CHART =====
+function renderChartTimer(type, expiresAt) {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap) return;
+
+    var oldTimer = chartWrap.querySelector(".qx-chart-timer-live");
+    if (oldTimer) oldTimer.remove();
+
+    var timer = document.createElement("div");
+    timer.className = "qx-chart-timer-live " + type;
+    timer.innerHTML =
+      '<span class="qx-timer-pulse"></span>' +
+      '<span class="qx-timer-text">00:00</span>';
+    chartWrap.appendChild(timer);
+
+    // Update loop
+    var intervalId = setInterval(function() {
+      var remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      var m = Math.floor(remaining / 60);
+      var s = remaining % 60;
+      var txt = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      var textEl = timer.querySelector(".qx-timer-text");
+      if (textEl) textEl.textContent = txt;
+      if (remaining <= 0) {
+        clearInterval(intervalId);
+        timer.remove();
+      }
+    }, 200);
+
+    console.log("[TIMER] Chart timer added:", type);
+  } catch(e) {
+    console.error("[TIMER] Error:", e);
+  }
+}
+
+// ===== 5. MASTER: TRADE PLACE HOLE SOB RENDER =====
+function renderAllTradeMarkers(type, entryPrice, entryTime, expiresAt) {
+  console.log("[MASTER] Rendering all markers for:", type);
+  renderTickMark(type, entryPrice, entryTime);
+  renderDotTrail(type, entryPrice, entryTime);
+  renderEntryLine(type, entryPrice);
+  renderChartTimer(type, expiresAt);
+}
+
+// ===== 6. PATCH placeTrade → render markers =====
+(function patchPlaceTradeForMarkers() {
+  if (typeof window.placeTrade !== "function") {
+    setTimeout(patchPlaceTradeForMarkers, 1000);
+    return;
+  }
+  var _origPlace = window.placeTrade;
+  window.placeTrade = async function(type) {
+    var before = activeTradesLocal.length;
+    await _origPlace(type);
+    setTimeout(function() {
+      if (activeTradesLocal.length > before) {
+        var last = activeTradesLocal[activeTradesLocal.length - 1];
+        if (last) {
+          renderAllTradeMarkers(last.type, last.entryPrice, last.entryTime, last.expiresAt);
+        }
+      }
+    }, 800);
+  };
+  console.log("[MASTER] placeTrade patched with markers");
+})();
+
+// ===== 7. ZOOM/SCROLL E MARKER POSITION REFRESH =====
+if (window.chart) {
+  try {
+    window.chart.timeScale().subscribeVisibleTimeRangeChange(function() {
+      refreshAllMarkers();
+    });
+  } catch(e) {}
+}
+
+function refreshAllMarkers() {
+  try {
+    // Tick marks refresh
+    activeTradesLocal.forEach(function(trade) {
+      if (trade.status !== "pending") return;
+      renderTickMark(trade.type, trade.entryPrice, trade.entryTime);
+      renderEntryLine(trade.type, trade.entryPrice);
+    });
+  } catch(e) {}
+}
+
+// ===== 8. TRADE EXPIRE HOLE MARKER REMOVE =====
+function clearTradeMarkers() {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap) return;
+    chartWrap.querySelectorAll(".qx-tick-mark").forEach(function(m) { m.remove(); });
+    chartWrap.querySelectorAll(".qx-dot-trail").forEach(function(m) { m.remove(); });
+    chartWrap.querySelectorAll(".qx-entry-line").forEach(function(m) { m.remove(); });
+    chartWrap.querySelectorAll(".qx-chart-timer-live").forEach(function(m) { m.remove(); });
+    console.log("[MASTER] All trade markers cleared");
+  } catch(e) {}
+}
+
+// Expose
+window.renderAllTradeMarkers = renderAllTradeMarkers;
+window.renderTickMark = renderTickMark;
+window.renderDotTrail = renderDotTrail;
+window.renderEntryLine = renderEntryLine;
+window.renderChartTimer = renderChartTimer;
+window.refreshAllMarkers = refreshAllMarkers;
+window.clearTradeMarkers = clearTradeMarkers;
+
+console.log("===== MSG 7: Trade Marker + Tick Mark LOADED =====");
