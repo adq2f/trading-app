@@ -2961,3 +2961,16 @@ setTimeout(function() {
   msg += "activeTradesLocal: " + (typeof activeTradesLocal !== "undefined" ? activeTradesLocal.length : "undefined") + "\n";
   alert(msg);
 }, 6000);
+// ============================================
+// MSG 7 ALERT — Trade Check
+// ============================================
+
+setTimeout(function() {
+  var msg = "=== TRADE CHECK ===\n";
+  msg += "chart: " + (window.chart ? "READY" : "NULL") + "\n";
+  msg += "candleSeries: " + (window.candleSeries ? "READY" : "NULL") + "\n";
+  msg += "activeTradesLocal: " + (typeof activeTradesLocal !== "undefined" ? activeTradesLocal.length : "undefined") + "\n";
+  msg += "renderTickMark: " + typeof window.renderTickMark + "\n";
+  msg += "renderAllTradeMarkers: " + typeof window.renderAllTradeMarkers + "\n";
+  alert(msg);
+}, 5000);
