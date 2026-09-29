@@ -5695,3 +5695,55 @@ console.log('===== MSG 21: Quotex-style Trade Screen loaded =====');
 })();
 
 console.log('===== MSG 21 NUL-SAFE: AddEventListener wrapper loaded =====');
+/* ============================================================
+   MSG 22: BONUS BANNER + CHART REDESIGN
+   ============================================================ */
+
+// ===== 1. Bonus Banner Close =====
+(function initBonusBanner() {
+  if (window.__bonusBannerInit) return;
+  window.__bonusBannerInit = true;
+
+  var closeBtn = document.getElementById('bonus-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      var banner = document.getElementById('bonus-banner');
+      if (banner) {
+        banner.classList.add('hidden');
+        try {
+          localStorage.setItem('bonusBannerClosed', '1');
+        } catch (e) {}
+      }
+      console.log('[MSG22] Bonus banner closed');
+    });
+  }
+
+  // Hide on load if already closed
+  try {
+    if (localStorage.getItem('bonusBannerClosed') === '1') {
+      var banner = document.getElementById('bonus-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+  } catch (e) {}
+
+  console.log('[MSG22] Bonus banner initialized');
+})();
+
+// ===== 2. Chart Menu Button =====
+(function initChartMenu() {
+  if (window.__chartMenuInit) return;
+  window.__chartMenuInit = true;
+
+  var btn = document.getElementById('chart-menu-btn');
+  if (btn && btn.dataset.bound !== '1') {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', function () {
+      if (typeof openMoreMenu === 'function') {
+        openMoreMenu();
+      }
+    });
+    console.log('[MSG22] Chart menu button bound');
+  }
+})();
+
+console.log('===== MSG 22: Bonus Banner + Chart Redesign loaded =====');
