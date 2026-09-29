@@ -2857,3 +2857,28 @@ input, select {
   justify-content: center;
   border: 2px solid #141a2a;
 }
+/* ===== BALANCE POPUP ===== */
+.balance-popup-display {
+  text-align: center;
+  padding: 20px 0;
+  background: linear-gradient(135deg, #0a2818 0%, #141d2e 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 200, 83, 0.3);
+  margin-bottom: 8px;
+}
+
+.balance-popup-label {
+  font-size: 11px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.balance-popup-amount {
+  font-size: 32px;
+  font-weight: 800;
+  color: #00c853;
+  font-variant-numeric: tabular-nums;
+}
