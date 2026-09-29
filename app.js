@@ -2948,3 +2948,105 @@ setTimeout(function() {
 }, 1000);
 
 console.log("===== FINAL FIX LOADED =====");
+// ============================================
+// FINAL FIX: Balance Chip + Popup + Trade Card
+// ============================================
+console.log("===== FINAL FIX STARTING =====");
+
+(function fixBalanceChip() {
+  var chip = document.getElementById("balance-chip");
+  if (!chip) {
+    console.warn("[FINAL] balance-chip NOT FOUND");
+    return;
+  }
+  var newChip = chip.cloneNode(true);
+  chip.parentNode.replaceChild(newChip, chip);
+  newChip.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[FINAL] Balance chip clicked");
+    var balPopup = document.getElementById("balance-popup");
+    var accPopup = document.getElementById("account-popup");
+    var bpv = document.getElementById("balance-popup-value");
+    if (balPopup) {
+      if (bpv && typeof userBalance !== "undefined") {
+        bpv.textContent = Number(userBalance).toFixed(2);
+      }
+      balPopup.classList.remove("hidden");
+      balPopup.style.zIndex = "9500";
+      console.log("[FINAL] Balance popup opened");
+    } else if (accPopup) {
+      accPopup.classList.remove("hidden");
+      accPopup.style.zIndex = "9500";
+      console.log("[FINAL] Account popup opened");
+    } else {
+      console.warn("[FINAL] No popup found");
+    }
+  });
+  console.log("[FINAL] Balance chip fixed");
+})();
+
+(function fixTradeCardRender() {
+  if (typeof window.loadActiveTrades !== "function") {
+    console.warn("[FINAL] loadActiveTrades not found");
+    return;
+  }
+  window.loadActiveTrades = function() {
+    if (!currentUser) return;
+    var q = query(
+      collection(db, "trades"),
+      where("userId", "==", currentUser.uid),
+      where("status", "==", "pending")
+    );
+    if (activeTradesUnsub) {
+      try { activeTradesUnsub(); } catch(e) {}
+    }
+    activeTradesUnsub = onSnapshot(q, function(snapshot) {
+      activeTradesLocal = [];
+      var listEl = document.getElementById("active-trades-list");
+      if (listEl) listEl.innerHTML = "";
+      if (snapshot.empty) {
+        if (listEl) listEl.innerHTML = '<p class="empty-text">No active trades</p>';
+        if (activeCount) activeCount.textContent = "0";
+        if (bigTimer) bigTimer.classList.add("hidden");
+        updateTradeMarkers();
+        return;
+      }
+      snapshot.forEach(function(docSnap) {
+        var trade = Object.assign({ id: docSnap.id }, docSnap.data());
+        activeTradesLocal.push(trade);
+        if (listEl && typeof renderTradeCard === "function") {
+          listEl.appendChild(renderTradeCard(trade, false));
+        }
+      });
+      if (activeCount) activeCount.textContent = activeTradesLocal.length;
+      updateBigTimer();
+      updateTradeMarkers();
+    });
+  };
+  console.log("[FINAL] Trade card render fixed");
+})();
+
+setTimeout(function() {
+  var callBtn = document.getElementById("call-btn");
+  var putBtn = document.getElementById("put-btn");
+  if (callBtn && callBtn.dataset.finalBound !== "1") {
+    callBtn.dataset.finalBound = "1";
+    callBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[FINAL] CALL clicked");
+      if (typeof placeTrade === "function") placeTrade("call");
+    };
+  }
+  if (putBtn && putBtn.dataset.finalBound !== "1") {
+    putBtn.dataset.finalBound = "1";
+    putBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[FINAL] PUT clicked");
+      if (typeof placeTrade === "function") placeTrade("put");
+    };
+  }
+  console.log("[FINAL] Trade buttons bound");
+}, 1000);
+
+console.log("===== FINAL FIX LOADED =====");
