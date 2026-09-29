@@ -8,16 +8,16 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=21">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>eruda.init();</script>
 </head>
 <body>
 
-  <!-- ========== লগইন পেজ ========== -->
+  <!-- ========== LOGIN PAGE ========== -->
   <div id="login-page" class="page">
     <div class="logo-box">
       <div class="logo-icon">Q</div>
@@ -32,7 +32,7 @@
 
     <div class="input-group">
       <label>পাসওয়ার্ড</label>
-      <input type="password" id="password" placeholder="••••••••">
+      <input type="password" id="password" placeholder="........">
     </div>
 
     <button id="login-btn" class="primary-btn">লগইন</button>
@@ -41,232 +41,174 @@
     <p id="message"></p>
   </div>
 
-  <!-- ========== ট্রেডিং পেজ ========== -->
+  <!-- ========== TRADING PAGE ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== বাম সাইডবার ===== -->
-    <aside class="left-sidebar">
-      <button class="side-icon" id="profile-btn" title="Profile">👤</button>
-      <button class="side-icon acc-toggle" id="account-toggle" title="Account">💼</button>
-      <button class="side-icon" id="market-btn" title="Market">📊</button>
-      <button class="side-icon" id="tournament-btn" title="Tournament">🏆</button>
-      <button class="side-icon" id="referral-btn" title="Refer & Earn">🎁</button>
-      <button class="side-icon" id="chat-btn" title="Chat">💬</button>
-      <button class="side-icon logout-icon" id="logout-btn" title="Logout">⏻</button>
-    </aside>
+    <!-- ===== TOP BAR (Quotex-style) ===== -->
+    <header class="qx-top-bar">
+      <button class="qx-account-btn" id="balance-chip">
+        <span class="qx-badge" id="qx-account-type">DEMO</span>
+        <span class="qx-balance">$<span id="balance">10,000.00</span></span>
+        <span class="qx-caret">▾</span>
+      </button>
 
-    <!-- ===== মূল কনটেন্ট ===== -->
-    <main class="main-content">
+      <button class="qx-bell-btn" id="notif-btn">
+        <span class="qx-bell-icon">🔔</span>
+        <span class="qx-bell-badge" id="notif-badge">0</span>
+      </button>
 
-      <!-- হেডার -->
-      <header class="top-bar">
-        <div class="top-left">
-          <span class="brand-logo">Q</span>
-          <span class="brand-name">Quotex Clone</span>
-        </div>
-        <div class="top-right">
-          <button class="balance-chip" id="balance-chip">
-            <span class="balance-amount">$<span id="balance">0.00</span></span>
-            <span class="chip-arrow">▾</span>
-          </button>
-        </div>
-      </header>
+      <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
+    </header>
 
-      <!-- ===== চার্ট সেকশন ===== -->
-      <section class="chart-section">
+    <!-- ===== MAIN CHART AREA ===== -->
+    <main class="qx-main">
 
-        <div class="chart-header">
-          <div class="asset-picker">
-            <span class="asset-dot"></span>
-            <select id="asset-select" class="asset-select">
+      <section class="qx-chart-section">
+
+        <!-- Chart Header (Symbol + Price) -->
+        <div class="qx-chart-header">
+          <div class="qx-symbol-picker">
+            <span class="qx-flag">◉</span>
+            <select id="asset-select" class="qx-symbol-select">
               <option value="BTCUSDT">BTC/USDT</option>
               <option value="ETHUSDT">ETH/USDT</option>
               <option value="BNBUSDT">BNB/USDT</option>
             </select>
-            <span class="asset-arrow">▾</span>
           </div>
-          <div class="price-box">
+          <div class="qx-price-display">
             <span id="current-price">0.00</span>
-            <span id="price-arrow" class="price-arrow">▲</span>
+            <span id="price-arrow" class="qx-price-arrow">▲</span>
           </div>
         </div>
 
-        <div class="chart-main">
+        <!-- Chart Wrapper (Quotex-style, full height) -->
+        <div class="qx-chart-wrapper" id="chart-wrapper">
+          <div id="chart"></div>
+          <canvas id="drawing-canvas"></canvas>
 
-          <div class="drawing-toolbar" id="drawing-toolbar">
-            <button class="drawing-btn active" data-tool="cursor" title="Cursor">✥</button>
-            <button class="drawing-btn" data-tool="TrendLine" title="Trend Line">╱</button>
-            <button class="drawing-btn" data-tool="HorizontalLine" title="Horizontal">━</button>
-            <button class="drawing-btn" data-tool="VerticalLine" title="Vertical">┃</button>
-            <button class="drawing-btn" data-tool="CrossLine" title="Cross">✚</button>
-            <button class="drawing-btn" data-tool="Rectangle" title="Rectangle">▭</button>
-            <button class="drawing-btn" data-tool="FibRetracement" title="Fibonacci">⌗</button>
-            <button class="drawing-btn" data-tool="Ray" title="Ray">↗</button>
-            <button class="drawing-btn" data-tool="TextAnnotation" title="Text">T</button>
-            <button class="drawing-btn" data-tool="Eraser" title="Clear All">🗑</button>
+          <!-- Timer on chart (top-left) -->
+          <div id="top-countdown-timer" class="qx-chart-timer hidden">
+            <span class="qx-timer-dot"></span>
+            <span id="countdown-time">00:01</span>
           </div>
 
-          <div id="chart-wrapper">
-            <div id="chart"></div>
-            <canvas id="drawing-canvas"></canvas>
-
-            <div id="top-countdown-timer" class="top-countdown-timer hidden">
-              <span id="countdown-symbol">-</span>
-              <span id="countdown-time">00:00</span>
-            </div>
-
-            <div id="trade-info-badge" class="trade-info-badge hidden">
-              <span id="trade-info-arrow">▲</span>
-              <span id="trade-info-text">-</span>
-            </div>
-
-            <div class="chart-time-labels">
-              <span id="timeLeft">--:--</span>
-              <span id="timeCenter">LIVE</span>
-              <span id="timeRight">--:--</span>
-            </div>
-
-            <div id="entryLabel" class="entry-exit-label entry hidden">
-              <span class="label-arrow">▲</span>
-              <span class="label-price">ENTRY: --</span>
-            </div>
-
-            <div id="exitLabel" class="entry-exit-label exit hidden">
-              <span class="label-arrow">▼</span>
-              <span class="label-price">EXIT: --</span>
-            </div>
+          <!-- Entry/Exit Labels -->
+          <div id="entryLabel" class="entry-exit-label entry hidden">
+            <span class="label-arrow">▲</span>
+            <span class="label-price">ENTRY: --</span>
           </div>
 
-        </div>
+          <div id="exitLabel" class="entry-exit-label exit hidden">
+            <span class="label-arrow">▼</span>
+            <span class="label-price">EXIT: --</span>
+          </div>
 
-        <div class="chart-timeframe">
-          <button class="tf-btn" data-tf="5s">5s</button>
-          <button class="tf-btn" data-tf="10s">10s</button>
-          <button class="tf-btn" data-tf="15s">15s</button>
-          <button class="tf-btn" data-tf="30s">30s</button>
-          <button class="tf-btn active" data-tf="1m">1m</button>
-          <button class="tf-btn" data-tf="5m">5m</button>
-          <button class="tf-btn" data-tf="15m">15m</button>
-          <button class="tf-btn" data-tf="1h">1h</button>
-          <button class="tf-btn" data-tf="4h">4h</button>
+          <!-- Timeframe badges on chart (bottom) -->
+          <div class="qx-chart-timeframe">
+            <button class="qx-tf-btn active" data-tf="1m">1m</button>
+            <button class="qx-tf-btn" data-tf="5m">5m</button>
+            <button class="qx-tf-btn" data-tf="15m">15m</button>
+            <button class="qx-tf-btn" data-tf="1h">1h</button>
+          </div>
+
+          <!-- Chart control (top-right of chart) -->
+          <button class="qx-chart-menu" id="chart-menu-btn">⋯</button>
         </div>
 
       </section>
 
-      <!-- ===== ট্রেড প্যানেল ===== -->
-      <section class="trade-panel">
+      <!-- ===== TRADE PANEL (Quotex-style) ===== -->
+      <section class="qx-trade-panel">
 
-        <div class="trade-row">
-          <label class="trade-label">পরিমাণ ($)</label>
-          <div class="amount-input-wrap">
-            <button class="amount-btn" data-action="minus">−</button>
-            <input type="number" id="trade-amount" value="10" min="1" step="1">
-            <button class="amount-btn" data-action="plus">+</button>
+        <!-- Timer + Investment Row -->
+        <div class="qx-trade-row">
+          <div class="qx-field-group">
+            <label class="qx-field-label">Timer</label>
+            <div class="qx-field-value qx-timer-value">
+              <span id="big-timer">00:01</span>
+            </div>
+          </div>
+
+          <div class="qx-field-group">
+            <label class="qx-field-label">Investment</label>
+            <div class="qx-field-value qx-investment-value">
+              <button class="qx-inc-btn" data-action="minus">−</button>
+              <input type="number" id="trade-amount" value="1" min="1" step="1">
+              <button class="qx-inc-btn" data-action="plus">+</button>
+            </div>
           </div>
         </div>
 
-        <div class="trade-row">
-          <label class="trade-label">সময়</label>
-          <div class="time-buttons">
-            <button class="time-btn" data-time="5">5s</button>
-            <button class="time-btn" data-time="10">10s</button>
-            <button class="time-btn" data-time="15">15s</button>
-            <button class="time-btn" data-time="30">30s</button>
-            <button class="time-btn active" data-time="60">1m</button>
-            <button class="time-btn" data-time="300">5m</button>
-            <button class="time-btn" data-time="900">15m</button>
-            <button class="time-btn" data-time="3600">1h</button>
+        <!-- Payout Row -->
+        <div class="qx-payout-row">
+          <span class="qx-payout-label">Payout</span>
+          <div class="qx-payout-value">
+            <span id="payout-display">1.68</span>
+            <button class="qx-switch-btn" id="payout-switch-btn">SWITCH</button>
           </div>
         </div>
 
-        <div id="big-timer" class="big-timer hidden">01:00</div>
-
-        <div class="trade-buttons">
-          <button id="call-btn" class="call-btn">
-            <span class="arrow">▲</span>
-            <span class="btn-label">CALL</span>
-            <span class="btn-payout">+85%</span>
+        <!-- Up/Down Buttons -->
+        <div class="qx-trade-actions">
+          <button id="call-btn" class="qx-up-btn">
+            <span class="qx-btn-text">Up</span>
+            <span class="qx-btn-icon">↑</span>
           </button>
-          <button id="put-btn" class="put-btn">
-            <span class="arrow">▼</span>
-            <span class="btn-label">PUT</span>
-            <span class="btn-payout">+85%</span>
+          <button id="put-btn" class="qx-down-btn">
+            <span class="qx-btn-text">Down</span>
+            <span class="qx-btn-icon">↓</span>
           </button>
         </div>
 
+        <!-- Trade Message -->
         <p id="trade-message"></p>
 
       </section>
 
-      <!-- ===== ট্যাব + ট্রেড লিস্ট ===== -->
-      <section class="trades-section">
+      <!-- ===== BOTTOM NAV (Quotex-style) ===== -->
+      <nav class="qx-bottom-nav">
+        <button class="qx-nav-btn" data-nav="history" type="button">
+          <span class="qx-nav-icon">📷</span>
+        </button>
 
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="active">
-            চলমান <span id="active-count">0</span>
-          </button>
-          <button class="tab-btn" data-tab="history">হিস্ট্রি</button>
-        </div>
+        <button class="qx-nav-btn" data-nav="help" type="button">
+          <span class="qx-nav-icon">❓</span>
+        </button>
 
-        <div class="tab-content">
-          <div id="active-trades-list" class="tab-pane active">
-            <p class="empty-text">কোনো চলমান ট্রেড নেই</p>
-          </div>
-          <div id="history-list" class="tab-pane">
-            <p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>
-          </div>
-        </div>
+        <button class="qx-nav-btn active" data-nav="profile" type="button">
+          <span class="qx-nav-icon">👤</span>
+        </button>
 
-      </section>
+        <button class="qx-nav-btn" data-nav="tournament" type="button">
+          <span class="qx-nav-icon">🏆</span>
+          <span class="qx-nav-badge hidden" id="tour-badge">0</span>
+        </button>
+
+        <button class="qx-nav-btn" data-nav="more" type="button">
+          <span class="qx-nav-icon">⋯</span>
+          <span class="qx-nav-badge hidden" id="more-badge">0</span>
+        </button>
+      </nav>
 
     </main>
 
   </div>
 
-  <!-- ========== ব্যালেন্স পপআপ ========== -->
-  <div id="balance-popup" class="popup hidden">
-    <div class="popup-overlay" id="balance-popup-overlay"></div>
-
-    <div class="popup-content">
-      <div class="popup-header">
-        <h3>অ্যাকাউন্ট</h3>
-        <button id="balance-popup-close" class="popup-close">✕</button>
-      </div>
-
-      <div class="account-toggle-popup">
-        <button class="acc-btn-popup active" data-acc="demo">ডেমো</button>
-        <button class="acc-btn-popup" data-acc="real">রিয়েল</button>
-      </div>
-
-      <div class="popup-balance">
-        <div class="popup-balance-label">বর্তমান ব্যালেন্স</div>
-        <div class="popup-balance-value">$<span id="balance-popup-value">0.00</span></div>
-      </div>
-
-      <div class="popup-actions">
-        <button id="deposit-btn" class="action-btn deposit">＋ ডিপোজিট</button>
-        <button id="withdraw-btn" class="action-btn withdraw">↗ উইথড্র</button>
-      </div>
-
-      <button class="popup-link" id="tx-history-btn">📋 ট্রানজেকশন হিস্ট্রি</button>
-    </div>
-  </div>
-
-  <!-- ========== অ্যাকাউন্ট সুইচ পপআপ ========== -->
+  <!-- ========== ACCOUNT POPUP ========== -->
   <div id="account-popup" class="popup hidden">
     <div class="popup-overlay" id="account-popup-overlay"></div>
 
     <div class="popup-content small">
       <div class="popup-header">
-        <h3>অ্যাকাউন্ট সিলেক্ট করুন</h3>
+        <h3>Account</h3>
         <button id="account-popup-close" class="popup-close">✕</button>
       </div>
 
       <button class="account-option active" data-acc="demo">
         <span class="acc-icon">🎮</span>
         <div class="acc-info">
-          <div class="acc-title">ডেমো অ্যাকাউন্ট</div>
-          <div class="acc-desc">ভার্চুয়াল মানি দিয়ে প্র্যাকটিস</div>
+          <div class="acc-title">Demo Account</div>
+          <div class="acc-desc">Virtual money</div>
         </div>
         <span class="acc-check">✓</span>
       </button>
@@ -274,93 +216,93 @@
       <button class="account-option" data-acc="real">
         <span class="acc-icon">💰</span>
         <div class="acc-info">
-          <div class="acc-title">রিয়েল অ্যাকাউন্ট</div>
-          <div class="acc-desc">আসল টাকা দিয়ে ট্রেড</div>
+          <div class="acc-title">Live Account</div>
+          <div class="acc-desc">Real money</div>
         </div>
         <span class="acc-check">✓</span>
       </button>
     </div>
   </div>
 
-  <!-- ========== ডিপোজিট পপআপ ========== -->
+  <!-- ========== DEPOSIT POPUP ========== -->
   <div id="deposit-popup" class="popup hidden">
     <div class="popup-overlay" id="deposit-popup-overlay"></div>
 
     <div class="popup-content">
       <div class="popup-header">
-        <h3>ডিপোজিট</h3>
+        <h3>Deposit</h3>
         <button id="deposit-popup-close" class="popup-close">✕</button>
       </div>
 
       <p class="popup-note">
-        নিচের নাম্বারে পেমেন্ট করে স্লিপ আপলোড করুন। অ্যাডমিন অ্যাপ্রুভ করলে ব্যালেন্স যোগ হবে।
+        Send payment to any method below. Admin will approve.
       </p>
 
       <div class="payment-info">
         <div class="payment-row">
-          <span class="payment-label">বিকাশ</span>
+          <span class="payment-label">Bkash</span>
           <span class="payment-value">01700-000000</span>
         </div>
         <div class="payment-row">
-          <span class="payment-label">নগদ</span>
+          <span class="payment-label">Nagad</span>
           <span class="payment-value">01800-000000</span>
         </div>
       </div>
 
       <div class="input-group">
-        <label>পরিমাণ ($)</label>
+        <label>Amount ($)</label>
         <input type="number" id="deposit-amount" placeholder="10" min="1">
       </div>
 
       <div class="input-group">
-        <label>ট্রানজেকশন আইডি</label>
-        <input type="text" id="deposit-txid" placeholder="TrxID লিখুন">
+        <label>Transaction ID</label>
+        <input type="text" id="deposit-txid" placeholder="TrxID">
       </div>
 
-      <button id="deposit-submit" class="primary-btn">রিকোয়েস্ট পাঠান</button>
+      <button id="deposit-submit" class="primary-btn">Submit Request</button>
       <p id="deposit-message"></p>
     </div>
   </div>
 
-  <!-- ========== উইথড্র পপআপ ========== -->
+  <!-- ========== WITHDRAW POPUP ========== -->
   <div id="withdraw-popup" class="popup hidden">
     <div class="popup-overlay" id="withdraw-popup-overlay"></div>
 
     <div class="popup-content">
       <div class="popup-header">
-        <h3>উইথড্র</h3>
+        <h3>Withdraw</h3>
         <button id="withdraw-popup-close" class="popup-close">✕</button>
       </div>
 
       <p class="popup-note">
-        উইথড্র রিকোয়েস্ট পাঠান। অ্যাডমিন ২৪ ঘণ্টার মধ্যে প্রসেস করবে।
+        Send withdraw request. Admin will process in 24h.
       </p>
 
       <div class="input-group">
-        <label>পরিমাণ ($)</label>
+        <label>Amount ($)</label>
         <input type="number" id="withdraw-amount" placeholder="10" min="1">
       </div>
 
       <div class="input-group">
-        <label>পেমেন্ট মেথড</label>
+        <label>Method</label>
         <select id="withdraw-method">
-          <option value="bkash">বিকাশ</option>
-          <option value="nagad">নগদ</option>
-          <option value="rocket">রকেট</option>
+          <option value="bkash">Bkash</option>
+          <option value="nagad">Nagad</option>
+          <option value="rocket">Rocket</option>
         </select>
       </div>
 
       <div class="input-group">
-        <label>একাউন্ট নাম্বার</label>
+        <label>Account Number</label>
         <input type="text" id="withdraw-number" placeholder="01XXXXXXXXX">
       </div>
 
-      <button id="withdraw-submit" class="primary-btn">রিকোয়েস্ট পাঠান</button>
+      <button id="withdraw-submit" class="primary-btn">Submit Request</button>
       <p id="withdraw-message"></p>
     </div>
   </div>
 
-  <!-- ========== চ্যাট পপআপ ========== -->
+  <!-- ========== CHAT POPUP ========== -->
   <div id="chat-popup" class="popup hidden">
     <div class="popup-overlay" id="chat-popup-overlay"></div>
 
@@ -381,13 +323,13 @@
     </div>
   </div>
 
-  <!-- ========== MSG 18: Tournament Popup ========== -->
+  <!-- ========== TOURNAMENT POPUP ========== -->
   <div id="tournament-popup" class="popup hidden">
     <div class="popup-overlay" id="tournament-popup-overlay"></div>
 
     <div class="popup-content" style="max-width: 440px;">
       <div class="popup-header">
-        <h3>🏆 Tournaments</h3>
+        <h3>Tournaments</h3>
         <button id="tournament-popup-close" class="popup-close">✕</button>
       </div>
 
@@ -411,7 +353,7 @@
     </div>
   </div>
 
-  <!-- ========== MSG 18: Tournament Detail Popup ========== -->
+  <!-- ========== TOURNAMENT DETAIL POPUP ========== -->
   <div id="tournament-detail-popup" class="popup hidden">
     <div class="popup-overlay" id="tournament-detail-overlay"></div>
 
@@ -425,13 +367,13 @@
     </div>
   </div>
 
-  <!-- ========== MSG 20: Referral Popup ========== -->
+  <!-- ========== REFERRAL POPUP ========== -->
   <div id="referral-popup" class="popup hidden">
     <div class="popup-overlay" id="referral-popup-overlay"></div>
 
     <div class="popup-content ref-popup-content">
       <div class="popup-header">
-        <h3>🎁 Refer & Earn</h3>
+        <h3>Refer & Earn</h3>
         <button id="referral-popup-close" class="popup-close">✕</button>
       </div>
 
@@ -488,36 +430,82 @@
     </div>
   </div>
 
-  <!-- ========== MSG 16: Bottom Navigation ========== -->
-  <nav class="bottom-nav hidden" id="bottomNav">
-    <button class="bottom-nav-btn active" data-nav="trade" type="button">
-      <span class="nav-icon">📈</span>
-      <span class="nav-label">Trade</span>
-    </button>
+  <!-- ========== MORE MENU (Drawer) ========== -->
+  <div id="more-menu" class="more-menu hidden">
+    <div class="more-menu-overlay" id="more-menu-overlay"></div>
 
-    <button class="bottom-nav-btn" data-nav="active" type="button">
-      <span class="nav-icon">⏱</span>
-      <span class="nav-label">Active</span>
-      <span class="nav-badge hidden" id="navActiveBadge">0</span>
-    </button>
+    <div class="more-menu-panel">
+      <div class="more-menu-header">
+        <h3>More</h3>
+        <button id="more-menu-close" class="more-menu-close">✕</button>
+      </div>
 
-    <button class="bottom-nav-btn" data-nav="history" type="button">
-      <span class="nav-icon">📋</span>
-      <span class="nav-label">History</span>
-    </button>
+      <div class="more-menu-list">
+        <button class="more-menu-item" data-menu="market">
+          <span class="menu-icon">📊</span>
+          <span class="menu-text">Market</span>
+          <span class="menu-arrow">›</span>
+        </button>
 
-    <button class="bottom-nav-btn" data-nav="chat" type="button">
-      <span class="nav-icon">💬</span>
-      <span class="nav-label">Chat</span>
-    </button>
+        <button class="more-menu-item" data-menu="analytics">
+          <span class="menu-icon">📈</span>
+          <span class="menu-text">Analytics</span>
+          <span class="menu-arrow">›</span>
+        </button>
 
-    <button class="bottom-nav-btn" data-nav="profile" type="button">
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">Profile</span>
-    </button>
-  </nav>
+        <button class="more-menu-item" data-menu="signals">
+          <span class="menu-icon">📡</span>
+          <span class="menu-text">Signals</span>
+          <span class="menu-arrow">›</span>
+        </button>
 
-  <script type="module" src="app.js?v=20"></script>
+        <button class="more-menu-item" data-menu="deposit">
+          <span class="menu-icon">💵</span>
+          <span class="menu-text">Deposit</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <button class="more-menu-item" data-menu="withdraw">
+          <span class="menu-icon">💸</span>
+          <span class="menu-text">Withdrawal</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <button class="more-menu-item" data-menu="trades">
+          <span class="menu-icon">📋</span>
+          <span class="menu-text">Trades</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <button class="more-menu-item" data-menu="referral">
+          <span class="menu-icon">🎁</span>
+          <span class="menu-text">Refer & Earn</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <button class="more-menu-item" data-menu="chat">
+          <span class="menu-icon">💬</span>
+          <span class="menu-text">Support</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <div class="more-menu-divider"></div>
+
+        <button class="more-menu-item" data-menu="settings">
+          <span class="menu-icon">⚙</span>
+          <span class="menu-text">Settings</span>
+          <span class="menu-arrow">›</span>
+        </button>
+
+        <button class="more-menu-item logout" data-menu="logout">
+          <span class="menu-icon">⏻</span>
+          <span class="menu-text">Logout</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js?v=21"></script>
 
 </body>
 </html>
