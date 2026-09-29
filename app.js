@@ -1,42 +1,4 @@
-// ============================================
-// Quotex Clone — app.js
-// ============================================
-// Quotex Clone — app.js
-// ============================================
 
-// ============================================
-// SAFE TEXT REPLACEMENT — sob textContent safe
-// ============================================
-(function safeTextReplacement() {
-  if (window.__safeTextReplacement) return;
-  window.__safeTextReplacement = true;
-
-  var originalTextContent = Object.getOwnPropertyDescriptor(
-    Element.prototype, "textContent"
-  );
-
-  try {
-    Object.defineProperty(Element.prototype, "textContent", {
-      get: function() {
-        try { return originalTextContent.get.call(this); } catch(e) { return ""; }
-      },
-      set: function(value) {
-        try { originalTextContent.set.call(this, value); } catch(e) {
-          console.warn("[SAFE-TEXT] Blocked null textContent:", e.message);
-        }
-      },
-      configurable: true
-    });
-  } catch(e) {
-    console.warn("[SAFE-TEXT] Cannot override:", e.message);
-  }
-
-  console.log("[SAFE-TEXT] Global textContent safety active");
-})();
-
-// ===== GLOBAL NULL-GUARD (must run FIRST) =====
-(function() {
-  ...
 // Part 1: Imports + Firebase + DOM + Globals + Sounds
 // ============================================
 
@@ -104,7 +66,35 @@ import {
   onSnapshot,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// ============================================
+// SAFE TEXT REPLACEMENT — sob textContent safe
+// ============================================
+(function safeTextReplacement() {
+  if (window.__safeTextReplacement) return;
+  window.__safeTextReplacement = true;
 
+  var originalTextContent = Object.getOwnPropertyDescriptor(
+    Element.prototype, "textContent"
+  );
+
+  try {
+    Object.defineProperty(Element.prototype, "textContent", {
+      get: function() {
+        try { return originalTextContent.get.call(this); } catch(e) { return ""; }
+      },
+      set: function(value) {
+        try { originalTextContent.set.call(this, value); } catch(e) {
+          console.warn("[SAFE-TEXT] Blocked null textContent:", e.message);
+        }
+      },
+      configurable: true
+    });
+  } catch(e) {
+    console.warn("[SAFE-TEXT] Cannot override:", e.message);
+  }
+
+  console.log("[SAFE-TEXT] Global textContent safety active");
+})();
 // ===== Firebase Config =====
 const firebaseConfig = {
   apiKey: "AIzaSyDSHI9UELxtQe0jrApkjg_F46LwKuG-vns",
