@@ -254,16 +254,32 @@ if (createMarketBtn) {
     const base = parseFloat(newMarketBase.value) || 50000;
     const payout = newMarketPayout ? (parseInt(newMarketPayout.value) || currentPayout) : currentPayout;
     const winRate = newMarketWinrate ? (parseInt(newMarketWinrate.value) || currentWinRate) : currentWinRate;
-    if (!name || !symbol) {
-      alert("Name and symbol required");
+
+    // FIX: Symbol must check
+    if (!name) {
+      alert("Market Name dite hobe");
       return;
     }
+    if (!symbol) {
+      alert("Symbol dite hobe (jemon: BTCUSDT)");
+      return;
+    }
+    if (symbol.length < 3) {
+      alert("Symbol kompokkhe 3 character hote hobe");
+      return;
+    }
+
     try {
       const marketId = symbol.toLowerCase() + "_" + Date.now();
       await setDoc(doc(db, "markets", marketId), {
-        id: marketId, name: name, symbol: symbol,
-        basePrice: base, currentPrice: base,
-        enabled: true, payout: payout, winRate: winRate,
+        id: marketId,
+        name: name,
+        symbol: symbol,
+        basePrice: base,
+        currentPrice: base,
+        enabled: true,
+        payout: payout,
+        winRate: winRate,
         candleMode: window.candleMode || "locked",
         currentCandleIndex: 0,
         autoModeInterval: currentAutoInterval,
@@ -275,8 +291,10 @@ if (createMarketBtn) {
       newMarketBase.value = "";
       if (newMarketPayout) newMarketPayout.value = "";
       if (newMarketWinrate) newMarketWinrate.value = "";
-      alert(name + " created!");
-    } catch (err) { alert(err.message); }
+      alert(name + " (" + symbol + ") created!");
+    } catch (err) {
+      alert(err.message);
+    }
   });
 }
 
