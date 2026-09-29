@@ -662,12 +662,20 @@ function initChart() {
     chartEl.appendChild(chartWatermark);
   } catch(e) {}
 
-  // ===== TIME LABELS =====
+  // ===== TIME LABELS (Quotex-style) =====
   try {
     var timeLabels = document.createElement("div");
     timeLabels.className = "qx-time-labels";
     timeLabels.id = "qx-time-labels";
     chartEl.appendChild(timeLabels);
+  } catch(e) {}
+
+  // ===== PRICE DOT (Quotex-style) =====
+  try {
+    var priceDot = document.createElement("div");
+    priceDot.id = "qx-price-dot";
+    priceDot.className = "qx-price-dot";
+    chartEl.appendChild(priceDot);
   } catch(e) {}
 
   // Update time labels
@@ -767,12 +775,26 @@ function startLivePrice() {
           currentPriceEl.style.color = "#ff5252";
           priceArrowEl.textContent = "▼";
         }
-        if (candleSeries) {
+                if (candleSeries) {
           candleSeries.update({
             time: Math.floor(k.t / 1000), open: parseFloat(k.o),
             high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c)
           });
         }
+
+        // ===== PRICE DOT UPDATE (Quotex-style) =====
+        try {
+          var priceDot = document.getElementById("qx-price-dot");
+          if (priceDot && candleSeries) {
+            var yPos = candleSeries.priceToCoordinate(currentPrice);
+            if (yPos !== null && yPos !== undefined) {
+              priceDot.style.top = yPos + "px";
+              priceDot.style.display = "block";
+              priceDot.className = "qx-price-dot " + (currentPrice >= prevPrice ? "up" : "down");
+            }
+          }
+        } catch(e) {}
+
         checkExpiredTrades();
         updateBigTimer();
       } catch (err) {}
@@ -1027,21 +1049,42 @@ function updateTradeMarkers() {
 function drawEntryMarker(type, entryPrice, amount) {
   if (!window.candleSeries) return;
   var now = Math.floor(Date.now() / 1000);
-  var marker = {
+  var isCall = (type === "call");
+  var color = isCall ? "#00c853" : "#ff5252";
+
+  // ===== DOT DOT DOT ARROW MARKER (Quotex-style) =====
+  var dotMarkers = [];
+  for (var i = 0; i < 4; i++) {
+    dotMarkers.push({
+      time: now - (4 - i) * 1,
+      position: isCall ? "belowBar" : "aboveBar",
+      color: color,
+      shape: "circle",
+      text: ""
+    });
+  }
+
+  var arrowMarker = {
     time: now,
-    position: type === "call" ? "belowBar" : "aboveBar",
-    color: type === "call" ? "#00c853" : "#ff5252",
-    shape: type === "call" ? "arrowUp" : "arrowDown",
-    text: (type === "call" ? "BUY" : "SELL") + " $" + amount
+    position: isCall ? "belowBar" : "aboveBar",
+    color: color,
+    shape: isCall ? "arrowUp" : "arrowDown",
+    text: (isCall ? "BUY" : "SELL") + " $" + amount
   };
+
   try {
     var existingMarkers = window.__tradeMarkers || [];
-    existingMarkers.push(marker);
+    var allNewMarkers = dotMarkers.concat([arrowMarker]);
+    existingMarkers = existingMarkers.concat(allNewMarkers);
     existingMarkers.sort(function(a, b) { return a.time - b.time; });
     window.__tradeMarkers = existingMarkers;
     window.candleSeries.setMarkers(existingMarkers);
-    console.log("[Marker] Added:", marker.text);
-  } catch (e) {}
+    console.log("[Marker] Dot-dot-arrow added");
+  } catch (e) {
+    console.error("[Marker] Error:", e.message);
+  }
+
+  // ===== ENTRY PRICE LINE =====
   try {
     if (window.candleSeries.createPriceLine) {
       if (window.__entryLines && window.__entryLines.length > 0) {
@@ -1052,13 +1095,17 @@ function drawEntryMarker(type, entryPrice, amount) {
       window.__entryLines = [];
       var priceLine = window.candleSeries.createPriceLine({
         price: entryPrice,
-        color: type === "call" ? "#00c853" : "#ff5252",
-        lineWidth: 2, lineStyle: 2, axisLabelVisible: true,
-        title: type === "call" ? "BUY" : "SELL"
+        color: color,
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: ""
       });
       window.__entryLines.push(priceLine);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("[Marker] Line error:", e.message);
+  }
 }
 
 async function placeTrade(type) {
