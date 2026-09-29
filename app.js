@@ -1122,30 +1122,47 @@ function drawEntryMarker(type, entryPrice, amount) {
     console.error("[Marker] Error:", e.message);
   }
 
-  // ===== ENTRY PRICE LINE =====
-  try {
-    if (window.candleSeries.createPriceLine) {
-      if (window.__entryLines && window.__entryLines.length > 0) {
-        window.__entryLines.forEach(function(line) {
-          try { window.candleSeries.removePriceLine(line); } catch(e) {}
+    // ===== ENTRY PRICE LINE (FIXED — Quotex-style) =====
+    try {
+      if (window.candleSeries.createPriceLine) {
+        if (window.__entryLines && window.__entryLines.length > 0) {
+          window.__entryLines.forEach(function(line) {
+            try { window.candleSeries.removePriceLine(line); } catch(e) {}
+          });
+        }
+        window.__entryLines = [];
+        var priceLine = window.candleSeries.createPriceLine({
+          price: entryPrice,
+          color: color,
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: ""
         });
+        window.__entryLines.push(priceLine);
+
+        // Store entry price for refresh
+        window.__activeEntryPrice = entryPrice;
+        window.__activeEntryColor = color;
+
+        // Refresh price line on chart scale change
+        if (!window.__entryLineRefreshBound) {
+          window.__entryLineRefreshBound = true;
+          if (window.chart && window.chart.timeScale) {
+            window.chart.timeScale().subscribeVisibleTimeRangeChange(function() {
+              if (window.__activeEntryPrice && window.candleSeries) {
+                try {
+                  window.candleSeries.applyOptions({});
+                } catch(e) {}
+              }
+            });
+          }
       }
-      window.__entryLines = [];
-      var priceLine = window.candleSeries.createPriceLine({
-        price: entryPrice,
-        color: color,
-        lineWidth: 2,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: ""
-      });
-      window.__entryLines.push(priceLine);
+    } catch (e) {
+      console.error("[Marker] Line error:", e.message);
     }
-  } catch (e) {
-    console.error("[Marker] Line error:", e.message);
   }
 }
-
 async function placeTrade(type) {
   if (!currentUser) return;
   const now = Date.now();
