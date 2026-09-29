@@ -1084,7 +1084,7 @@ function updateTradeMarkers() {
   try { candleSeries.setMarkers(markers); } catch (e) {}
 }
 
-function drawEntryMarker(type, entryPrice, amount) {
+function drawEntryMarker(type, entryPrice, amount, entryTime) {
   if (!window.candleSeries) return;
   var now = Math.floor(Date.now() / 1000);
   var isCall = (type === "call");
@@ -1122,47 +1122,107 @@ function drawEntryMarker(type, entryPrice, amount) {
     console.error("[Marker] Error:", e.message);
   }
 
-    // ===== ENTRY PRICE LINE (FIXED — Quotex-style) =====
-    try {
-      if (window.candleSeries.createPriceLine) {
-        if (window.__entryLines && window.__entryLines.length > 0) {
-          window.__entryLines.forEach(function(line) {
-            try { window.candleSeries.removePriceLine(line); } catch(e) {}
-          });
-        }
-        window.__entryLines = [];
-        var priceLine = window.candleSeries.createPriceLine({
-          price: entryPrice,
-          color: color,
-          lineWidth: 2,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: ""
-        });
-        window.__entryLines.push(priceLine);
+  // ===== ENTRY LINE (HTML Overlay — entry candle theke) =====
+  renderHtmlEntryLine(entryPrice, color, entryTime);
+}
+// ===== HTML ENTRY LINE RENDERER (Quotex-style — entry candle theke) =====
+function renderHtmlEntryLine(price, color, entryTime) {
+  try {
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap || !window.candleSeries || !window.chart) return;
 
-        // Store entry price for refresh
-        window.__activeEntryPrice = entryPrice;
-        window.__activeEntryColor = color;
+    // Purono line remove
+    var oldLine = chartWrap.querySelector(".qx-html-entry-line");
+    if (oldLine) oldLine.remove();
 
-        // Refresh price line on chart scale change
-        if (!window.__entryLineRefreshBound) {
-          window.__entryLineRefreshBound = true;
-          if (window.chart && window.chart.timeScale) {
-            window.chart.timeScale().subscribeVisibleTimeRangeChange(function() {
-              if (window.__activeEntryPrice && window.candleSeries) {
-                try {
-                  window.candleSeries.applyOptions({});
-                } catch(e) {}
-              }
-            });
-          }
-      }
-    } catch (e) {
-      console.error("[Marker] Line error:", e.message);
+    // Notun line create
+    var line = document.createElement("div");
+    line.className = "qx-html-entry-line";
+    line.style.cssText =
+      "position:absolute;height:0;" +
+      "border-top:2px dashed " + color + ";" +
+      "z-index:18;pointer-events:none;";
+
+    // Right dot
+    var dot = document.createElement("div");
+    dot.style.cssText =
+      "position:absolute;right:-4px;top:-5px;width:10px;height:10px;" +
+      "background:" + color + ";border:2px solid #fff;border-radius:50%;";
+    line.appendChild(dot);
+
+    // Price label
+    var label = document.createElement("div");
+    label.className = "qx-html-entry-label";
+    label.textContent = Number(price).toFixed(2);
+    label.style.cssText =
+      "position:absolute;right:-62px;top:-10px;" +
+      "background:" + color + ";color:#fff;" +
+      "font-size:10px;font-weight:800;padding:2px 6px;" +
+      "border-radius:4px;white-space:nowrap;";
+    line.appendChild(label);
+
+    chartWrap.appendChild(line);
+
+    // Store for update loop
+    window.__htmlEntryLine = line;
+    window.__htmlEntryPrice = price;
+    window.__htmlEntryColor = color;
+    window.__htmlEntryTime = entryTime || Math.floor(Date.now() / 1000);
+
+    // Start update loop if not started
+    if (!window.__htmlEntryLineLoop) {
+      window.__htmlEntryLineLoop = setInterval(updateHtmlEntryLine, 100);
     }
+
+    // Initial position
+    updateHtmlEntryLine();
+  } catch(e) {
+    console.error("[HTML-LINE] Error:", e);
   }
 }
+
+// ===== UPDATE HTML ENTRY LINE POSITION (entry candle theke) =====
+function updateHtmlEntryLine() {
+  try {
+    var line = window.__htmlEntryLine;
+    var price = window.__htmlEntryPrice;
+    var entryTime = window.__htmlEntryTime;
+    if (!line || !price) return;
+    if (!window.candleSeries || !window.chart) return;
+
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap) return;
+
+    // Price position
+    var yPos = window.candleSeries.priceToCoordinate(price);
+    if (yPos === null || yPos === undefined) {
+      line.style.display = "none";
+      return;
+    }
+
+    // Entry time position — entry candle er X coordinate
+    var xPos = null;
+    if (entryTime) {
+      try {
+        xPos = window.chart.timeScale().timeToCoordinate(entryTime);
+      } catch(e) { xPos = null; }
+    }
+
+    // Jodi entry candle screen e na thake — line hide
+    if (xPos === null || xPos === undefined) {
+      line.style.display = "none";
+      return;
+    }
+
+    // Entry candle er position theke right edge porjonto
+    var leftOffset = Math.max(0, xPos);
+    line.style.left = leftOffset + "px";
+    line.style.right = "60px";
+    line.style.top = yPos + "px";
+    line.style.display = "block";
+  } catch(e) {}
+}
+
 async function placeTrade(type) {
   if (!currentUser) return;
   const now = Date.now();
@@ -1228,7 +1288,7 @@ async function placeTrade(type) {
       } catch(e) {}
     }, 2000);
 
-    drawEntryMarker(type, entryPrice, amount);
+    drawEntryMarker(type, entryPrice, amount, entryTime);
     console.log("[Trade] Placed:", type, "$" + amount, "@ $" + entryPrice.toFixed(2));
   } catch (error) {
     showMsg(error.message, "#ff5252");
@@ -1278,6 +1338,14 @@ async function checkExpiredTrades() {
           status: "completed", result: result, exitPrice: exitPrice,
           profit: profit, completedAt: new Date().toISOString()
         });
+        // HTML line remove
+        var chartWrap = document.getElementById("chart-wrapper");
+        if (chartWrap) {
+          var htmlLine = chartWrap.querySelector(".qx-html-entry-line");
+          if (htmlLine) htmlLine.remove();
+        }
+        window.__htmlEntryLine = null;
+        window.__htmlEntryPrice = null;
         if (result === "win") {
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           const currentBal = userDoc.data().balance || 0;
@@ -2787,6 +2855,8 @@ function renderTickMark(type, entryPrice, entryTime) {
     if (!chartWrap || !window.candleSeries || !window.chart) return;
     var oldMarks = chartWrap.querySelectorAll(".qx-tick-mark");
     oldMarks.forEach(function(m) { m.remove(); });
+    var oldHtmlLine = chartWrap.querySelector(".qx-html-entry-line");
+    if (oldHtmlLine) oldHtmlLine.remove();
     var entryTimeSec = Math.floor(new Date(entryTime).getTime() / 1000);
     var xPos = window.chart.timeScale().timeToCoordinate(entryTimeSec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
