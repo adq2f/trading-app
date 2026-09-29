@@ -2847,99 +2847,144 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
 // MSG 7 CLEAN: Trade Marker + Tick Mark
 // ============================================
 
-console.log("===== MSG 7 CLEAN STARTING =====");
+// ============================================
+// MSG 7 FINAL: Tick Mark + Entry Line (Quotex Style)
+// ============================================
+console.log("===== MSG 7 FINAL STARTING =====");
 
+// ===== Ensure candleSeries exposed =====
+setInterval(function() {
+  try {
+    if (!window.candleSeries && chart && chart._private__seriesMap) {
+      chart._private__seriesMap.forEach(function(s) {
+        if (s && s.priceToCoordinate) {
+          window.candleSeries = s;
+          console.log("[MSG7] candleSeries exposed");
+        }
+      });
+    }
+  } catch(e) {}
+}, 500);
+
+// ===== 1. Tick Mark (entry candle er nice/upore) =====
 function renderTickMark(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
     if (!chartWrap || !window.candleSeries || !window.chart) return;
-    var oldMarks = chartWrap.querySelectorAll(".qx-tick-mark");
-    oldMarks.forEach(function(m) { m.remove(); });
-    var oldHtmlLine = chartWrap.querySelector(".qx-html-entry-line");
-    if (oldHtmlLine) oldHtmlLine.remove();
-    var entryTimeSec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chart.timeScale().timeToCoordinate(entryTimeSec);
+    if (!entryTime || !entryPrice) return;
+
+    var old = chartWrap.querySelectorAll(".qx-tick-mark");
+    old.forEach(function(m) { m.remove(); });
+
+    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (xPos === null || yPos === null) {
-      setTimeout(function() { renderTickMark(type, entryPrice, entryTime); }, 500);
-      return;
-    }
+    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+
     var tick = document.createElement("div");
     tick.className = "qx-tick-mark " + type;
     tick.style.left = (xPos - 11) + "px";
-    tick.style.top = type === "call" ? (yPos + 20) + "px" : (yPos - 30) + "px";
+    tick.style.top = type === "call" ? (yPos + 18) + "px" : (yPos - 30) + "px";
+    tick.textContent = "\u2713";
     chartWrap.appendChild(tick);
-    console.log("[CLEAN] Tick mark added");
-  } catch(e) { console.error("[TICK] Error:", e); }
+  } catch(e) { console.warn("[MSG7] tick error:", e); }
 }
 
+// ===== 2. Dot Trail (4 dot, tick theke bahire) =====
 function renderDotTrail(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
     if (!chartWrap || !window.candleSeries || !window.chart) return;
-    var entryTimeSec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chart.timeScale().timeToCoordinate(entryTimeSec);
+    if (!entryTime || !entryPrice) return;
+
+    var old = chartWrap.querySelectorAll(".qx-dot-trail");
+    old.forEach(function(m) { m.remove(); });
+
+    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (xPos === null || yPos === null) return;
+    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+
     var trail = document.createElement("div");
     trail.className = "qx-dot-trail " + type;
     for (var i = 0; i < 4; i++) {
       var dot = document.createElement("div");
-      dot.className = "qx-dot";
+      dot.className = "qx-dot qx-dot-" + i;
       trail.appendChild(dot);
     }
     if (type === "call") {
-      trail.style.left = (xPos - 60) + "px";
+      trail.style.left = (xPos - 62) + "px";
       trail.style.top = (yPos + 18) + "px";
     } else {
-      trail.style.left = (xPos + 10) + "px";
+      trail.style.left = (xPos + 12) + "px";
       trail.style.top = (yPos - 28) + "px";
     }
     chartWrap.appendChild(trail);
-  } catch(e) { console.error("[TRAIL] Error:", e); }
+  } catch(e) { console.warn("[MSG7] trail error:", e); }
 }
 
-function renderEntryLine(type, entryPrice) {
+// ===== 3. Entry Line (shudhu entry candle theke dane) =====
+function renderEntryLine(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap || !window.candleSeries) return;
-    var oldLine = chartWrap.querySelector(".qx-entry-line");
-    if (oldLine) oldLine.remove();
+    if (!chartWrap || !window.candleSeries || !window.chart) return;
+    if (!entryPrice || !entryTime) return;
+
+    var old = chartWrap.querySelectorAll(".qx-entry-line");
+    old.forEach(function(m) { m.remove(); });
+
+    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (yPos === null || yPos === undefined) return;
+    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+
     var line = document.createElement("div");
     line.className = "qx-entry-line " + type;
+    line.style.left = xPos + "px";
+    line.style.right = "60px";
     line.style.top = yPos + "px";
     chartWrap.appendChild(line);
-  } catch(e) { console.error("[LINE] Error:", e); }
+
+    var label = document.createElement("div");
+    label.className = "qx-entry-label " + type;
+    label.textContent = Number(entryPrice).toFixed(2);
+    label.style.left = (xPos + 4) + "px";
+    label.style.top = (yPos - 22) + "px";
+    chartWrap.appendChild(label);
+  } catch(e) { console.warn("[MSG7] line error:", e); }
 }
 
+// ===== 4. Render all =====
 function renderAllTradeMarkers(type, entryPrice, entryTime) {
   renderTickMark(type, entryPrice, entryTime);
   renderDotTrail(type, entryPrice, entryTime);
-  renderEntryLine(type, entryPrice);
+  renderEntryLine(type, entryPrice, entryTime);
 }
 
+// ===== 5. Auto render check (har 1s) =====
 setInterval(function() {
   try {
     if (!window.chart || !window.candleSeries) return;
     if (typeof activeTradesLocal === "undefined") return;
     if (activeTradesLocal.length === 0) return;
+
     var chartWrap = document.getElementById("chart-wrapper");
     if (!chartWrap) return;
-    var existingTicks = chartWrap.querySelectorAll(".qx-tick-mark");
-    if (existingTicks.length === 0) {
-      activeTradesLocal.forEach(function(trade) {
-        if (trade.status !== "pending") return;
-        renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
-      });
-    }
+
+    var existing = chartWrap.querySelectorAll(".qx-tick-mark");
+    if (existing.length > 0) return;
+
+    activeTradesLocal.forEach(function(trade) {
+      if (trade.status !== "pending") return;
+      renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
+    });
   } catch(e) {}
 }, 1000);
 
-(function cleanPatchPlaceTrade() {
+// ===== 6. Patch placeTrade =====
+(function patchPlaceTradeFinal() {
   if (typeof window.placeTrade !== "function") {
-    setTimeout(cleanPatchPlaceTrade, 1000);
+    setTimeout(patchPlaceTradeFinal, 1000);
     return;
   }
   var _orig = window.placeTrade;
@@ -2955,8 +3000,10 @@ setInterval(function() {
       }
     }, 1000);
   };
+  console.log("[MSG7] placeTrade patched");
 })();
 
+// ===== 7. Initial render =====
 setTimeout(function() {
   try {
     if (activeTradesLocal && activeTradesLocal.length > 0) {
@@ -2968,194 +3015,24 @@ setTimeout(function() {
   } catch(e) {}
 }, 5000);
 
+// ===== 8. Cleanup expired =====
+setInterval(function() {
+  try {
+    if (typeof activeTradesLocal === "undefined") return;
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap) return;
+    if (activeTradesLocal.length === 0) {
+      chartWrap.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-entry-line, .qx-entry-label").forEach(function(el) {
+        el.remove();
+      });
+    }
+  } catch(e) {}
+}, 2000);
+
+// ===== Expose =====
 window.renderTickMark = renderTickMark;
 window.renderDotTrail = renderDotTrail;
 window.renderEntryLine = renderEntryLine;
 window.renderAllTradeMarkers = renderAllTradeMarkers;
 
-console.log("===== MSG 7 CLEAN LOADED =====");
-// ============================================
-// MSG 7 TEST: Tick Mark Debug
-// ============================================
-
-console.log("===== MSG 7 TEST STARTING =====");
-
-// ===== Test 1: Function ache ki na =====
-setTimeout(function() {
-  console.log("[TEST-1] renderTickMark:", typeof window.renderTickMark);
-  console.log("[TEST-2] renderAllTradeMarkers:", typeof window.renderAllTradeMarkers);
-  console.log("[TEST-3] chart:", typeof window.chart, window.chart ? "READY" : "NULL");
-  console.log("[TEST-4] candleSeries:", typeof window.candleSeries, window.candleSeries ? "READY" : "NULL");
-  console.log("[TEST-5] activeTradesLocal length:", activeTradesLocal ? activeTradesLocal.length : "undefined");
-}, 3000);
-
-// ===== Test 2: Manual Tick Mark Render =====
-setTimeout(function() {
-  console.log("[TEST-6] Manual render attempt...");
-  if (typeof window.renderTickMark === "function") {
-    try {
-      var testTime = new Date().toISOString();
-      window.renderTickMark("call", 85000, testTime);
-      console.log("[TEST-7] Manual renderTickMark called SUCCESS");
-    } catch(e) {
-      console.error("[TEST-8] Manual renderTickMark FAILED:", e.message);
-    }
-  } else {
-    console.error("[TEST-9] renderTickMark NOT A FUNCTION");
-  }
-}, 5000);
-
-// ===== Test 3: Chart Wrapper Check =====
-setTimeout(function() {
-  var chartWrap = document.getElementById("chart-wrapper");
-  console.log("[TEST-10] chart-wrapper:", chartWrap ? "FOUND" : "NOT FOUND");
-  if (chartWrap) {
-    console.log("[TEST-11] chart-wrapper width:", chartWrap.clientWidth);
-    console.log("[TEST-12] chart-wrapper height:", chartWrap.clientHeight);
-  }
-}, 6000);
-
-// ===== Test 4: Manually Trigger After 8s =====
-setTimeout(function() {
-  console.log("[TEST-13] Forcing render from activeTradesLocal...");
-  if (typeof activeTradesLocal !== "undefined" && activeTradesLocal.length > 0) {
-    activeTradesLocal.forEach(function(trade) {
-      console.log("[TEST-14] Trade found:", trade.type, trade.entryPrice);
-      if (typeof window.renderAllTradeMarkers === "function") {
-        try {
-          window.renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
-          console.log("[TEST-15] Manual render SUCCESS for", trade.type);
-        } catch(e) {
-          console.error("[TEST-16] Manual render FAILED:", e.message);
-        }
-      }
-    });
-  } else {
-    console.warn("[TEST-17] No active trades — trade place korun");
-  }
-}, 8000);
-
-console.log("===== MSG 7 TEST LOADED =====");
-// ============================================
-// MSG 7 ALERT TEST — Direct Check
-// ============================================
-
-setTimeout(function() {
-  var msg = "=== MSG 7 CHECK ===\n";
-  msg += "renderTickMark: " + typeof window.renderTickMark + "\n";
-  msg += "renderAllTradeMarkers: " + typeof window.renderAllTradeMarkers + "\n";
-  msg += "chart: " + (window.chart ? "READY" : "NULL") + "\n";
-  msg += "candleSeries: " + (window.candleSeries ? "READY" : "NULL") + "\n";
-  msg += "chart-wrapper: " + (document.getElementById("chart-wrapper") ? "FOUND" : "NOT FOUND") + "\n";
-  msg += "activeTradesLocal: " + (typeof activeTradesLocal !== "undefined" ? activeTradesLocal.length : "undefined") + "\n";
-  alert(msg);
-}, 6000);
-// ============================================
-// MSG 7 ALERT — Trade Check
-// ============================================
-
-setTimeout(function() {
-  var msg = "=== TRADE CHECK ===\n";
-  msg += "chart: " + (window.chart ? "READY" : "NULL") + "\n";
-  msg += "candleSeries: " + (window.candleSeries ? "READY" : "NULL") + "\n";
-  msg += "activeTradesLocal: " + (typeof activeTradesLocal !== "undefined" ? activeTradesLocal.length : "undefined") + "\n";
-  msg += "renderTickMark: " + typeof window.renderTickMark + "\n";
-  msg += "renderAllTradeMarkers: " + typeof window.renderAllTradeMarkers + "\n";
-  alert(msg);
-}, 5000);
-// ============================================
-// MSG 7 FINAL FIX: candleSeries Expose
-// ============================================
-
-console.log("===== MSG 7 FINAL FIX STARTING =====");
-
-// ===== 1. candleSeries ke window e expose korun =====
-setInterval(function() {
-  try {
-    if (chart && chart._private__seriesMap) {
-      // Lightweight Charts v4 e series map
-      var series = chart._private__seriesMap;
-      series.forEach(function(s) {
-        if (!window.candleSeries && s && s.priceToCoordinate) {
-          window.candleSeries = s;
-          console.log("[FINAL-FIX] candleSeries exposed from chart map");
-        }
-      });
-    }
-  } catch(e) {}
-}, 500);
-
-// ===== 2. Direct check — candleSeries ache ki na =====
-setTimeout(function() {
-  if (!window.candleSeries) {
-    console.log("[FINAL-FIX] Searching candleSeries in chart...");
-    try {
-      // Try chart's internal method
-      if (chart && chart._private__seriesMap) {
-        chart._private__seriesMap.forEach(function(s) {
-          if (s && s.priceToCoordinate && s.timeScale) {
-            window.candleSeries = s;
-            console.log("[FINAL-FIX] candleSeries FOUND");
-          }
-        });
-      }
-    } catch(e) {
-      console.error("[FINAL-FIX] Error:", e);
-    }
-  }
-}, 3000);
-
-// ===== 3. Trade render — candleSeries ache hole =====
-setInterval(async function() {
-  try {
-    if (!currentUser) return;
-    if (!window.chart) return;
-    if (!window.candleSeries) {
-      // Try again to get candleSeries
-      try {
-        if (chart && chart._private__seriesMap) {
-          chart._private__seriesMap.forEach(function(s) {
-            if (s && s.priceToCoordinate) {
-              window.candleSeries = s;
-            }
-          });
-        }
-      } catch(e) {}
-      return;
-    }
-    
-    var q = query(collection(db, "trades"),
-      where("userId", "==", currentUser.uid),
-      where("status", "==", "pending"));
-    var snap = await getDocs(q);
-    if (snap.empty) return;
-    
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
-    
-    var existingTicks = chartWrap.querySelectorAll(".qx-tick-mark");
-    if (existingTicks.length > 0) return;
-    
-    console.log("[FINAL-FIX] Rendering " + snap.size + " trades");
-    snap.forEach(function(docSnap) {
-      var trade = docSnap.data();
-      try {
-        if (typeof window.renderTickMark === "function") {
-          window.renderTickMark(trade.type, trade.entryPrice, trade.entryTime);
-        }
-        if (typeof window.renderDotTrail === "function") {
-          window.renderDotTrail(trade.type, trade.entryPrice, trade.entryTime);
-        }
-        if (typeof window.renderEntryLine === "function") {
-          window.renderEntryLine(trade.type, trade.entryPrice);
-        }
-      } catch(e) {
-        console.error("[FINAL-FIX] Render error:", e);
-      }
-    });
-  } catch(e) {
-    console.error("[FINAL-FIX] Error:", e);
-  }
-}, 3000);
-
-console.log("===== MSG 7 FINAL FIX LOADED =====");
+console.log("===== MSG 7 FINAL LOADED =====");
