@@ -116,21 +116,36 @@
           <!-- Chart menu -->
           <button class="qx-chart-menu" id="chart-menu-btn">⋯</button>
 
-          <!-- Timeframe badges -->
-          <div class="qx-chart-timeframe">
-            <button class="qx-tf-btn active" data-tf="1m">1m</button>
-            <button class="qx-tf-btn" data-tf="5m">5m</button>
-            <button class="qx-tf-btn" data-tf="15m">15m</button>
-            <button class="qx-tf-btn" data-tf="1h">1h</button>
+          <!-- Timeframe Dropdown (Quotex-style) -->
+          <div class="qx-tf-dropdown" id="tf-dropdown">
+            <div class="qx-tf-grid">
+              <button class="qx-tf-item" data-tf="5s">5s</button>
+              <button class="qx-tf-item" data-tf="10s">10s</button>
+              <button class="qx-tf-item" data-tf="15s">15s</button>
+              <button class="qx-tf-item" data-tf="30s">30s</button>
+              <button class="qx-tf-item active" data-tf="1m">1m</button>
+              <button class="qx-tf-item" data-tf="2m">2m</button>
+              <button class="qx-tf-item" data-tf="3m">3m</button>
+              <button class="qx-tf-item" data-tf="5m">5m</button>
+              <button class="qx-tf-item" data-tf="10m">10m</button>
+              <button class="qx-tf-item" data-tf="15m">15m</button>
+              <button class="qx-tf-item" data-tf="30m">30m</button>
+              <button class="qx-tf-item" data-tf="1h">1h</button>
+              <button class="qx-tf-item" data-tf="4h">4h</button>
+              <button class="qx-tf-item" data-tf="1d">1d</button>
+            </div>
           </div>
+
+          <!-- Active Timeframe Display -->
+          <div class="qx-tf-active" id="qx-tf-active">1m</div>
         </div>
 
       </section>
 
-      <!-- ===== TRADE PANEL ===== -->
+      <!-- ===== TRADE PANEL (Quotex-style v23) ===== -->
       <section class="qx-trade-panel">
 
-        <!-- Symbol + Pending Trade header -->
+        <!-- Symbol + Payout + Pending Toggle -->
         <div class="qx-trade-header">
           <div class="qx-trade-symbol">
             <span class="qx-trade-flag">◉</span>
@@ -139,7 +154,7 @@
               <option value="ETHUSDT">ETH/USDT</option>
               <option value="BNBUSDT">BNB/USDT</option>
             </select>
-            <span class="qx-trade-payout-badge">60%</span>
+            <span class="qx-trade-payout-badge">68%</span>
           </div>
 
           <div class="qx-pending-toggle">
@@ -153,7 +168,7 @@
           <div class="qx-field-group">
             <label class="qx-field-label">Timer</label>
             <div class="qx-field-value qx-timer-value">
-              <span id="big-timer">01:00</span>
+              <span id="big-timer">00:01</span>
             </div>
           </div>
 
@@ -171,12 +186,12 @@
         <div class="qx-payout-row">
           <span class="qx-payout-label">Payout</span>
           <div class="qx-payout-value">
-            <span id="payout-display">1.68</span>
+            <span id="payout-display">1.68 $</span>
             <button class="qx-switch-btn" id="payout-switch-btn">SWITCH</button>
           </div>
         </div>
 
-        <!-- Up/Down Buttons -->
+        <!-- Buy/Sell Buttons (Quotex-style) -->
         <div class="qx-trade-actions">
           <button id="call-btn" class="qx-up-btn">
             <span class="qx-btn-text">Buy</span>
@@ -191,7 +206,39 @@
         <p id="trade-message"></p>
 
       </section>
-
+      <!-- ===== TRADES TAB SECTION (MSG 4) ===== -->
+      <section class="qx-trades-section">
+        <div class="qx-trades-tabs">
+          <button class="qx-trades-tab active" data-trades-tab="active" type="button">
+            <span>Trades</span>
+            <span class="qx-trades-count" id="trades-count-badge">0</span>
+          </button>
+          <button class="qx-trades-tab" data-trades-tab="history" type="button">
+            <span class="qx-clock-icon">🕐</span>
+            <span class="qx-trades-count" id="history-count-badge">0</span>
+          </button>
+        </div>
+        <div class="qx-trades-body">
+          <div id="qx-trades-active-pane" class="qx-trades-pane active">
+            <div class="qx-trades-date-badge">
+              <span id="qx-date-label">TODAY</span>
+              <span class="qx-date-count" id="qx-date-count">0</span>
+            </div>
+            <div id="active-trades-list" class="qx-trades-list">
+              <p class="empty-text">No active trades</p>
+            </div>
+          </div>
+          <div id="qx-trades-history-pane" class="qx-trades-pane">
+            <div class="qx-trades-date-badge">
+              <span id="qx-history-date-label">TODAY</span>
+              <span class="qx-date-count" id="qx-history-date-count">0</span>
+            </div>
+            <div id="history-list" class="qx-trades-list">
+              <p class="empty-text">No trade history yet</p>
+            </div>
+          </div>
+        </div>
+      </section>
       <!-- ===== BOTTOM NAV ===== -->
       <nav class="qx-bottom-nav">
         <button class="qx-nav-btn" data-nav="history" type="button">
