@@ -1821,3 +1821,29 @@ setInterval(function() {
 
 console.log("===== ALL PARTS LOADED =====");
 console.log("===== Part 5: Trade Logic + Timer + History + Entry Marker loaded =====");
+// ===== QUOTEX-STYLE TIME LABELS =====
+try {
+  var timeLabels = document.createElement("div");
+  timeLabels.className = "qx-time-labels";
+  timeLabels.id = "qx-time-labels";
+  chartEl.appendChild(timeLabels);
+} catch(e) {}
+
+// Update time labels every 1s
+setInterval(function() {
+  try {
+    var labelsEl = document.getElementById("qx-time-labels");
+    if (!labelsEl) return;
+    var now = new Date();
+    var labels = [];
+    for (var i = -2; i <= 2; i++) {
+      var t = new Date(now.getTime() + i * 2 * 60 * 1000);
+      var hh = String(t.getHours()).padStart(2, "0");
+      var mm = String(t.getMinutes()).padStart(2, "0");
+      labels.push(hh + ":" + mm);
+    }
+    labelsEl.innerHTML = labels.map(function(l, i) {
+      return '<span class="qx-time-label' + (i === 2 ? " active" : "") + '">' + l + '</span>';
+    }).join("");
+  } catch(e) {}
+}, 1000);
