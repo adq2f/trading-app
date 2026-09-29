@@ -278,12 +278,24 @@ loginBtn.addEventListener("click", async () => {
   }
 });
 
-// ===== লগআউট =====
-logoutBtn.addEventListener("click", async () => {
-  await signOut(auth);
+// ===== লগআউট (null-safe) =====
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+  });
+}
+
+// ===== পরিমাণ +/− (Quotex style — qx-inc-btn) =====
+document.querySelectorAll(".qx-inc-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    let val = parseFloat(tradeAmountInput.value) || 0;
+    if (btn.dataset.action === "plus") val += 1;
+    else val = Math.max(1, val - 1);
+    tradeAmountInput.value = val;
+  });
 });
 
-// ===== পরিমাণ +/− =====
+// ===== পুরোনো amount-btn (fallback, যদি থাকে) =====
 document.querySelectorAll(".amount-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     let val = parseFloat(tradeAmountInput.value) || 0;
@@ -293,7 +305,7 @@ document.querySelectorAll(".amount-btn").forEach(btn => {
   });
 });
 
-// ===== এক্সপায়ারি টাইম সিলেকশন =====
+// ===== এক্সপায়ারি টাইম সিলেকশন (qux-tf-btn, qx-tf-btn) =====
 document.querySelectorAll(".time-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".time-btn").forEach(b => b.classList.remove("active"));
@@ -302,7 +314,18 @@ document.querySelectorAll(".time-btn").forEach(btn => {
   });
 });
 
-// ===== টাইমফ্রেম সিলেকশন =====
+// ===== টাইমফ্রেম সিলেকশন (qx-tf-btn) =====
+document.querySelectorAll(".qx-tf-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".qx-tf-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedTimeframe = btn.dataset.tf;
+    await loadCandles();
+    if (currentUser) startLivePrice();
+  });
+});
+
+// ===== পুরোনো .tf-btn (fallback) =====
 document.querySelectorAll(".tf-btn").forEach(btn => {
   btn.addEventListener("click", async () => {
     document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
@@ -313,7 +336,7 @@ document.querySelectorAll(".tf-btn").forEach(btn => {
   });
 });
 
-// ===== অ্যাসেট পরিবর্তন =====
+// ===== অ্যাসেট পরিবর্তন (null-safe) =====
 if (assetSelect) {
   assetSelect.addEventListener("change", async () => {
     selectedAsset = assetSelect.value;
@@ -322,27 +345,29 @@ if (assetSelect) {
   });
 }
 
-// ===== ট্যাব স্যুইচ =====
+// ===== ট্যাব স্যুইচ (null-safe) =====
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-    if (btn.dataset.tab === "active") {
-      document.getElementById("active-trades-list").classList.add("active");
-    } else {
-      document.getElementById("history-list").classList.add("active");
+    var activeTab = document.getElementById("active-trades-list");
+    var historyTab = document.getElementById("history-list");
+    if (btn.dataset.tab === "active" && activeTab) {
+      activeTab.classList.add("active");
+    } else if (historyTab) {
+      historyTab.classList.add("active");
     }
   });
 });
 
-// ===== ড্রয়িং টুল সিলেকশন =====
+// ===== ড্রয়িং টুল সিলেকশন (null-safe) =====
 document.querySelectorAll(".drawing-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     const tool = btn.dataset.tool;
 
     if (tool === "Eraser") {
-      clearAllDrawings();
+      if (typeof clearAllDrawings === "function") clearAllDrawings();
       return;
     }
 
@@ -350,10 +375,12 @@ document.querySelectorAll(".drawing-btn").forEach(btn => {
     btn.classList.add("active");
     currentDrawingTool = tool;
 
-    if (tool === "cursor") {
-      drawingCanvas.classList.remove("active");
-    } else {
-      drawingCanvas.classList.add("active");
+    if (drawingCanvas) {
+      if (tool === "cursor") {
+        drawingCanvas.classList.remove("active");
+      } else {
+        drawingCanvas.classList.add("active");
+      }
     }
   });
 });
@@ -373,16 +400,21 @@ function closePopup(popup) {
   popup.classList.add("hidden");
 }
 
-// ব্যালেন্স পপআপ
+// ব্যালেন্স পপআপ (MSG 21 এ balance-popup নেই, তাই শুধু account-popup)
 if (balanceChip) {
   balanceChip.addEventListener("click", () => {
     if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-    openPopup(balancePopup, balancePopupOverlay);
+    if (balancePopup) {
+      openPopup(balancePopup, balancePopupOverlay);
+    } else {
+      // No balance popup — open account popup instead
+      openPopup(accountPopup, accountPopupOverlay);
+    }
   });
 }
 if (balancePopupClose) balancePopupClose.addEventListener("click", () => closePopup(balancePopup));
 
-// অ্যাকাউন্ট টগল পপআপ
+// অ্যাকাউন্ট টগল পপআপ (MSG 21 এ account-toggle নেই, তাই শুধু balance-chip handle করে)
 if (accountToggleBtn) {
   accountToggleBtn.addEventListener("click", () => {
     openPopup(accountPopup, accountPopupOverlay);
@@ -393,7 +425,7 @@ if (accountPopupClose) accountPopupClose.addEventListener("click", () => closePo
 // ডিপোজিট পপআপ
 if (depositBtn) {
   depositBtn.addEventListener("click", () => {
-    closePopup(balancePopup);
+    if (balancePopup) closePopup(balancePopup);
     openPopup(depositPopup, depositPopupOverlay);
   });
 }
@@ -402,7 +434,7 @@ if (depositPopupClose) depositPopupClose.addEventListener("click", () => closePo
 // উইথড্র পপআপ
 if (withdrawBtn) {
   withdrawBtn.addEventListener("click", () => {
-    closePopup(balancePopup);
+    if (balancePopup) closePopup(balancePopup);
     openPopup(withdrawPopup, withdrawPopupOverlay);
   });
 }
@@ -1176,7 +1208,11 @@ function updateBigTimer() {
   if (!bigTimer) return;
 
   if (activeTradesLocal.length === 0) {
-    bigTimer.classList.add("hidden");
+    bigTimer.classList.remove("hidden");
+    var time = (typeof selectedTime !== "undefined") ? selectedTime : 60;
+    var mm = Math.floor(time / 60);
+    var ss = time % 60;
+    bigTimer.textContent = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
     return;
   }
 
@@ -1376,12 +1412,12 @@ function loadActiveTrades() {
 
   activeTradesUnsub = onSnapshot(q, (snapshot) => {
     activeTradesLocal = [];
-    activeTradesList.innerHTML = "";
+    if (activeTradesList) activeTradesList.innerHTML = "";
 
     if (snapshot.empty) {
-      activeTradesList.innerHTML = '<p class="empty-text">কোনো চলমান ট্রেড নেই</p>';
+      if (activeTradesList) activeTradesList.innerHTML = '<p class="empty-text">No active trades</p>';
       if (activeCount) activeCount.textContent = "0";
-      bigTimer.classList.add("hidden");
+      if (bigTimer) bigTimer.classList.add("hidden");
       updateTradeMarkers();
       return;
     }
@@ -1400,11 +1436,11 @@ function loadActiveTrades() {
       div.innerHTML = `
         <div class="trade-info">
           <span class="trade-type ${trade.type}">${trade.type.toUpperCase()}</span>
-          <span class="trade-time">$${trade.amount} @ ${trade.entryPrice.toFixed(2)}</span>
+          <span class="trade-time">$${trade.amount} @ ${Number(trade.entryPrice).toFixed(2)}</span>
         </div>
         <div class="trade-result pending">${timeStr}</div>
       `;
-      activeTradesList.appendChild(div);
+      if (activeTradesList) activeTradesList.appendChild(div);
     });
 
     if (activeCount) activeCount.textContent = activeTradesLocal.length;
@@ -1424,10 +1460,10 @@ function loadHistory() {
   );
 
   historyUnsub = onSnapshot(q, (snapshot) => {
-    historyList.innerHTML = "";
+    if (historyList) historyList.innerHTML = "";
 
     if (snapshot.empty) {
-      historyList.innerHTML = '<p class="empty-text">এখনো কোনো ট্রেড সম্পন্ন হয়নি</p>';
+      if (historyList) historyList.innerHTML = '<p class="empty-text">No trade history yet</p>';
       return;
     }
 
@@ -1464,7 +1500,7 @@ function loadHistory() {
           ${trade.result === "win" ? "+$" + trade.profit.toFixed(2) : "-$" + trade.amount.toFixed(2)}
         </div>
       `;
-      historyList.appendChild(div);
+      if (historyList) historyList.appendChild(div);
     });
   });
 }
