@@ -2592,7 +2592,7 @@ setTimeout(function() {
 
 console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
 // ============================================
-// BALANCE POPUP — QUOTEX STYLE (Demo/Live Select + Edit)
+// BALANCE POPUP — QUOTEX STYLE (Demo Edit Only)
 // ============================================
 
 (function initQuotexBalancePopup() {
@@ -2616,7 +2616,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     } catch(e) { console.error("[QX-BAL] refresh error:", e); }
   }
 
-  // Active account option update
   function updateActiveOption() {
     document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
       var type = opt.dataset.accType;
@@ -2624,10 +2623,9 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Click on Demo/Live option = switch account
   document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
     opt.addEventListener("click", function(e) {
-      if (e.target.closest(".qx-acc-edit")) return; // Edit button click ignore
+      if (e.target.closest(".qx-acc-edit")) return;
       var type = opt.dataset.accType;
       console.log("[QX-BAL] Switching to:", type);
       if (typeof switchAccount === "function") {
@@ -2637,13 +2635,12 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   });
 
-  // Edit button click
   document.querySelectorAll(".qx-acc-edit").forEach(function(btn) {
     btn.addEventListener("click", function(e) {
       e.preventDefault();
       e.stopPropagation();
       var type = btn.dataset.edit;
-      console.log("[QX-BAL] Edit clicked for:", type);
+      if (type !== "demo") return;
 
       var editBox = document.getElementById("qx-balance-edit-box");
       var editInput = document.getElementById("qx-balance-edit-input");
@@ -2652,14 +2649,11 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
       editBox.classList.remove("hidden");
       editBox.dataset.editType = type;
 
-      // Current value load
       if (currentUser) {
         getDoc(doc(db, "users", currentUser.uid)).then(function(userDoc) {
           if (userDoc.exists()) {
             var data = userDoc.data();
-            var currentVal = type === "demo"
-              ? (data.demoBalance ?? data.balance ?? 1000)
-              : (data.realBalance ?? 0);
+            var currentVal = data.demoBalance ?? data.balance ?? 1000;
             editInput.value = Number(currentVal).toFixed(2);
             editInput.focus();
           }
@@ -2668,7 +2662,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   });
 
-  // Cancel edit
   var cancelBtn = document.getElementById("qx-balance-edit-cancel");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", function() {
@@ -2677,7 +2670,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Save edit
   var saveBtn = document.getElementById("qx-balance-edit-save");
   if (saveBtn) {
     saveBtn.addEventListener("click", async function() {
@@ -2686,6 +2678,11 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
       if (!editBox || !editInput || !currentUser) return;
 
       var type = editBox.dataset.editType;
+      if (type !== "demo") {
+        alert("Live balance cannot be edited.");
+        return;
+      }
+
       var newVal = parseFloat(editInput.value);
       if (isNaN(newVal) || newVal < 0) {
         alert("Please enter a valid amount");
@@ -2693,20 +2690,17 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
       }
 
       try {
-        var field = type === "demo" ? "demoBalance" : "realBalance";
-        var updateData = {};
-        updateData[field] = newVal;
-        // balance field always mirrors active account
-        if (type === accountType) {
-          updateData.balance = newVal;
+        await updateDoc(doc(db, "users", currentUser.uid), {
+          demoBalance: newVal
+        });
+        if (accountType === "demo") {
           userBalance = newVal;
           window.userBalance = newVal;
           if (typeof safeSetTextById === "function") {
             safeSetTextById("balance", userBalance.toFixed(2));
           }
         }
-        await updateDoc(doc(db, "users", currentUser.uid), updateData);
-        console.log("[QX-BAL] Balance updated:", type, "=", newVal);
+        console.log("[QX-BAL] Demo balance updated:", newVal);
         refreshBalanceDisplays();
         editBox.classList.add("hidden");
       } catch(err) {
@@ -2716,7 +2710,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Close button
   var closeBtn = document.getElementById("balance-popup-close");
   var popup = document.getElementById("balance-popup");
   if (closeBtn && popup) {
@@ -2725,7 +2718,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Overlay click
   var overlay = document.getElementById("balance-popup-overlay");
   if (overlay && popup) {
     overlay.addEventListener("click", function() {
@@ -2733,7 +2725,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Deposit / Withdraw buttons inside popup
   var depBtn = document.getElementById("balance-popup-deposit");
   var wdBtn = document.getElementById("balance-popup-withdraw");
   if (depBtn && popup) {
@@ -2751,7 +2742,6 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
     });
   }
 
-  // Refresh display whenever popup opens
   var chip = document.getElementById("balance-chip");
   if (chip) {
     chip.addEventListener("click", function() {
