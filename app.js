@@ -5176,3 +5176,375 @@ window.applyReferralOnSignup = applyReferralOnSignup;
 window.getRefCodeFromURL = getRefCodeFromURL;
 
 console.log('===== MSG 20: Referral System loaded =====');
+/* ============================================================
+   MSG 21: QUOTEX-STYLE UI CONTROLLERS
+   ============================================================ */
+
+// ============================================================
+// 1. TOP BAR — Account dropdown
+// ============================================================
+
+function bindAccountButton() {
+  var btn = document.getElementById('balance-chip');
+  if (!btn || btn.dataset.boundQx === '1') return;
+  btn.dataset.boundQx = '1';
+  btn.addEventListener('click', function () {
+    var popup = document.getElementById('account-popup');
+    var overlay = document.getElementById('account-popup-overlay');
+    if (!popup) return;
+    popup.classList.remove('hidden');
+    if (overlay) overlay.onclick = function () {
+      popup.classList.add('hidden');
+    };
+  });
+  console.log('[MSG21] Account button bound');
+}
+
+function bindAccountPopupClose() {
+  var btn = document.getElementById('account-popup-close');
+  if (btn && btn.dataset.boundQxClose !== '1') {
+    btn.dataset.boundQxClose = '1';
+    btn.addEventListener('click', function () {
+      document.getElementById('account-popup').classList.add('hidden');
+    });
+  }
+}
+
+// ============================================================
+// 2. NOTIFICATIONS BELL
+// ============================================================
+
+function bindNotifButton() {
+  var btn = document.getElementById('notif-btn');
+  if (!btn || btn.dataset.boundQx === '1') return;
+  btn.dataset.boundQx = '1';
+  btn.addEventListener('click', function () {
+    // For now just open chat / tournament based on unread
+    var badge = document.getElementById('notif-badge');
+    var count = badge ? parseInt(badge.textContent) || 0 : 0;
+    if (count > 0) {
+      // Show alert — will be upgraded in MSG 22
+      alert('You have ' + count + ' notifications');
+      if (badge) badge.classList.add('hidden');
+    } else {
+      alert('No new notifications');
+    }
+  });
+  console.log('[MSG21] Notif button bound');
+}
+
+// ============================================================
+// 3. CHART TIMEFRAME (bottom of chart)
+// ============================================================
+
+function bindChartTimeframe() {
+  var btns = document.querySelectorAll('.qx-tf-btn');
+  btns.forEach(function (btn) {
+    if (btn.dataset.boundQx === '1') return;
+    btn.dataset.boundQx = '1';
+    btn.addEventListener('click', function () {
+      btns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var tf = btn.dataset.tf;
+      selectedTimeframe = tf;
+      if (typeof loadCandles === 'function') {
+        loadCandles();
+      }
+      console.log('[MSG21] Timeframe changed:', tf);
+    });
+  });
+  console.log('[MSG21] Chart timeframe bound');
+}
+
+// ============================================================
+// 4. CHART MENU (top-right dots)
+// ============================================================
+
+function bindChartMenu() {
+  var btn = document.getElementById('chart-menu-btn');
+  if (!btn || btn.dataset.boundQx === '1') return;
+  btn.dataset.boundQx = '1';
+  btn.addEventListener('click', function () {
+    // Open more menu for now
+    if (typeof openMoreMenu === 'function') openMoreMenu();
+  });
+}
+
+// ============================================================
+// 5. INVESTMENT +/- (Quotex style)
+// ============================================================
+
+function bindInvestmentControls() {
+  var btns = document.querySelectorAll('.qx-inc-btn');
+  btns.forEach(function (btn) {
+    if (btn.dataset.boundQx === '1') return;
+    btn.dataset.boundQx = '1';
+    btn.addEventListener('click', function () {
+      var input = document.getElementById('trade-amount');
+      if (!input) return;
+      var val = parseFloat(input.value) || 0;
+      if (btn.dataset.action === 'plus') val += 1;
+      else val = Math.max(1, val - 1);
+      input.value = val;
+    });
+  });
+  console.log('[MSG21] Investment controls bound');
+}
+
+// ============================================================
+// 6. PAYOUT SWITCH (change timer)
+// ============================================================
+
+window.qxCurrentTime = 60;
+
+function bindPayoutSwitch() {
+  var btn = document.getElementById('payout-switch-btn');
+  if (!btn || btn.dataset.boundQx === '1') return;
+  btn.dataset.boundQx = '1';
+  btn.addEventListener('click', function () {
+    // Cycle timer between options
+    var options = [60, 300, 900, 3600, 1800];
+    var idx = options.indexOf(window.qxCurrentTime);
+    idx = (idx + 1) % options.length;
+    window.qxCurrentTime = options[idx];
+    selectedTime = window.qxCurrentTime;
+
+    // Update display
+    var timerEl = document.getElementById('big-timer');
+    if (timerEl) {
+      timerEl.textContent = formatQxTimer(window.qxCurrentTime);
+    }
+    console.log('[MSG21] Timer switched to:', window.qxCurrentTime + 's');
+  });
+  console.log('[MSG21] Payout switch bound');
+}
+
+function formatQxTimer(sec) {
+  var m = Math.floor(sec / 60);
+  var s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+// ============================================================
+// 7. BOTTOM NAV
+// ============================================================
+
+function bindBottomNav() {
+  var btns = document.querySelectorAll('.qx-nav-btn');
+  btns.forEach(function (btn) {
+    if (btn.dataset.boundQx === '1') return;
+    btn.dataset.boundQx = '1';
+    btn.addEventListener('click', function () {
+      var action = btn.dataset.nav;
+
+      // Update active
+      btns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+
+      if (action === 'history') {
+        // Open trades history (from MSG 20 we have chat popup — no history yet)
+        alert('Trade History — Coming in MSG 22');
+      } else if (action === 'help') {
+        alert('Help — Coming in MSG 22');
+      } else if (action === 'profile') {
+        // Open account popup
+        var popup = document.getElementById('account-popup');
+        var overlay = document.getElementById('account-popup-overlay');
+        if (popup) {
+          popup.classList.remove('hidden');
+          if (overlay) overlay.onclick = function () { popup.classList.add('hidden'); };
+        }
+      } else if (action === 'tournament') {
+        // Open tournament
+        if (typeof openTournamentPopup === 'function') {
+          openTournamentPopup();
+        } else {
+          alert('Tournament — MSG 18');
+        }
+      } else if (action === 'more') {
+        // Open more menu
+        openMoreMenu();
+      }
+    });
+  });
+  console.log('[MSG21] Bottom nav bound');
+}
+
+// ============================================================
+// 8. MORE MENU (Drawer)
+// ============================================================
+
+function openMoreMenu() {
+  var menu = document.getElementById('more-menu');
+  var overlay = document.getElementById('more-menu-overlay');
+  if (!menu) return;
+  menu.classList.remove('hidden');
+  if (overlay) overlay.onclick = function () { closeMoreMenu(); };
+}
+
+function closeMoreMenu() {
+  var menu = document.getElementById('more-menu');
+  if (!menu) return;
+  menu.classList.add('hidden');
+}
+
+function bindMoreMenu() {
+  // Close button
+  var closeBtn = document.getElementById('more-menu-close');
+  if (closeBtn && closeBtn.dataset.boundQx !== '1') {
+    closeBtn.dataset.boundQx = '1';
+    closeBtn.addEventListener('click', closeMoreMenu);
+  }
+
+  // Menu items
+  var items = document.querySelectorAll('.more-menu-item');
+  items.forEach(function (item) {
+    if (item.dataset.boundQx === '1') return;
+    item.dataset.boundQx = '1';
+    item.addEventListener('click', function () {
+      var action = item.dataset.menu;
+      closeMoreMenu();
+
+      if (action === 'deposit') {
+        var popup = document.getElementById('deposit-popup');
+        var overlay = document.getElementById('deposit-popup-overlay');
+        if (popup) {
+          popup.classList.remove('hidden');
+          if (overlay) overlay.onclick = function () { popup.classList.add('hidden'); };
+        }
+      } else if (action === 'withdraw') {
+        var popup = document.getElementById('withdraw-popup');
+        var overlay = document.getElementById('withdraw-popup-overlay');
+        if (popup) {
+          popup.classList.remove('hidden');
+          if (overlay) overlay.onclick = function () { popup.classList.add('hidden'); };
+        }
+      } else if (action === 'referral') {
+        if (typeof openReferralPopup === 'function') openReferralPopup();
+      } else if (action === 'chat') {
+        if (typeof openUserChat === 'function') openUserChat();
+      } else if (action === 'logout') {
+        if (confirm('Logout?')) {
+          if (typeof signOut === 'function' && typeof auth !== 'undefined') {
+            signOut(auth);
+          }
+        }
+      } else if (action === 'market') {
+        alert('Market — Coming in MSG 22');
+      } else if (action === 'analytics') {
+        alert('Analytics — Coming in MSG 22');
+      } else if (action === 'signals') {
+        alert('Signals — Coming in MSG 23');
+      } else if (action === 'trades') {
+        alert('Trades — Coming in MSG 22');
+      } else if (action === 'settings') {
+        alert('Settings — Coming in MSG 22');
+      }
+    });
+  });
+
+  console.log('[MSG21] More menu bound');
+}
+
+// ============================================================
+// 9. BIND SIDEBAR-REPLACEMENT BUTTONS
+// ============================================================
+
+// Deposit button in top bar
+function bindTopBarDeposit() {
+  var btn = document.getElementById('deposit-btn');
+  if (!btn || btn.dataset.boundQx === '1') return;
+  btn.dataset.boundQx = '1';
+  btn.addEventListener('click', function () {
+    var popup = document.getElementById('deposit-popup');
+    var overlay = document.getElementById('deposit-popup-overlay');
+    if (popup) {
+      popup.classList.remove('hidden');
+      if (overlay) overlay.onclick = function () { popup.classList.add('hidden'); };
+    }
+  });
+}
+
+// ============================================================
+// 10. UPDATE ACCOUNT BADGE (DEMO/LIVE)
+// ============================================================
+
+function updateAccountBadge() {
+  var badge = document.getElementById('qx-account-type');
+  if (!badge) return;
+  if (typeof accountType !== 'undefined' && accountType === 'real') {
+    badge.textContent = 'LIVE';
+    badge.style.background = 'linear-gradient(135deg, #00c853 0%, #00a844 100%)';
+  } else {
+    badge.textContent = 'DEMO';
+    badge.style.background = 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)';
+  }
+}
+
+setInterval(updateAccountBadge, 1000);
+
+// ============================================================
+// 11. TICKER UPDATE — Big timer should show selectedTime
+// ============================================================
+
+function updateQxBigTimer() {
+  var el = document.getElementById('big-timer');
+  if (!el) return;
+
+  if (typeof activeTradesLocal !== 'undefined' && activeTradesLocal.length > 0) {
+    // Active trade running — show its countdown
+    var soonest = activeTradesLocal[0].expiresAt;
+    activeTradesLocal.forEach(function (t) {
+      if (t.expiresAt < soonest) soonest = t.expiresAt;
+    });
+    var remaining = Math.max(0, Math.ceil((soonest - Date.now()) / 1000));
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  } else {
+    // No active trade — show selected time
+    var time = (typeof selectedTime !== 'undefined') ? selectedTime : 60;
+    el.textContent = formatQxTimer(time);
+  }
+}
+
+setInterval(updateQxBigTimer, 500);
+
+// ============================================================
+// 12. INIT
+// ============================================================
+
+function initMsg21() {
+  bindAccountButton();
+  bindAccountPopupClose();
+  bindNotifButton();
+  bindChartTimeframe();
+  bindChartMenu();
+  bindInvestmentControls();
+  bindPayoutSwitch();
+  bindBottomNav();
+  bindMoreMenu();
+  bindTopBarDeposit();
+  updateAccountBadge();
+  updateQxBigTimer();
+  console.log('[MSG21] Quotex-style UI initialized');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMsg21);
+} else {
+  initMsg21();
+}
+setTimeout(initMsg21, 1500);
+setTimeout(initMsg21, 3500);
+
+// ============================================================
+// 13. EXPOSE FOR DEBUG
+// ============================================================
+
+window.openMoreMenu = openMoreMenu;
+window.closeMoreMenu = closeMoreMenu;
+window.initMsg21 = initMsg21;
+window.formatQxTimer = formatQxTimer;
+
+console.log('===== MSG 21: Quotex-style Trade Screen loaded =====');
