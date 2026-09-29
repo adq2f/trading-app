@@ -2974,3 +2974,99 @@ setTimeout(function() {
   msg += "renderAllTradeMarkers: " + typeof window.renderAllTradeMarkers + "\n";
   alert(msg);
 }, 5000);
+// ============================================
+// MSG 7 FINAL FIX: candleSeries Expose
+// ============================================
+
+console.log("===== MSG 7 FINAL FIX STARTING =====");
+
+// ===== 1. candleSeries ke window e expose korun =====
+setInterval(function() {
+  try {
+    if (chart && chart._private__seriesMap) {
+      // Lightweight Charts v4 e series map
+      var series = chart._private__seriesMap;
+      series.forEach(function(s) {
+        if (!window.candleSeries && s && s.priceToCoordinate) {
+          window.candleSeries = s;
+          console.log("[FINAL-FIX] candleSeries exposed from chart map");
+        }
+      });
+    }
+  } catch(e) {}
+}, 500);
+
+// ===== 2. Direct check — candleSeries ache ki na =====
+setTimeout(function() {
+  if (!window.candleSeries) {
+    console.log("[FINAL-FIX] Searching candleSeries in chart...");
+    try {
+      // Try chart's internal method
+      if (chart && chart._private__seriesMap) {
+        chart._private__seriesMap.forEach(function(s) {
+          if (s && s.priceToCoordinate && s.timeScale) {
+            window.candleSeries = s;
+            console.log("[FINAL-FIX] candleSeries FOUND");
+          }
+        });
+      }
+    } catch(e) {
+      console.error("[FINAL-FIX] Error:", e);
+    }
+  }
+}, 3000);
+
+// ===== 3. Trade render — candleSeries ache hole =====
+setInterval(async function() {
+  try {
+    if (!currentUser) return;
+    if (!window.chart) return;
+    if (!window.candleSeries) {
+      // Try again to get candleSeries
+      try {
+        if (chart && chart._private__seriesMap) {
+          chart._private__seriesMap.forEach(function(s) {
+            if (s && s.priceToCoordinate) {
+              window.candleSeries = s;
+            }
+          });
+        }
+      } catch(e) {}
+      return;
+    }
+    
+    var q = query(collection(db, "trades"),
+      where("userId", "==", currentUser.uid),
+      where("status", "==", "pending"));
+    var snap = await getDocs(q);
+    if (snap.empty) return;
+    
+    var chartWrap = document.getElementById("chart-wrapper");
+    if (!chartWrap) return;
+    
+    var existingTicks = chartWrap.querySelectorAll(".qx-tick-mark");
+    if (existingTicks.length > 0) return;
+    
+    console.log("[FINAL-FIX] Rendering " + snap.size + " trades");
+    snap.forEach(function(docSnap) {
+      var trade = docSnap.data();
+      try {
+        if (typeof window.renderTickMark === "function") {
+          window.renderTickMark(trade.type, trade.entryPrice, trade.entryTime);
+        }
+        if (typeof window.renderDotTrail === "function") {
+          window.renderDotTrail(trade.type, trade.entryPrice, trade.entryTime);
+        }
+        if (typeof window.renderEntryLine === "function") {
+          window.renderEntryLine(trade.type, trade.entryPrice);
+        }
+      } catch(e) {
+        console.error("[FINAL-FIX] Render error:", e);
+      }
+    });
+  } catch(e) {
+    console.error("[FINAL-FIX] Error:", e);
+  }
+}, 3000);
+
+console.log("===== MSG 7 FINAL FIX LOADED =====");
