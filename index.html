@@ -10,10 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=22">
+  <link rel="stylesheet" href="style.css?v=23">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
 </head>
 <body>
 
@@ -44,7 +42,7 @@
   <!-- ========== TRADING PAGE ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== TOP BAR (Quotex-style v23) ===== -->
+    <!-- ===== TOP BAR ===== -->
     <header class="qx-top-bar">
       <button class="qx-account-btn" id="balance-chip">
         <span class="qx-launch-icon">🚀</span>
@@ -61,7 +59,7 @@
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
 
-    <!-- ===== BONUS BANNER (MSG 22) ===== -->
+    <!-- ===== BONUS BANNER ===== -->
     <div class="qx-bonus-banner" id="bonus-banner">
       <span class="qx-bonus-icon">🚀</span>
       <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
@@ -74,7 +72,7 @@
 
       <section class="qx-chart-section">
 
-        <!-- Chart Header (Symbol + Price) -->
+        <!-- Chart Header -->
         <div class="qx-chart-header">
           <div class="qx-symbol-picker">
             <span class="qx-flag">◉</span>
@@ -95,7 +93,7 @@
           <div id="chart"></div>
           <canvas id="drawing-canvas"></canvas>
 
-          <!-- Timer on chart (top-left) -->
+          <!-- Timer on chart -->
           <div id="top-countdown-timer" class="qx-chart-timer hidden">
             <span class="qx-timer-dot"></span>
             <span id="countdown-time">00:01</span>
@@ -112,10 +110,10 @@
             <span class="label-price">EXIT: --</span>
           </div>
 
-          <!-- Chart menu (top-left) -->
+          <!-- Chart menu -->
           <button class="qx-chart-menu" id="chart-menu-btn">⋯</button>
 
-          <!-- Timeframe badges (bottom-left) -->
+          <!-- Timeframe badges -->
           <div class="qx-chart-timeframe">
             <button class="qx-tf-btn active" data-tf="1m">1m</button>
             <button class="qx-tf-btn" data-tf="5m">5m</button>
@@ -126,7 +124,7 @@
 
       </section>
 
-      <!-- ===== TRADE PANEL (Quotex-style v23) ===== -->
+      <!-- ===== TRADE PANEL ===== -->
       <section class="qx-trade-panel">
 
         <!-- Symbol + Pending Trade header -->
@@ -190,6 +188,7 @@
         <p id="trade-message"></p>
 
       </section>
+
       <!-- ===== BOTTOM NAV ===== -->
       <nav class="qx-bottom-nav">
         <button class="qx-nav-btn" data-nav="history" type="button">
@@ -482,7 +481,7 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=22"></script>
+  <script type="module" src="app.js?v=23"></script>
 
 </body>
 </html>
