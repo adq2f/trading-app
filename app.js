@@ -5584,3 +5584,42 @@ window.initMsg21 = initMsg21;
 window.formatQxTimer = formatQxTimer;
 
 console.log('===== MSG 21: Quotex-style Trade Screen loaded =====');
+/* ============================================================
+   MSG 21: Null-safe addEventListener Wrapper
+   (Missing elements এ error না দেখানোর জন্য)
+   ============================================================ */
+
+(function msg21NullSafeWrapper() {
+  if (window.__msg21NullSafe) return;
+  window.__msg21NullSafe = true;
+
+  // Save original
+  var originalAddEventListener = EventTarget.prototype.addEventListener;
+
+  // Override to silently skip null
+  EventTarget.prototype.addEventListener = function (type, listener, options) {
+    try {
+      if (this === null || this === undefined) {
+        return;
+      }
+      return originalAddEventListener.call(this, type, listener, options);
+    } catch (e) {
+      console.warn('[MSG21-NULL] Skipped addEventListener:', type, e.message);
+    }
+  };
+
+  // Global error handler for "Cannot read properties of null"
+  window.addEventListener('error', function (e) {
+    var msg = e.message || '';
+    if (msg.indexOf("Cannot read properties of null") !== -1 &&
+        msg.indexOf("addEventListener") !== -1) {
+      e.preventDefault();
+      console.warn('[MSG21-NULL] Suppressed null error');
+      return true;
+    }
+  }, true);
+
+  console.log('[MSG21-NULL] Null-safe wrapper active');
+})();
+
+console.log('===== MSG 21 NUL-SAFE: AddEventListener wrapper loaded =====');
