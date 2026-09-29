@@ -788,69 +788,73 @@ function convertTimeframe(tf) {
 // ===== Binance থেকে ক্যান্ডেল লোড =====
 async function loadCandles() {
   try {
+    // FIX 1: Asset check
+    if (!selectedAsset || typeof selectedAsset !== "string" || selectedAsset.length < 3) {
+      console.warn("[Candles] Asset khali, BTCUSDT use kori");
+      selectedAsset = "BTCUSDT";
+      var sel = document.getElementById("asset-select");
+      if (sel) sel.value = "BTCUSDT";
+    }
+
+    // FIX 2: Chart ready check
+    if (!candleSeries) {
+      console.warn("[Candles] Chart ready na, wait kori");
+      setTimeout(loadCandles, 500);
+      return;
+    }
+
     var isRealSymbol = /^(BTC|ETH|BNB|ADA|SOL|XRP|DOGE|MATIC|LTC|DOT)/i.test(selectedAsset);
 
     if (!isRealSymbol) {
-      console.log("[Candles] Fake symbol - skipping Binance API: " + selectedAsset);
-      if (candleSeries) {
-        candleSeries.setData([]);
-      }
+      console.log("[Candles] Symbol thik nei: " + selectedAsset);
+      if (candleSeries) candleSeries.setData([]);
       return;
     }
 
     const interval = convertTimeframe(selectedTimeframe);
     const limit = interval.includes("s") ? 200 : 150;
 
-    const url = `https://api.binance.com/api/v3/klines?symbol=${selectedAsset}&interval=${interval}&limit=${limit}`;
+    const url = "https://api.binance.com/api/v3/klines?symbol=" + selectedAsset + "&interval=" + interval + "&limit=" + limit;
+    console.log("[Candles] Fetch kori:", url);
+
     const res = await fetch(url);
     const data = await res.json();
 
     if (!Array.isArray(data)) {
-      console.error("Binance error:", data);
+      console.error("[Candles] Binance error:", data);
       return;
     }
 
-    var candleData = data.map(k => ({
-      time: Math.floor(k[0] / 1000),
-      open: parseFloat(k[1]),
-      high: parseFloat(k[2]),
-      low: parseFloat(k[3]),
-      close: parseFloat(k[4])
-    })).filter(function(c) {
-      return c.open > 0 &&
-        c.high > 0 &&
-        c.low > 0 &&
-        c.close > 0 &&
-        !isNaN(c.open) &&
-        !isNaN(c.close) &&
-        c.high >= c.low;
+    var candleData = data.map(function(k) {
+      return {
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4])
+      };
+    }).filter(function(c) {
+      return c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0 &&
+        !isNaN(c.open) && !isNaN(c.close) && c.high >= c.low;
     });
 
-    if (candleData.length > 2) {
-      var firstClose = candleData[0].close;
-      candleData = candleData.filter(function(c) {
-        var ratio = c.close / firstClose;
-        return ratio > 0.5 && ratio < 2.0;
-      });
-    }
+    console.log("[Candles] Valo candle:", candleData.length);
 
-    candleData = candleData.filter(function(c) {
-      return c.open > 0 && c.close > 0 && !isNaN(c.open) && !isNaN(c.close);
-    });
-
-    if (candleSeries) {
+    if (candleData.length > 0 && candleSeries) {
       candleSeries.setData(candleData);
       chart.timeScale().fitContent();
-    }
 
-    if (candleData.length > 0) {
       currentPrice = candleData[candleData.length - 1].close;
       prevPrice = currentPrice;
-      currentPriceEl.textContent = currentPrice.toFixed(2);
+      if (currentPriceEl) currentPriceEl.textContent = currentPrice.toFixed(2);
+
+      console.log("[Candles] " + candleData.length + " candle chart e boso");
+    } else {
+      console.warn("[Candles] Valo candle paowa gelo na");
     }
 
   } catch (err) {
-    console.error("Candle load error:", err);
+    console.error("[Candles] Error:", err);
   }
 }
 
@@ -2073,16 +2077,25 @@ function populateAssetSelect(markets) {
   }
 
   if (!markets || markets.length === 0) {
-    // No markets - show placeholder
-    sel.innerHTML = '<option value="">-- No Markets Available --</option>';
-    console.log("[Markets] No enabled markets to populate");
+    sel.innerHTML = '<option value="BTCUSDT">BTC/USDT</option>' +
+                    '<option value="ETHUSDT">ETH/USDT</option>' +
+                    '<option value="BNBUSDT">BNB/USDT</option>';
+    selectedAsset = "BTCUSDT";
+    console.log("[Markets] No markets, default BTCUSDT");
     return;
   }
 
   const currentValue = sel.value;
   sel.innerHTML = "";
 
+  var validCount = 0;
   markets.forEach(function(m) {
+    // FIX: Symbol must check
+    if (!m.symbol || m.symbol.length < 3) {
+      console.warn("[Markets] Skipping market with bad symbol:", m.name);
+      return;
+    }
+
     const opt = document.createElement("option");
     opt.value = m.symbol;
     opt.textContent = m.name + (m.payout ? " +" + m.payout + "%" : "");
@@ -2091,9 +2104,19 @@ function populateAssetSelect(markets) {
     opt.dataset.payout = m.payout;
     opt.dataset.winRate = m.winRate;
     sel.appendChild(opt);
+    validCount++;
   });
 
-  // Try to restore previous selection
+  // FIX: Jodi valid market na thake, default boso
+  if (validCount === 0) {
+    sel.innerHTML = '<option value="BTCUSDT">BTC/USDT</option>' +
+                    '<option value="ETHUSDT">ETH/USDT</option>' +
+                    '<option value="BNBUSDT">BNB/USDT</option>';
+    selectedAsset = "BTCUSDT";
+    console.log("[Markets] No valid markets, default BTCUSDT");
+    return;
+  }
+
   let found = false;
   for (let i = 0; i < sel.options.length; i++) {
     if (sel.options[i].value === currentValue) {
@@ -2103,18 +2126,21 @@ function populateAssetSelect(markets) {
     }
   }
 
-  // If previous not found, select first
   if (!found && sel.options.length > 0) {
     sel.selectedIndex = 0;
   }
 
-  // Update global selectedAsset
+  // FIX: selectedAsset always set
   if (sel.value) {
     selectedAsset = sel.value;
+    window.selectedAsset = sel.value;
     window.selectedMarketId = sel.options[sel.selectedIndex]?.dataset.marketId || null;
+  } else {
+    selectedAsset = "BTCUSDT";
+    window.selectedAsset = "BTCUSDT";
   }
 
-  console.log("[Markets] Populated " + markets.length + " markets. Selected: " + selectedAsset);
+  console.log("[Markets] " + validCount + " market boso. Selected: " + selectedAsset);
 }
 
 /**
