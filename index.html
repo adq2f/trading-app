@@ -267,7 +267,22 @@
     </main>
 
   </div>
-
+<!-- ========== BALANCE POPUP ========== -->
+  <div id="balance-popup" class="popup hidden">
+    <div class="popup-overlay" id="balance-popup-overlay"></div>
+    <div class="popup-content small">
+      <div class="popup-header">
+        <h3>Balance</h3>
+        <button id="balance-popup-close" class="popup-close">✕</button>
+      </div>
+      <div class="balance-popup-display">
+        <div class="balance-popup-label">Available Balance</div>
+        <div class="balance-popup-amount">$<span id="balance-popup-value">0.00</span></div>
+      </div>
+      <button id="balance-popup-deposit" class="primary-btn" style="margin-top:14px;">Deposit</button>
+      <button id="balance-popup-withdraw" class="secondary-btn">Withdraw</button>
+    </div>
+  </div>
   <!-- ========== ACCOUNT POPUP ========== -->
   <div id="account-popup" class="popup hidden">
     <div class="popup-overlay" id="account-popup-overlay"></div>
