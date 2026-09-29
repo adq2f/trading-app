@@ -2361,3 +2361,235 @@ setInterval(function() {
 }, 1000);
 
 console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
+// ============================================
+// MSG 5 FIX: FORCE BUTTON BINDING
+// (Sob button kaj korbe — trade chara)
+// ============================================
+
+(function forceBindAllButtons() {
+  console.log("[FIX] Force binding all buttons...");
+
+  // ===== 1. BOTTOM NAV BUTTONS =====
+  var navBtns = document.querySelectorAll(".qx-nav-btn");
+  navBtns.forEach(function(btn) {
+    // Purono listener remove korte na parleo, notun listener add korbo
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+  });
+
+  // Re-query after clone
+  var freshNavBtns = document.querySelectorAll(".qx-nav-btn");
+  freshNavBtns.forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      var nav = btn.dataset.nav;
+      console.log("[FIX] Nav clicked:", nav);
+
+      // Active state
+      freshNavBtns.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+
+      // ===== ACTIONS =====
+      if (nav === "more") {
+        var moreMenu = document.getElementById("more-menu");
+        if (moreMenu) {
+          moreMenu.classList.remove("hidden");
+          console.log("[FIX] More menu opened");
+        } else {
+          console.warn("[FIX] more-menu element not found");
+        }
+      } 
+      else if (nav === "tournament") {
+        var tourPopup = document.getElementById("tournament-popup");
+        if (tourPopup) {
+          tourPopup.classList.remove("hidden");
+          console.log("[FIX] Tournament popup opened");
+        } else {
+          console.warn("[FIX] tournament-popup not found");
+        }
+      } 
+      else if (nav === "help") {
+        var chatPopup = document.getElementById("chat-popup");
+        if (chatPopup) {
+          chatPopup.classList.remove("hidden");
+          console.log("[FIX] Chat popup opened");
+        } else {
+          console.warn("[FIX] chat-popup not found");
+        }
+      } 
+      else if (nav === "history") {
+        var tradesSection = document.querySelector(".qx-trades-section");
+        if (tradesSection) {
+          tradesSection.scrollIntoView({ behavior: "smooth" });
+        } else {
+          // Fallback: history tab e switch
+          var historyTab = document.querySelector('[data-trades-tab="history"]');
+          if (historyTab) historyTab.click();
+        }
+      } 
+      else if (nav === "profile") {
+        var accountPopup = document.getElementById("account-popup");
+        if (accountPopup) {
+          accountPopup.classList.remove("hidden");
+          console.log("[FIX] Account popup opened");
+        }
+      }
+    });
+  });
+
+  // ===== 2. BONUS BANNER CLOSE =====
+  var bonusClose = document.getElementById("bonus-close");
+  var bonusBanner = document.getElementById("bonus-banner");
+  if (bonusClose && bonusBanner) {
+    var newClose = bonusClose.cloneNode(true);
+    bonusClose.parentNode.replaceChild(newClose, bonusClose);
+    newClose.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      bonusBanner.classList.add("hidden");
+      try { localStorage.setItem("bonusBannerClosed", "1"); } catch(err) {}
+      console.log("[FIX] Bonus banner closed");
+    });
+    // Auto hide if already closed
+    try {
+      if (localStorage.getItem("bonusBannerClosed") === "1") {
+        bonusBanner.classList.add("hidden");
+      }
+    } catch(err) {}
+  }
+
+  // ===== 3. NOTIFICATION BELL =====
+  var bellBtn = document.getElementById("notif-btn");
+  if (bellBtn) {
+    var newBell = bellBtn.cloneNode(true);
+    bellBtn.parentNode.replaceChild(newBell, bellBtn);
+    newBell.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var badge = document.getElementById("notif-badge");
+      if (badge) {
+        badge.textContent = "0";
+        badge.style.display = "none";
+      }
+      console.log("[FIX] Notifications cleared");
+    });
+  }
+
+  // ===== 4. BALANCE CHIP (POPUP) =====
+  var balanceChip = document.getElementById("balance-chip");
+  if (balanceChip) {
+    var newChip = balanceChip.cloneNode(true);
+    balanceChip.parentNode.replaceChild(newChip, balanceChip);
+    newChip.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var accPopup = document.getElementById("account-popup");
+      var balPopup = document.getElementById("balance-popup");
+      if (balPopup) {
+        var bpv = document.getElementById("balance-popup-value");
+        if (bpv && typeof userBalance !== "undefined") {
+          bpv.textContent = Number(userBalance).toFixed(2);
+        }
+        balPopup.classList.remove("hidden");
+      } else if (accPopup) {
+        accPopup.classList.remove("hidden");
+      }
+      console.log("[FIX] Balance chip clicked");
+    });
+  }
+
+  // ===== 5. DEPOSIT BUTTON =====
+  var depositBtn = document.getElementById("deposit-btn");
+  if (depositBtn) {
+    var newDeposit = depositBtn.cloneNode(true);
+    depositBtn.parentNode.replaceChild(newDeposit, depositBtn);
+    newDeposit.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var depPopup = document.getElementById("deposit-popup");
+      if (depPopup) {
+        depPopup.classList.remove("hidden");
+        console.log("[FIX] Deposit popup opened");
+      }
+    });
+  }
+
+  console.log("[FIX] All buttons force-bound successfully");
+})();
+
+// ===== RE-BIND AFTER 2 SECONDS (jodi dynamic content load hoy) =====
+setTimeout(function() {
+  console.log("[FIX] Re-binding buttons after 2s...");
+  
+  // Re-bind More Menu Close
+  var moreClose = document.getElementById("more-menu-close");
+  var moreMenu = document.getElementById("more-menu");
+  if (moreClose && moreMenu && moreClose.dataset.bound !== "1") {
+    moreClose.dataset.bound = "1";
+    moreClose.addEventListener("click", function(e) {
+      e.preventDefault();
+      moreMenu.classList.add("hidden");
+    });
+  }
+
+  // Re-bind More Menu Items
+  var menuItems = document.querySelectorAll(".more-menu-item");
+  menuItems.forEach(function(item) {
+    if (item.dataset.bound === "1") return;
+    item.dataset.bound = "1";
+    item.addEventListener("click", function(e) {
+      e.preventDefault();
+      var menu = item.dataset.menu;
+      console.log("[FIX] Menu item:", menu);
+      
+      if (moreMenu) moreMenu.classList.add("hidden");
+
+      if (menu === "deposit") {
+        var dp = document.getElementById("deposit-popup");
+        if (dp) dp.classList.remove("hidden");
+      } else if (menu === "withdraw") {
+        var wp = document.getElementById("withdraw-popup");
+        if (wp) wp.classList.remove("hidden");
+      } else if (menu === "referral") {
+        var rp = document.getElementById("referral-popup");
+        if (rp) rp.classList.remove("hidden");
+      } else if (menu === "chat") {
+        var cp = document.getElementById("chat-popup");
+        if (cp) cp.classList.remove("hidden");
+      } else if (menu === "trades") {
+        var ts = document.querySelector(".qx-trades-section");
+        if (ts) ts.scrollIntoView({ behavior: "smooth" });
+      } else if (menu === "logout") {
+        if (typeof auth !== "undefined" && typeof signOut === "function") {
+          signOut(auth);
+        }
+      }
+    });
+  });
+
+  // Re-bind popup overlays (click outside to close)
+  document.querySelectorAll(".popup-overlay, .more-menu-overlay").forEach(function(overlay) {
+    if (overlay.dataset.bound === "1") return;
+    overlay.dataset.bound = "1";
+    overlay.addEventListener("click", function() {
+      var parent = overlay.closest(".popup, .more-menu");
+      if (parent) parent.classList.add("hidden");
+    });
+  });
+
+  // Re-bind popup close buttons
+  document.querySelectorAll(".popup-close").forEach(function(btn) {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", function() {
+      var parent = btn.closest(".popup");
+      if (parent) parent.classList.add("hidden");
+    });
+  });
+
+  console.log("[FIX] Re-binding complete");
+}, 2000);
+
+console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
