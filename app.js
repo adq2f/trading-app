@@ -2657,3 +2657,159 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
 
   console.log("[DEBUG] On-screen console active. Tap 🐛 to view.");
 })();
+// ============================================
+// ON-SCREEN DEBUG BOX (Mobile Friendly)
+// ============================================
+(function createDebugBox() {
+  // Purono box remove
+  var old = document.getElementById("debug-box");
+  if (old) old.remove();
+  var oldBtn = document.getElementById("debug-toggle-btn");
+  if (oldBtn) oldBtn.remove();
+
+  // Debug box
+  var box = document.createElement("div");
+  box.id = "debug-box";
+  box.style.cssText = "position:fixed;top:60px;left:6px;right:6px;height:180px;" +
+    "background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:10px;" +
+    "padding:8px;border-radius:8px;z-index:999999;overflow-y:auto;" +
+    "display:none;border:1px solid #0f0;";
+  box.innerHTML = '<div style="color:#fff;font-weight:bold;margin-bottom:6px;">DEBUG LOG (tap to close)</div>';
+  document.body.appendChild(box);
+
+  // Toggle button
+  var btn = document.createElement("button");
+  btn.id = "debug-toggle-btn";
+  btn.textContent = "🐛";
+  btn.style.cssText = "position:fixed;bottom:75px;right:8px;width:40px;height:40px;" +
+    "background:#ff5252;color:#fff;border:2px solid #fff;border-radius:50%;" +
+    "font-size:18px;z-index:999998;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.5);";
+  btn.onclick = function() {
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  };
+  document.body.appendChild(btn);
+
+  box.onclick = function() { box.style.display = "none"; };
+
+  // Override console
+  var origLog = console.log;
+  var origErr = console.error;
+  var origWarn = console.warn;
+
+  function addLine(text, color) {
+    try {
+      var line = document.createElement("div");
+      line.style.color = color;
+      line.style.borderBottom = "1px solid #222";
+      line.style.padding = "2px 0";
+      line.style.wordBreak = "break-all";
+      line.textContent = text;
+      box.appendChild(line);
+      box.scrollTop = box.scrollHeight;
+      while (box.children.length > 60) {
+        box.removeChild(box.children[1]);
+      }
+    } catch(e) {}
+  }
+
+  console.log = function() {
+    var a = Array.prototype.slice.call(arguments);
+    addLine("> " + a.join(" "), "#0f0");
+    origLog.apply(console, arguments);
+  };
+  console.error = function() {
+    var a = Array.prototype.slice.call(arguments);
+    addLine("! " + a.join(" "), "#ff5252");
+    origErr.apply(console, arguments);
+  };
+  console.warn = function() {
+    var a = Array.prototype.slice.call(arguments);
+    addLine("? " + a.join(" "), "#ffb300");
+    origWarn.apply(console, arguments);
+  };
+
+  console.log("=== DEBUG BOX READY ===");
+  console.log("Tap 🐛 button to view logs");
+})();
+
+// ============================================
+// TEST: Button bind check
+// ============================================
+setTimeout(function() {
+  console.log("=== BUTTON BIND CHECK ===");
+
+  var navBtns = document.querySelectorAll(".qx-nav-btn");
+  console.log("Nav buttons found: " + navBtns.length);
+
+  var moreBtn = document.querySelector('.qx-nav-btn[data-nav="more"]');
+  console.log("More button: " + (moreBtn ? "FOUND" : "NOT FOUND"));
+
+  var moreMenu = document.getElementById("more-menu");
+  console.log("More menu: " + (moreMenu ? "FOUND" : "NOT FOUND"));
+
+  var tourPopup = document.getElementById("tournament-popup");
+  console.log("Tournament popup: " + (tourPopup ? "FOUND" : "NOT FOUND"));
+
+  var chatPopup = document.getElementById("chat-popup");
+  console.log("Chat popup: " + (chatPopup ? "FOUND" : "NOT FOUND"));
+
+  // Force bind More button
+  if (moreBtn && moreMenu) {
+    moreBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[TEST] More button clicked!");
+      moreMenu.classList.remove("hidden");
+    };
+    console.log("More button FORCE bound");
+  }
+
+  // Force bind Tournament
+  var tourBtn = document.querySelector('.qx-nav-btn[data-nav="tournament"]');
+  if (tourBtn && tourPopup) {
+    tourBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[TEST] Tournament clicked!");
+      tourPopup.classList.remove("hidden");
+    };
+    console.log("Tournament FORCE bound");
+  }
+
+  // Force bind Help
+  var helpBtn = document.querySelector('.qx-nav-btn[data-nav="help"]');
+  if (helpBtn && chatPopup) {
+    helpBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[TEST] Help clicked!");
+      chatPopup.classList.remove("hidden");
+    };
+    console.log("Help FORCE bound");
+  }
+
+  // Force bind History
+  var histBtn = document.querySelector('.qx-nav-btn[data-nav="history"]');
+  if (histBtn) {
+    histBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[TEST] History clicked!");
+      var ts = document.querySelector(".qx-trades-section");
+      if (ts) ts.scrollIntoView({ behavior: "smooth" });
+    };
+    console.log("History FORCE bound");
+  }
+
+  // Force bind Profile
+  var profBtn = document.querySelector('.qx-nav-btn[data-nav="profile"]');
+  if (profBtn) {
+    profBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[TEST] Profile clicked!");
+      var ap = document.getElementById("account-popup");
+      if (ap) ap.classList.remove("hidden");
+    };
+    console.log("Profile FORCE bound");
+  }
+
+  console.log("=== BIND COMPLETE ===");
+}, 3000);
+
+console.log("=== DEBUG SCRIPT LOADED ===");
