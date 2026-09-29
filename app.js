@@ -788,12 +788,10 @@ function convertTimeframe(tf) {
 // ===== Binance থেকে ক্যান্ডেল লোড =====
 async function loadCandles() {
   try {
-    // BULLUSD-OTP বা fake symbol হলে Binance API কাজ করবে না
-    // তাহলে empty chart দেখাব (admin designer candle থেকে আসবে)
     var isRealSymbol = /^(BTC|ETH|BNB|ADA|SOL|XRP|DOGE|MATIC|LTC|DOT)/i.test(selectedAsset);
 
     if (!isRealSymbol) {
-      console.log("[Candles] Fake symbol detected — skipping Binance API:", selectedAsset);
+      console.log("[Candles] Fake symbol - skipping Binance API: " + selectedAsset);
       if (candleSeries) {
         candleSeries.setData([]);
       }
@@ -812,30 +810,33 @@ async function loadCandles() {
       return;
     }
 
-    let candleData = data.map(k => ({
+    var candleData = data.map(k => ({
       time: Math.floor(k[0] / 1000),
       open: parseFloat(k[1]),
       high: parseFloat(k[2]),
       low: parseFloat(k[3]),
       close: parseFloat(k[4])
-    })).filter(c =>
-      c.open > 0 &&
-      c.high > 0 &&
-      c.low > 0 &&
-      c.close > 0 &&
-      !isNaN(c.open) &&
-      !isNaN(c.close) &&
-      c.high >= c.low
-    );
+    })).filter(function(c) {
+      return c.open > 0 &&
+        c.high > 0 &&
+        c.low > 0 &&
+        c.close > 0 &&
+        !isNaN(c.open) &&
+        !isNaN(c.close) &&
+        c.high >= c.low;
+    });
 
-    // Filter out huge outliers (bad data)
     if (candleData.length > 2) {
-      const firstClose = candleData[0].close;
-      candleData = candleData.filter(c => {
-        const ratio = c.close / firstClose;
+      var firstClose = candleData[0].close;
+      candleData = candleData.filter(function(c) {
+        var ratio = c.close / firstClose;
         return ratio > 0.5 && ratio < 2.0;
       });
     }
+
+    candleData = candleData.filter(function(c) {
+      return c.open > 0 && c.close > 0 && !isNaN(c.open) && !isNaN(c.close);
+    });
 
     if (candleSeries) {
       candleSeries.setData(candleData);
@@ -845,9 +846,7 @@ async function loadCandles() {
     if (candleData.length > 0) {
       currentPrice = candleData[candleData.length - 1].close;
       prevPrice = currentPrice;
-      if (currentPriceEl) {
-        currentPriceEl.textContent = currentPrice.toFixed(2);
-      }
+      currentPriceEl.textContent = currentPrice.toFixed(2);
     }
 
   } catch (err) {
