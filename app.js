@@ -2593,3 +2593,67 @@ setTimeout(function() {
 }, 2000);
 
 console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
+// ===== ON-SCREEN CONSOLE (Mobile Debug) =====
+(function onScreenConsole() {
+  var logBox = document.createElement("div");
+  logBox.id = "debug-log-box";
+  logBox.style.cssText = 
+    "position:fixed;top:60px;left:8px;right:8px;max-height:200px;" +
+    "background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;" +
+    "font-size:10px;padding:8px;border-radius:8px;z-index:99999;" +
+    "overflow-y:auto;display:none;pointer-events:auto;";
+  logBox.innerHTML = '<div style="color:#fff;font-weight:bold;margin-bottom:4px;">DEBUG LOG (tap to close)</div>';
+  document.body.appendChild(logBox);
+
+  // Toggle button
+  var toggleBtn = document.createElement("button");
+  toggleBtn.textContent = "🐛";
+  toggleBtn.style.cssText = 
+    "position:fixed;bottom:70px;right:8px;width:36px;height:36px;" +
+    "background:#ff5252;color:#fff;border:none;border-radius:50%;" +
+    "font-size:16px;z-index:99998;cursor:pointer;";
+  toggleBtn.onclick = function() {
+    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
+  };
+  document.body.appendChild(toggleBtn);
+
+  logBox.onclick = function() { logBox.style.display = "none"; };
+
+  // Override console.log
+  var origLog = console.log;
+  var origErr = console.error;
+  var origWarn = console.warn;
+
+  function addLine(text, color) {
+    try {
+      var line = document.createElement("div");
+      line.style.color = color || "#0f0";
+      line.style.borderBottom = "1px solid #333";
+      line.style.padding = "2px 0";
+      line.textContent = text;
+      logBox.appendChild(line);
+      logBox.scrollTop = logBox.scrollHeight;
+      if (logBox.children.length > 50) {
+        logBox.removeChild(logBox.children[1]);
+      }
+    } catch(e) {}
+  }
+
+  console.log = function() {
+    var args = Array.prototype.slice.call(arguments);
+    addLine("> " + args.join(" "), "#0f0");
+    origLog.apply(console, args);
+  };
+  console.error = function() {
+    var args = Array.prototype.slice.call(arguments);
+    addLine("! " + args.join(" "), "#ff5252");
+    origErr.apply(console, args);
+  };
+  console.warn = function() {
+    var args = Array.prototype.slice.call(arguments);
+    addLine("? " + args.join(" "), "#ffb300");
+    origWarn.apply(console, args);
+  };
+
+  console.log("[DEBUG] On-screen console active. Tap 🐛 to view.");
+})();
