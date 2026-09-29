@@ -1998,3 +1998,338 @@ input, select {
   pointer-events: none;
   border: 2px solid #fff;
 }
+/* ============================================
+   MSG 3: QUOTEX-STYLE — Trade Panel + Button + Dropdown
+   ============================================ */
+
+/* ===== TIMEFRAME DROPDOWN ===== */
+.qx-tf-dropdown {
+  position: absolute;
+  top: 44px;
+  left: 8px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  width: 240px;
+}
+
+.qx-tf-dropdown.active {
+  display: block;
+}
+
+.qx-tf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.qx-tf-item {
+  padding: 8px 6px;
+  background: transparent;
+  border: none;
+  color: #8b98ab;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.qx-tf-item:hover {
+  background: #2a3648;
+  color: #fff;
+}
+
+.qx-tf-item.active {
+  background: #2196f3;
+  color: #fff;
+  font-weight: 800;
+}
+
+/* Active Timeframe Display */
+.qx-tf-active {
+  position: absolute;
+  bottom: 48px;
+  left: 8px;
+  background: rgba(20, 26, 42, 0.95);
+  border: 1px solid #2a3648;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #58a6ff;
+  z-index: 20;
+  backdrop-filter: blur(10px);
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===== TRADE PANEL (Compact Quotex-style) ===== */
+.qx-trade-panel {
+  background: #141a2a;
+  padding: 8px 10px 6px;
+  border-top: 1px solid #1a2333;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.qx-trade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+.qx-trade-symbol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qx-trade-flag {
+  font-size: 14px;
+  color: #f0b90b;
+}
+
+.qx-trade-symbol-select {
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.qx-trade-payout-badge {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffb300;
+}
+
+.qx-pending-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qx-pending-label {
+  font-size: 10px;
+  color: #58a6ff;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.qx-toggle-btn {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: #1a2333;
+  border-radius: 10px;
+  border: 1px solid #2a3648;
+  padding: 0;
+  cursor: pointer;
+}
+
+.qx-toggle-btn::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  background: #4a5568;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.qx-toggle-btn.active {
+  background: rgba(88, 166, 255, 0.3);
+  border-color: #58a6ff;
+}
+
+.qx-toggle-btn.active::after {
+  left: 17px;
+  background: #58a6ff;
+}
+
+.qx-trade-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.qx-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.qx-field-label {
+  font-size: 10px;
+  color: #6b7a90;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.qx-field-value {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #0e1320;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  padding: 0 4px;
+}
+
+.qx-timer-value {
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #58a6ff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+
+.qx-investment-value {
+  justify-content: space-between;
+}
+
+.qx-inc-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a2333;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.qx-inc-btn:active {
+  background: #2a3648;
+}
+
+#trade-amount {
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  border: none;
+  outline: none;
+  width: 100%;
+}
+
+#trade-amount::-webkit-outer-spin-button,
+#trade-amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qx-payout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.qx-payout-label {
+  font-size: 11px;
+  color: #8b98ab;
+  font-weight: 600;
+}
+
+.qx-payout-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #00c853;
+  font-variant-numeric: tabular-nums;
+}
+
+.qx-switch-btn {
+  padding: 2px 6px;
+  background: transparent;
+  color: #58a6ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.qx-trade-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.qx-up-btn,
+.qx-down-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  transition: transform 0.1s;
+  border: none;
+  cursor: pointer;
+  height: 48px;
+}
+
+.qx-up-btn {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  box-shadow: 0 4px 14px rgba(0, 200, 83, 0.35);
+}
+
+.qx-down-btn {
+  background: linear-gradient(135deg, #ff3b30 0%, #d32f2f 100%);
+  box-shadow: 0 4px 14px rgba(255, 82, 82, 0.35);
+}
+
+.qx-up-btn:active,
+.qx-down-btn:active {
+  transform: scale(0.97);
+}
+
+.qx-btn-text {
+  font-size: 15px;
+}
+
+.qx-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+#trade-message {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 16px;
+  margin-top: -2px;
+  color: #ff5252;
+}
