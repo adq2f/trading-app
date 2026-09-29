@@ -2813,3 +2813,138 @@ setTimeout(function() {
 }, 3000);
 
 console.log("=== DEBUG SCRIPT LOADED ===");
+// ============================================
+// FINAL FIX: Balance Chip + Popup Z-Index + Trade Card
+// ============================================
+
+// ===== 1. BALANCE CHIP FIX =====
+(function fixBalanceChip() {
+  var chip = document.getElementById("balance-chip");
+  if (!chip) {
+    console.warn("[FINAL] balance-chip NOT FOUND in DOM");
+    return;
+  }
+  
+  // Clone kore purono listener remove
+  var newChip = chip.cloneNode(true);
+  chip.parentNode.replaceChild(newChip, chip);
+  
+  newChip.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[FINAL] Balance chip clicked");
+    
+    var balPopup = document.getElementById("balance-popup");
+    var accPopup = document.getElementById("account-popup");
+    var bpv = document.getElementById("balance-popup-value");
+    
+    // Balance popup age
+    if (balPopup) {
+      if (bpv && typeof userBalance !== "undefined") {
+        bpv.textContent = Number(userBalance).toFixed(2);
+      }
+      balPopup.classList.remove("hidden");
+      balPopup.style.zIndex = "9500";
+      console.log("[FINAL] Balance popup opened");
+    } 
+    // Na thakle account popup
+    else if (accPopup) {
+      accPopup.classList.remove("hidden");
+      accPopup.style.zIndex = "9500";
+      console.log("[FINAL] Account popup opened");
+    } 
+    else {
+      console.warn("[FINAL] No popup found!");
+    }
+  });
+  
+  console.log("[FINAL] Balance chip fixed");
+})();
+
+// ===== 2. POPUP Z-INDEX FORCE =====
+setInterval(function() {
+  try {
+    var popups = document.querySelectorAll(".popup");
+    popups.forEach(function(p) {
+      if (!p.classList.contains("hidden")) {
+        p.style.zIndex = "9500";
+      }
+    });
+  } catch(e) {}
+}, 1000);
+
+// ===== 3. TRADE CARD RENDER FIX =====
+(function fixTradeCardRender() {
+  // active-trades-list e purono HTML replace
+  var origLoadActive = window.loadActiveTrades;
+  if (typeof origLoadActive !== "function") {
+    console.warn("[FINAL] loadActiveTrades not found");
+    return;
+  }
+  
+  window.loadActiveTrades = function() {
+    if (!currentUser) return;
+    var q = query(
+      collection(db, "trades"),
+      where("userId", "==", currentUser.uid),
+      where("status", "==", "pending")
+    );
+    if (activeTradesUnsub) {
+      try { activeTradesUnsub(); } catch(e) {}
+    }
+    activeTradesUnsub = onSnapshot(q, function(snapshot) {
+      activeTradesLocal = [];
+      var listEl = document.getElementById("active-trades-list");
+      if (listEl) listEl.innerHTML = "";
+      
+      if (snapshot.empty) {
+        if (listEl) listEl.innerHTML = '<p class="empty-text">No active trades</p>';
+        if (activeCount) activeCount.textContent = "0";
+        if (bigTimer) bigTimer.classList.add("hidden");
+        updateTradeMarkers();
+        return;
+      }
+      
+      snapshot.forEach(function(docSnap) {
+        var trade = Object.assign({ id: docSnap.id }, docSnap.data());
+        activeTradesLocal.push(trade);
+        if (listEl && typeof renderTradeCard === "function") {
+          listEl.appendChild(renderTradeCard(trade, false));
+        }
+      });
+      
+      if (activeCount) activeCount.textContent = activeTradesLocal.length;
+      updateBigTimer();
+      updateTradeMarkers();
+    });
+  };
+  
+  console.log("[FINAL] Trade card render fixed");
+})();
+
+// ===== 4. TRADE BUTTON FORCE BIND (Already bound, but double-check) =====
+setTimeout(function() {
+  var callBtn = document.getElementById("call-btn");
+  var putBtn = document.getElementById("put-btn");
+  
+  if (callBtn && callBtn.dataset.finalBound !== "1") {
+    callBtn.dataset.finalBound = "1";
+    callBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[FINAL] CALL clicked");
+      if (typeof placeTrade === "function") placeTrade("call");
+    };
+  }
+  if (putBtn && putBtn.dataset.finalBound !== "1") {
+    putBtn.dataset.finalBound = "1";
+    putBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log("[FINAL] PUT clicked");
+      if (typeof placeTrade === "function") placeTrade("put");
+    };
+  }
+  
+  console.log("[FINAL] Trade buttons bound");
+}, 1000);
+
+console.log("===== FINAL FIX LOADED =====");
