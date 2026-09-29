@@ -1,470 +1,588 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0e1320">
-<title>Quotex Clone</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=23">
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0e1320">
+  <title>Quotex Clone</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=25">
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 
-<!-- ============================================
-     LOGIN PAGE
-     ============================================ -->
-<div id="login-page" class="page">
-  <div class="login-box">
-    <div class="login-logo">
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <circle cx="24" cy="24" r="22" stroke="#00c853" stroke-width="2"/>
-        <path d="M14 30 L20 22 L26 26 L34 16" stroke="#00c853" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
-    </div>
-    <h1 class="login-title">Quotex Clone</h1>
-    <p class="login-subtitle">Educational Trading Platform</p>
-    <div class="login-form">
-      <input type="email" id="email" placeholder="Email" autocomplete="email">
-      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
-      <button id="login-btn" class="btn-primary">Login</button>
-      <button id="signup-btn" class="btn-secondary">Sign Up</button>
-      <p id="message" class="message"></p>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================
-     DASHBOARD PAGE
-     ============================================ -->
-<div id="dashboard-page" class="page hidden">
-
-  <!-- TOP BAR -->
-  <div class="qx-topbar">
-    <div class="qx-topbar-left">
-      <button class="qx-menu-btn" aria-label="Menu">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <path d="M3 6h18M3 12h18M3 18h18"/>
+  <!-- ============================================
+       LOGIN PAGE
+       ============================================ -->
+  <div id="login-page" class="page">
+    <div class="login-box">
+      <div class="login-logo">
+        <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="21" stroke="#00c853" stroke-width="2.5"/>
+          <path d="M14 30 L20 22 L26 26 L34 16" stroke="#00c853" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="34" cy="16" r="2.5" fill="#00c853"/>
         </svg>
-      </button>
-      <span class="qx-brand">Quotex Clone</span>
-    </div>
-    <div class="qx-topbar-right">
-      <button class="qx-icon-btn" id="refresh-btn" aria-label="Refresh">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <path d="M21 12a9 9 0 1 1-3-6.7"/>
-          <path d="M21 3v6h-6"/>
-        </svg>
-      </button>
+      </div>
+      <h1 class="login-title">Quotex Clone</h1>
+      <p class="login-subtitle">Educational Trading Platform</p>
+
+      <div class="login-form">
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="........" autocomplete="current-password">
+        </div>
+        <button id="login-btn" class="btn-primary">Login</button>
+        <button id="signup-btn" class="btn-secondary">Create Account</button>
+        <p id="message" class="message"></p>
+      </div>
     </div>
   </div>
 
-  <!-- BONUS BANNER -->
-  <div class="qx-bonus-banner" id="bonus-banner">
-    <div class="qx-bonus-left">
-      <span class="qx-bonus-icon">&#127873;</span>
-      <span class="qx-bonus-badge">LIVE</span>
-      <span class="qx-bonus-amount" id="balance">$1000.00</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-        <path d="M6 9l6 6 6-6"/>
-      </svg>
-    </div>
-    <div class="qx-bonus-right">
-      <button class="qx-notif-btn" id="notif-btn" aria-label="Notifications">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+  <!-- ============================================
+       DASHBOARD PAGE
+       ============================================ -->
+  <div id="dashboard-page" class="page hidden">
+
+    <!-- ===== TOP BAR ===== -->
+    <header class="qx-topbar">
+      <button class="qx-account-chip" id="balance-chip">
+        <span class="qx-flag">&#127470;&#127475;</span>
+        <span class="qx-badge" id="qx-account-type">DEMO</span>
+        <span class="qx-balance">$<span id="balance">10,000.00</span></span>
+        <span class="qx-caret">&#9662;</span>
+      </button>
+
+      <button class="qx-bell-btn" id="notif-btn" aria-label="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
         </svg>
-        <span class="qx-notif-badge" id="notif-badge">0</span>
+        <span class="qx-bell-badge" id="notif-badge">0</span>
       </button>
+
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
-    </div>
-  </div>
+    </header>
 
-  <!-- CHART HEADER -->
-  <div class="qx-chart-header">
-    <div class="qx-chart-asset">
-      <span class="qx-asset-dot"></span>
-      <select id="asset-select" class="qx-asset-select">
-        <option value="BTCUSDT">BTC/USDT</option>
-        <option value="ETHUSDT">ETH/USDT</option>
-        <option value="BNBUSDT">BNB/USDT</option>
-      </select>
+    <!-- ===== BONUS BANNER ===== -->
+    <div class="qx-bonus-banner" id="bonus-banner">
+      <span class="qx-bonus-rocket">&#128640;</span>
+      <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
+      <span class="qx-bonus-tag">50%</span>
+      <button class="qx-bonus-close" id="bonus-close" aria-label="Close">&#10005;</button>
     </div>
-    <div class="qx-chart-price">
-      <span id="current-price">83370.12</span>
-      <span id="price-arrow" class="qx-price-arrow">&#9660;</span>
-    </div>
-  </div>
 
-  <!-- CHART AREA -->
-  <div class="qx-chart-area">
-    <div class="qx-chart-tools">
-      <button class="qx-menu-btn-sm" id="chart-menu-btn" aria-label="Chart menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <circle cx="5" cy="12" r="1.5" fill="#fff"/>
-          <circle cx="12" cy="12" r="1.5" fill="#fff"/>
-          <circle cx="19" cy="12" r="1.5" fill="#fff"/>
-        </svg>
-      </button>
-      <div class="qx-tf-btn" id="tf-btn">
-        <span class="qx-tf-dot"></span>
-        <span id="qx-tf-active">1m</span>
+    <!-- ===== MAIN AREA (Part 2 continues here) ===== -->
+    <!-- ===== CHART AREA ===== -->
+    <section class="qx-chart-area">
+
+      <!-- Chart Tools (top-left overlay) -->
+      <div class="qx-chart-tools">
+        <!-- Left Drawer Toggle -->
+        <button class="qx-icon-btn" id="drawer-toggle" aria-label="Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round">
+            <circle cx="5" cy="12" r="1.5" fill="#e6edf3"/>
+            <circle cx="12" cy="12" r="1.5" fill="#e6edf3"/>
+            <circle cx="19" cy="12" r="1.5" fill="#e6edf3"/>
+          </svg>
+        </button>
+
+        <!-- Drawing Tools Toggle -->
+        <button class="qx-icon-btn" id="drawing-toggle" aria-label="Drawing tools">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+            <path d="M2 2l7.586 7.586"/>
+            <circle cx="11" cy="11" r="2"/>
+          </svg>
+        </button>
+
+        <!-- Timeframe Button (bottom-left, but displayed here for structure) -->
+        <div class="qx-tf-badge" id="tf-badge">
+          <span id="qx-tf-active">1m</span>
+        </div>
       </div>
-      <div class="qx-tf-dropdown" id="tf-dropdown">
-        <button class="qx-tf-item" data-tf="5s">5s</button>
-        <button class="qx-tf-item" data-tf="10s">10s</button>
-        <button class="qx-tf-item" data-tf="15s">15s</button>
-        <button class="qx-tf-item" data-tf="30s">30s</button>
-        <button class="qx-tf-item active" data-tf="1m">1m</button>
-        <button class="qx-tf-item" data-tf="5m">5m</button>
-        <button class="qx-tf-item" data-tf="15m">15m</button>
-        <button class="qx-tf-item" data-tf="1h">1h</button>
-        <button class="qx-tf-item" data-tf="4h">4h</button>
+
+      <!-- Top Countdown Timer (chart overlay) -->
+      <div class="qx-chart-timer hidden" id="top-countdown-timer">
+        <span class="qx-timer-dot"></span>
+        <span id="countdown-time">00:45</span>
+      </div>
+
+      <!-- Chart Wrapper -->
+      <div class="qx-chart-wrapper" id="chart-wrapper">
+        <!-- IMPORTANT: id renamed to tv-chart (browser conflict fix) -->
+        <div id="tv-chart" class="qx-chart-container"></div>
+
+        <!-- Drawing Canvas -->
+        <canvas id="drawing-canvas" class="qx-drawing-canvas"></canvas>
+
+        <!-- Price Dot (right side) -->
+        <div id="qx-price-dot" class="qx-price-dot"></div>
+
+        <!-- Time Labels (bottom of chart) -->
+        <div class="qx-time-labels" id="qx-time-labels"></div>
+
+        <!-- Entry Line Container (markers rendered here by JS) -->
+        <div class="qx-entry-line-container" id="qx-entry-line-container"></div>
+
+        <!-- Vertical Lines Container (trade start/end) -->
+        <div class="qx-vline-container" id="qx-vline-container"></div>
+
+        <!-- Tick Mark Container -->
+        <div class="qx-tick-container" id="qx-tick-container"></div>
+      </div>
+
+      <!-- Big Timer (center overlay) -->
+      <div class="qx-big-timer hidden" id="big-timer">00:00</div>
+
+    </section>
+
+    <!-- ===== LEFT DRAWER (Collapsed → Tap → Open) ===== -->
+    <div class="qx-drawer hidden" id="qx-drawer">
+      <div class="qx-drawer-header">
+        <h3>Info</h3>
+        <button class="qx-drawer-close" id="drawer-close" aria-label="Close">&#10005;</button>
+      </div>
+
+      <div class="qx-drawer-body">
+        <!-- Running Candle Countdown -->
+        <div class="qx-drawer-section">
+          <div class="qx-drawer-label">Next Candle</div>
+          <div class="qx-drawer-value" id="candle-countdown">00:32</div>
+          <div class="qx-drawer-sub" id="candle-time-range">16:34 - 16:35</div>
+        </div>
+
+        <!-- Current Candle Info -->
+        <div class="qx-drawer-section">
+          <div class="qx-drawer-label">Current Candle</div>
+          <div class="qx-drawer-row">
+            <span>Open</span>
+            <span id="drawer-open">--</span>
+          </div>
+          <div class="qx-drawer-row">
+            <span>High</span>
+            <span id="drawer-high">--</span>
+          </div>
+          <div class="qx-drawer-row">
+            <span>Low</span>
+            <span id="drawer-low">--</span>
+          </div>
+          <div class="qx-drawer-row">
+            <span>Close</span>
+            <span id="drawer-close-price">--</span>
+          </div>
+        </div>
+
+        <!-- P/L History -->
+        <div class="qx-drawer-section">
+          <div class="qx-drawer-label">Recent Trades</div>
+          <div class="qx-drawer-history" id="drawer-history">
+            <p class="qx-empty">No trades yet</p>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="top-countdown-timer" class="qx-top-countdown hidden">
-      <span class="qx-countdown-dot"></span>
-      <span id="countdown-time">00:00</span>
-    </div>
-    <div id="big-timer" class="qx-big-timer hidden">00:00</div>
+    <div class="qx-drawer-overlay hidden" id="drawer-overlay"></div>
 
-    <!-- CHART WRAPPER -->
-    <div id="chart-wrapper" class="qx-chart-wrapper">
-      <!-- RENAMED: chart -> tv-chart -->
-      <div id="tv-chart" class="qx-chart-container"></div>
-      <canvas id="drawing-canvas" class="qx-drawing-canvas"></canvas>
-    </div>
-  </div>
-
-  <!-- DRAWING TOOLS -->
-  <div class="qx-drawing-tools">
-    <button class="drawing-btn" data-tool="cursor">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 4l7 17 2-7 7-2z"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="TrendLine">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 20L20 4"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="HorizontalLine">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 12h18"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="VerticalLine">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 3v18"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="Rectangle">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="4" y="6" width="16" height="12"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="FibRetracement">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 6h16M4 12h16M4 18h16"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="TextAnnotation">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 7V5h16v2M9 5v14M15 5v14"/>
-      </svg>
-    </button>
-    <button class="drawing-btn" data-tool="Eraser">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 21l3-3M6 18l-3-3L14 4l7 7-11 11z"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- TRADE PANEL -->
-  <div class="qx-trade-panel">
-    <div class="qx-trade-header">
-      <div class="qx-trade-asset">
-        <span class="qx-asset-dot"></span>
-        <span id="trade-asset-name">BTC/USDT</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
+    <!-- ===== DRAWING TOOLS PANEL (Separate) ===== -->
+    <div class="qx-drawing-panel hidden" id="drawing-panel">
+      <div class="qx-drawing-header">
+        <h3>Drawing Tools</h3>
+        <button class="qx-drawing-close" id="drawing-panel-close" aria-label="Close">&#10005;</button>
       </div>
-      <div class="qx-trade-payout-info">
-        <span class="qx-payout-pct">68%</span>
-        <span class="qx-pending-label">PENDING TRADE</span>
-        <div class="qx-toggle active">
-          <span class="qx-toggle-knob"></span>
+      <div class="qx-drawing-grid">
+        <button class="qx-tool-btn active" data-tool="cursor">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4l7 17 2-7 7-2z"/>
+          </svg>
+          <span>Cursor</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="TrendLine">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 20L20 4"/>
+          </svg>
+          <span>Trend</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="HorizontalLine">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 12h18"/>
+          </svg>
+          <span>Horizontal</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="VerticalLine">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 3v18"/>
+          </svg>
+          <span>Vertical</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="Rectangle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="6" width="16" height="12" rx="1"/>
+          </svg>
+          <span>Rectangle</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="FibRetracement">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          </svg>
+          <span>Fib</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="TextAnnotation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7V5h16v2M9 5v14M15 5v14"/>
+          </svg>
+          <span>Text</span>
+        </button>
+        <button class="qx-tool-btn" data-tool="Eraser">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21l3-3M6 18l-3-3L14 4l7 7-11 11z"/>
+          </svg>
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+    <div class="qx-drawing-overlay hidden" id="drawing-overlay"></div>
+
+    <!-- ===== TIMEFRAME GRID MODAL ===== -->
+    <div class="qx-tf-modal hidden" id="tf-modal">
+      <div class="qx-tf-overlay" id="tf-overlay"></div>
+      <div class="qx-tf-panel">
+        <div class="qx-tf-header">
+          <h3>Timeframe</h3>
+          <button class="qx-tf-close" id="tf-close" aria-label="Close">&#10005;</button>
+        </div>
+        <div class="qx-tf-grid">
+          <button class="qx-tf-item" data-tf="5s">5s</button>
+          <button class="qx-tf-item" data-tf="10s">10s</button>
+          <button class="qx-tf-item" data-tf="15s">15s</button>
+          <button class="qx-tf-item" data-tf="30s">30s</button>
+          <button class="qx-tf-item active" data-tf="1m">1m</button>
+          <button class="qx-tf-item" data-tf="2m">2m</button>
+          <button class="qx-tf-item" data-tf="3m">3m</button>
+          <button class="qx-tf-item" data-tf="5m">5m</button>
+          <button class="qx-tf-item" data-tf="10m">10m</button>
+          <button class="qx-tf-item" data-tf="15m">15m</button>
+          <button class="qx-tf-item" data-tf="30m">30m</button>
+          <button class="qx-tf-item" data-tf="1h">1h</button>
+          <button class="qx-tf-item" data-tf="4h">4h</button>
+          <button class="qx-tf-item" data-tf="1d">1d</button>
         </div>
       </div>
     </div>
 
-    <div class="qx-trade-row">
-      <div class="qx-trade-col">
-        <label class="qx-label">Timer</label>
-        <div class="qx-timer-display" id="trade-timer-display">00:54</div>
-      </div>
-      <div class="qx-trade-col">
-        <label class="qx-label">Investment</label>
-        <div class="qx-investment">
-          <button class="qx-inc-btn" data-action="minus">-</button>
-          <input type="number" id="trade-amount" value="1" min="1" step="1">
-          <button class="qx-inc-btn" data-action="plus">+</button>
+    <!-- ===== TRADE PANEL ===== -->
+    <section class="qx-trade-panel">
+
+      <!-- Header -->
+      <div class="qx-trade-header">
+        <div class="qx-trade-symbol">
+          <span class="qx-trade-flag">&#127470;&#127475;</span>
+          <select id="asset-select" class="qx-asset-select">
+            <option value="BTCUSDT">BTC/USDT</option>
+            <option value="ETHUSDT">ETH/USDT</option>
+            <option value="BNBUSDT">BNB/USDT</option>
+          </select>
+          <span class="qx-payout-badge" id="payout-badge">68%</span>
+        </div>
+
+        <div class="qx-pending-toggle">
+          <span class="qx-pending-label">PENDING TRADE</span>
+          <button class="qx-toggle-btn active" id="pending-toggle" type="button" aria-label="Toggle pending"></button>
         </div>
       </div>
-    </div>
 
-    <div class="qx-payout-row">
-      <span class="qx-payout-label">Payout</span>
-      <span class="qx-payout-value">1.68 $</span>
-      <button class="qx-switch-btn">SWITCH</button>
-    </div>
+      <!-- Timer + Investment Row -->
+      <div class="qx-trade-row">
+        <div class="qx-field">
+          <label class="qx-field-label">Timer</label>
+          <div class="qx-field-box qx-timer-box">
+            <span id="trade-timer-display">00:54</span>
+          </div>
+        </div>
 
-    <div class="qx-trade-actions">
-      <button class="qx-buy-btn" id="call-btn">
-        <span>Buy</span>
-        <span class="qx-btn-arrow">&#8593;</span>
-      </button>
-      <button class="qx-sell-btn" id="put-btn">
-        <span>Sell</span>
-        <span class="qx-btn-arrow">&#8595;</span>
-      </button>
-    </div>
-
-    <p id="trade-message" class="qx-trade-message"></p>
-  </div>
-
-  <!-- TRADES TABS -->
-  <div class="qx-trades-section">
-    <div class="qx-trades-header">
-      <div class="qx-trades-tab active" data-trades-tab="active">
-        Trades <span class="qx-trades-count" id="trades-count-badge">0</span>
+        <div class="qx-field">
+          <label class="qx-field-label">Investment</label>
+          <div class="qx-field-box qx-investment-box">
+            <button class="qx-inc-btn" data-action="minus">&#8722;</button>
+            <input type="number" id="trade-amount" value="1" min="1" step="1">
+            <button class="qx-inc-btn" data-action="plus">+</button>
+          </div>
+        </div>
       </div>
-      <div class="qx-trades-tab" data-trades-tab="history">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+      <!-- Payout Row -->
+      <div class="qx-payout-row">
+        <span class="qx-payout-label">Payout</span>
+        <div class="qx-payout-value">
+          <span id="payout-display">1.68 $</span>
+          <button class="qx-switch-btn" id="payout-switch-btn">SWITCH</button>
+        </div>
+      </div>
+
+      <!-- Buy / Sell Buttons -->
+      <div class="qx-trade-actions">
+        <button id="call-btn" class="qx-buy-btn">
+          <span>Buy</span>
+          <span class="qx-btn-arrow">&#8593;</span>
+        </button>
+        <button id="put-btn" class="qx-sell-btn">
+          <span>Sell</span>
+          <span class="qx-btn-arrow">&#8595;</span>
+        </button>
+      </div>
+
+      <p id="trade-message" class="qx-trade-message"></p>
+
+    </section>
+
+    <!-- ===== TRADES SECTION ===== -->
+    <section class="qx-trades-section">
+      <div class="qx-trades-header">
+        <button class="qx-trades-tab active" data-trades-tab="active">
+          Trades <span class="qx-trades-count" id="trades-count-badge">0</span>
+        </button>
+        <button class="qx-trades-tab" data-trades-tab="history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v5l3 3"/>
+          </svg>
+          <span id="active-count">0</span>
+        </button>
+      </div>
+
+      <div class="qx-trades-date">
+        <span id="qx-date-label">TODAY</span>
+        <span id="qx-date-count">0</span>
+      </div>
+
+      <div class="qx-trades-pane active" id="qx-trades-active-pane">
+        <div id="active-trades-list" class="qx-trades-list">
+          <p class="qx-empty">No active trades</p>
+        </div>
+      </div>
+
+      <div class="qx-trades-pane" id="qx-trades-history-pane">
+        <div id="history-list" class="qx-trades-list">
+          <p class="qx-empty">No trade history yet</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <nav class="qx-bottom-nav">
+      <button class="qx-nav-btn" data-nav="chart" aria-label="Chart">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="7" width="18" height="13" rx="2"/>
+          <circle cx="12" cy="13" r="3.5"/>
+        </svg>
+      </button>
+      <button class="qx-nav-btn" data-nav="help" aria-label="Help">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9"/>
-          <path d="M12 7v5l3 3"/>
+          <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .8-1 1.7"/>
+          <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
         </svg>
-        <span id="active-count">0</span>
+      </button>
+      <button class="qx-nav-btn active" data-nav="profile" aria-label="Profile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
+        </svg>
+      </button>
+      <button class="qx-nav-btn" data-nav="tournament" aria-label="Tournament">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 4h12v6a6 6 0 0 1-12 0z"/>
+          <path d="M6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/>
+          <path d="M9 20h6M12 16v4"/>
+        </svg>
+        <span class="qx-nav-badge" id="tour-badge">3</span>
+      </button>
+      <button class="qx-nav-btn" data-nav="more" aria-label="More">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+          <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+        </svg>
+        <span class="qx-nav-badge" id="more-badge">4</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ============================================
+       POPUPS
+       ============================================ -->
+
+  <!-- Balance Popup -->
+  <div class="popup hidden" id="balance-popup">
+    <div class="popup-overlay" id="balance-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Accounts</h3>
+        <button class="popup-close" id="balance-popup-close">&#10005;</button>
+      </div>
+      <div class="qx-acc-option active" data-acc-type="demo">
+        <div class="qx-acc-radio"></div>
+        <div class="qx-acc-info">
+          <div class="qx-acc-title">Demo Account</div>
+          <div class="qx-acc-balance">$<span id="demo-balance-display">10,000.00</span></div>
+        </div>
+        <button class="qx-acc-edit" data-edit="demo">Edit</button>
+      </div>
+      <div class="qx-acc-option" data-acc-type="real">
+        <div class="qx-acc-radio"></div>
+        <div class="qx-acc-info">
+          <div class="qx-acc-title">Live Account</div>
+          <div class="qx-acc-balance">$<span id="real-balance-display">0.00</span></div>
+        </div>
+        <button class="qx-acc-edit" data-edit="real" disabled>Lock</button>
+      </div>
+      <div class="qx-balance-edit-box hidden" id="qx-balance-edit-box">
+        <label class="qx-edit-label">New Demo Balance</label>
+        <input type="number" id="qx-balance-edit-input" step="0.01" min="0" placeholder="Enter amount">
+        <div class="qx-edit-actions">
+          <button class="qx-edit-cancel" id="qx-balance-edit-cancel">Cancel</button>
+          <button class="qx-edit-save" id="qx-balance-edit-save">Save</button>
+        </div>
+      </div>
+      <div class="popup-actions">
+        <button class="btn-primary" id="balance-popup-deposit">Deposit</button>
+        <button class="btn-secondary" id="balance-popup-withdraw">Withdraw</button>
       </div>
     </div>
+  </div>
 
-    <div class="qx-trades-date-badge">
-      <span id="qx-date-label">29 SEPTEMBER</span>
-      <span id="qx-date-count">0</span>
+  <!-- Account Popup -->
+  <div class="popup hidden" id="account-popup">
+    <div class="popup-overlay" id="account-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Switch Account</h3>
+        <button class="popup-close" id="account-popup-close">&#10005;</button>
+      </div>
+      <button class="acc-btn-popup active" data-acc="demo">Demo Account</button>
+      <button class="acc-btn-popup" data-acc="real">Live Account</button>
     </div>
+  </div>
 
-    <div class="qx-trades-active-pane active" id="qx-trades-active-pane">
-      <div id="active-trades-list" class="qx-trades-list">
-        <p class="empty-text">No active trades</p>
+  <!-- Deposit Popup -->
+  <div class="popup hidden" id="deposit-popup">
+    <div class="popup-overlay" id="deposit-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Deposit</h3>
+        <button class="popup-close" id="deposit-popup-close">&#10005;</button>
+      </div>
+      <p class="popup-note">Send payment then submit the TrxID below.</p>
+      <div class="payment-info">
+        <div class="payment-row">
+          <span class="payment-label">bKash</span>
+          <span class="payment-value">01700-000000</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Nagad</span>
+          <span class="payment-value">01800-000000</span>
+        </div>
+      </div>
+      <input type="number" id="deposit-amount" placeholder="Amount ($)" min="1">
+      <input type="text" id="deposit-txid" placeholder="Transaction ID">
+      <button class="btn-primary" id="deposit-submit">Submit Request</button>
+      <p id="deposit-message" class="message"></p>
+    </div>
+  </div>
+
+  <!-- Withdraw Popup -->
+  <div class="popup hidden" id="withdraw-popup">
+    <div class="popup-overlay" id="withdraw-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Withdraw</h3>
+        <button class="popup-close" id="withdraw-popup-close">&#10005;</button>
+      </div>
+      <input type="number" id="withdraw-amount" placeholder="Amount ($)" min="1">
+      <select id="withdraw-method">
+        <option value="bkash">bKash</option>
+        <option value="nagad">Nagad</option>
+        <option value="rocket">Rocket</option>
+      </select>
+      <input type="text" id="withdraw-number" placeholder="Account Number">
+      <button class="btn-primary" id="withdraw-submit">Submit Request</button>
+      <p id="withdraw-message" class="message"></p>
+    </div>
+  </div>
+
+  <!-- Chat Popup -->
+  <div class="popup hidden" id="chat-popup">
+    <div class="popup-overlay" id="chat-popup-overlay"></div>
+    <div class="popup-content chat-popup-content">
+      <div class="popup-header">
+        <h3>Support</h3>
+        <button class="popup-close" id="chat-popup-close">&#10005;</button>
+      </div>
+      <div class="user-chat-messages" id="user-chat-messages">
+        <p class="qx-empty">Send a message...</p>
+      </div>
+      <div class="user-chat-input-row">
+        <input type="text" id="user-chat-input" placeholder="Type message...">
+        <button id="user-chat-send">Send</button>
       </div>
     </div>
-
-    <div class="qx-trades-history-pane" id="qx-trades-history-pane">
-      <div class="qx-trades-date-badge">
-        <span id="qx-history-date-label">TODAY</span>
-        <span id="qx-history-date-count">0</span>
-      </div>
-      <div id="history-list" class="qx-trades-list">
-        <p class="empty-text">No trade history yet</p>
-      </div>
-    </div>
   </div>
 
-  <!-- BOTTOM NAV -->
-  <div class="qx-bottom-nav">
-    <button class="qx-nav-btn" data-nav="camera">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="7" width="18" height="13" rx="2"/>
-        <circle cx="12" cy="13" r="4"/>
-        <path d="M9 7l1-3h4l1 3"/>
-      </svg>
-    </button>
-    <button class="qx-nav-btn" data-nav="help">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M9 9a3 3 0 1 1 4.5 2.6c-.8.5-1.5 1-1.5 2.4"/>
-        <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
-      </svg>
-    </button>
-    <button class="qx-nav-btn" data-nav="profile">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="8" r="4"/>
-        <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
-      </svg>
-    </button>
-    <button class="qx-nav-btn" data-nav="tournament">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M6 4h12v6a6 6 0 0 1-12 0z"/>
-        <path d="M6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/>
-        <path d="M9 20h6M12 16v4"/>
-      </svg>
-    </button>
-    <button class="qx-nav-btn" data-nav="more">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
-        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-        <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
-      </svg>
-    </button>
-  </div>
-
-</div>
-
-<!-- ============================================
-     POPUPS (hidden by default)
-     ============================================ -->
-
-<!-- Balance Popup -->
-<div class="popup hidden" id="balance-popup">
-  <div class="popup-overlay" id="balance-popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Balance</h3>
-      <button class="popup-close" id="balance-popup-close">&#10005;</button>
-    </div>
-    <div class="qx-acc-option active" data-acc-type="demo">
-      <div class="qx-acc-info">
-        <div class="qx-acc-label">Demo Account</div>
-        <div class="qx-acc-value">$<span id="demo-balance-display">1000.00</span></div>
+  <!-- More Menu -->
+  <div class="qx-more-menu hidden" id="more-menu">
+    <div class="qx-more-overlay" id="more-menu-overlay"></div>
+    <div class="qx-more-panel">
+      <div class="qx-more-header">
+        <h3>More</h3>
+        <button class="qx-more-close" id="more-menu-close">&#10005;</button>
       </div>
-      <button class="qx-acc-edit" data-edit="demo">Edit</button>
-    </div>
-    <div class="qx-acc-option" data-acc-type="real">
-      <div class="qx-acc-info">
-        <div class="qx-acc-label">Live Account</div>
-        <div class="qx-acc-value">$<span id="real-balance-display">0.00</span></div>
-      </div>
-      <button class="qx-acc-edit" data-edit="real" disabled>Locked</button>
-    </div>
-    <div class="qx-balance-edit-box hidden" id="qx-balance-edit-box">
-      <input type="number" id="qx-balance-edit-input" step="0.01" min="0" placeholder="Enter amount">
-      <div class="qx-balance-edit-actions">
-        <button class="btn-secondary" id="qx-balance-edit-cancel">Cancel</button>
-        <button class="btn-primary" id="qx-balance-edit-save">Save</button>
+      <div class="qx-more-list">
+        <button class="qx-more-item" data-menu="deposit">Deposit</button>
+        <button class="qx-more-item" data-menu="withdraw">Withdraw</button>
+        <button class="qx-more-item" data-menu="referral">Refer & Earn</button>
+        <button class="qx-more-item" data-menu="chat">Support</button>
+        <button class="qx-more-item" data-menu="trades">My Trades</button>
+        <div class="qx-more-divider"></div>
+        <button class="qx-more-item logout" data-menu="logout">Logout</button>
       </div>
     </div>
-    <div class="popup-actions">
-      <button class="btn-primary" id="balance-popup-deposit">Deposit</button>
-      <button class="btn-secondary" id="balance-popup-withdraw">Withdraw</button>
+  </div>
+
+  <!-- Tournament Popup (placeholder) -->
+  <div class="popup hidden" id="tournament-popup">
+    <div class="popup-overlay" id="tournament-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Tournaments</h3>
+        <button class="popup-close" id="tournament-popup-close">&#10005;</button>
+      </div>
+      <p class="qx-empty">Coming soon...</p>
     </div>
   </div>
-</div>
 
-<!-- Account Popup -->
-<div class="popup hidden" id="account-popup">
-  <div class="popup-overlay" id="account-popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Account</h3>
-      <button class="popup-close" id="account-popup-close">&#10005;</button>
-    </div>
-    <button class="acc-btn-popup active" data-acc="demo">Demo Account</button>
-    <button class="acc-btn-popup" data-acc="real">Live Account</button>
-  </div>
-</div>
-
-<!-- Deposit Popup -->
-<div class="popup hidden" id="deposit-popup">
-  <div class="popup-overlay" id="deposit-popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Deposit</h3>
-      <button class="popup-close" id="deposit-popup-close">&#10005;</button>
-    </div>
-    <input type="number" id="deposit-amount" placeholder="Amount" min="1">
-    <input type="text" id="deposit-txid" placeholder="Transaction ID">
-    <button class="btn-primary" id="deposit-submit">Submit</button>
-    <p id="deposit-message" class="message"></p>
-  </div>
-</div>
-
-<!-- Withdraw Popup -->
-<div class="popup hidden" id="withdraw-popup">
-  <div class="popup-overlay" id="withdraw-popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Withdraw</h3>
-      <button class="popup-close" id="withdraw-popup-close">&#10005;</button>
-    </div>
-    <input type="number" id="withdraw-amount" placeholder="Amount" min="1">
-    <select id="withdraw-method">
-      <option value="bkash">bKash</option>
-      <option value="nagad">Nagad</option>
-      <option value="rocket">Rocket</option>
-    </select>
-    <input type="text" id="withdraw-number" placeholder="Account Number">
-    <button class="btn-primary" id="withdraw-submit">Submit</button>
-    <p id="withdraw-message" class="message"></p>
-  </div>
-</div>
-
-<!-- More Menu -->
-<div class="popup hidden" id="more-menu">
-  <div class="popup-overlay"></div>
-  <div class="popup-content more-menu-content">
-    <div class="popup-header">
-      <h3>More</h3>
-      <button class="popup-close" id="more-menu-close">&#10005;</button>
-    </div>
-    <button class="more-menu-item" data-menu="deposit">Deposit</button>
-    <button class="more-menu-item" data-menu="withdraw">Withdraw</button>
-    <button class="more-menu-item" data-menu="referral">Referral</button>
-    <button class="more-menu-item" data-menu="chat">Chat</button>
-    <button class="more-menu-item" data-menu="trades">My Trades</button>
-    <button class="more-menu-item" data-menu="logout">Logout</button>
-  </div>
-</div>
-
-<!-- Chat Popup -->
-<div class="popup hidden" id="chat-popup">
-  <div class="popup-overlay" id="chat-popup-overlay"></div>
-  <div class="popup-content chat-popup-content">
-    <div class="popup-header">
-      <h3>Chat with Admin</h3>
-      <button class="popup-close" id="chat-popup-close">&#10005;</button>
-    </div>
-    <div class="user-chat-messages" id="user-chat-messages"></div>
-    <div class="user-chat-input-row">
-      <input type="text" id="user-chat-input" placeholder="Type message...">
-      <button id="user-chat-send">Send</button>
+  <!-- Referral Popup (placeholder) -->
+  <div class="popup hidden" id="referral-popup">
+    <div class="popup-overlay" id="referral-popup-overlay"></div>
+    <div class="popup-content">
+      <div class="popup-header">
+        <h3>Refer & Earn</h3>
+        <button class="popup-close" id="referral-popup-close">&#10005;</button>
+      </div>
+      <p class="qx-empty">Coming soon...</p>
     </div>
   </div>
-</div>
 
-<!-- Tournament Popup -->
-<div class="popup hidden" id="tournament-popup">
-  <div class="popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Tournament</h3>
-      <button class="popup-close">&#10005;</button>
-    </div>
-    <p class="empty-text">Coming soon...</p>
-  </div>
-</div>
-
-<!-- Referral Popup -->
-<div class="popup hidden" id="referral-popup">
-  <div class="popup-overlay"></div>
-  <div class="popup-content">
-    <div class="popup-header">
-      <h3>Referral</h3>
-      <button class="popup-close">&#10005;</button>
-    </div>
-    <p class="empty-text">Coming soon...</p>
-  </div>
-</div>
-
-<!-- ============================================
-     SCRIPT
-     ============================================ -->
-<script type="module" src="app.js?v=23"></script>
+  <!-- ===== SCRIPT ===== -->
+  <script type="module" src="app.js?v=25"></script>
 
 </body>
-</html>
+</html>       
