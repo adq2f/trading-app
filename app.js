@@ -1285,14 +1285,15 @@ function drawFibonacci(p1, p2) {
 
 // ===== বড় টাইমার =====
 function updateBigTimer() {
-  if (!bigTimer) return;
+  var timerEl = document.getElementById("big-timer");
+  if (!timerEl) return;
 
   if (activeTradesLocal.length === 0) {
-    bigTimer.classList.remove("hidden");
+    timerEl.classList.remove("hidden");
     var time = (typeof selectedTime !== "undefined") ? selectedTime : 60;
     var mm = Math.floor(time / 60);
     var ss = time % 60;
-    bigTimer.textContent = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
+    timerEl.textContent = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
     return;
   }
 
@@ -1304,15 +1305,15 @@ function updateBigTimer() {
   const remaining = Math.max(0, Math.ceil((soonest - Date.now()) / 1000));
   const m = Math.floor(remaining / 60);
   const s = remaining % 60;
-  bigTimer.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  bigTimer.classList.remove("hidden");
+  timerEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  timerEl.classList.remove("hidden");
 
   if (remaining <= 5) {
-    bigTimer.style.borderColor = "#ff5252";
-    bigTimer.style.color = "#ff5252";
+    timerEl.style.borderColor = "#ff5252";
+    timerEl.style.color = "#ff5252";
   } else {
-    bigTimer.style.borderColor = "#1f6feb";
-    bigTimer.style.color = "#58a6ff";
+    timerEl.style.borderColor = "#1f6feb";
+    timerEl.style.color = "#58a6ff";
   }
 }
 
@@ -1451,8 +1452,12 @@ async function placeTrade(type) {
     userBalance = newBalance;
     window.userBalance = newBalance;
 
-    if (balEl) balEl.textContent = userBalance.toFixed(2);
-    if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+        if (balEl && balEl.textContent !== undefined) {
+      try { balEl.textContent = userBalance.toFixed(2); } catch(e) {}
+    }
+    if (balancePopupValue && balancePopupValue.textContent !== undefined) {
+      try { balancePopupValue.textContent = userBalance.toFixed(2); } catch(e) {}
+    }
 
     if (typeof animateBalanceChange === "function") {
       animateBalanceChange(-amount);
@@ -1480,7 +1485,8 @@ async function placeTrade(type) {
     );
 
     setTimeout(function() {
-      if (msgEl) msgEl.textContent = "";
+      var tm = document.getElementById("trade-message");
+      if (tm) tm.textContent = "";
     }, 2000);
 
     // Chart e Entry Marker Draw
@@ -1563,23 +1569,36 @@ async function checkExpiredTrades() {
           });
 
           userBalance = newBal;
-          balanceEl.textContent = userBalance.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+          if (balanceEl && balanceEl.textContent !== undefined) {
+            try { balanceEl.textContent = userBalance.toFixed(2); } catch(e) {}
+          }
+          if (balancePopupValue && balancePopupValue.textContent !== undefined) {
+            try { balancePopupValue.textContent = userBalance.toFixed(2); } catch(e) {}
+          }
           animateBalanceChange(profit);
           showResultFlash("win");
           playSound("win");
 
-          tradeMessage.style.color = "#00c853";
-          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
+          var tm1 = document.getElementById("trade-message");
+          if (tm1) {
+            tm1.style.color = "#00c853";
+            tm1.textContent = "🎉 জিতেছেন! +$" + profit.toFixed(2);
+          }
         } else {
           showResultFlash("loss");
           playSound("loss");
 
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
+          var tm2 = document.getElementById("trade-message");
+          if (tm2) {
+            tm2.style.color = "#ff5252";
+            tm2.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          }
         }
 
-        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
+        setTimeout(function() {
+          var tm3 = document.getElementById("trade-message");
+          if (tm3) tm3.textContent = "";
+        }, 3500);
 
       } catch (error) {
         console.error("Trade expire error:", error);
@@ -1899,24 +1918,37 @@ async function checkExpiredTradesAdmin() {
           });
 
           userBalance = newBal;
-          balanceEl.textContent = userBalance.toFixed(2);
-          if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
+          if (balanceEl && balanceEl.textContent !== undefined) {
+            try { balanceEl.textContent = userBalance.toFixed(2); } catch(e) {}
+          }
+          if (balancePopupValue && balancePopupValue.textContent !== undefined) {
+            try { balancePopupValue.textContent = userBalance.toFixed(2); } catch(e) {}
+          }
           animateBalanceChange(profit);
           showResultFlash("win");
           playSound("win");
 
-          tradeMessage.style.color = "#00c853";
-          tradeMessage.textContent = `🎉 জিতেছেন! +$${profit.toFixed(2)}`;
+          var tm4 = document.getElementById("trade-message");
+          if (tm4) {
+            tm4.style.color = "#00c853";
+            tm4.textContent = "🎉 জিতেছেন! +$" + profit.toFixed(2);
+          }
 
         } else {
           showResultFlash("loss");
           playSound("loss");
 
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = `😔 হেরেছেন -$${trade.amount.toFixed(2)}`;
+          var tm5 = document.getElementById("trade-message");
+          if (tm5) {
+            tm5.style.color = "#ff5252";
+            tm5.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          }
         }
 
-        setTimeout(() => { tradeMessage.textContent = ""; }, 3500);
+        setTimeout(function() {
+          var tm6 = document.getElementById("trade-message");
+          if (tm6) tm6.textContent = "";
+        }, 3500);
 
       } catch (error) {
         console.error("Admin trade expire error:", error);
@@ -2980,20 +3012,28 @@ async function processTradeResults() {
           safeShowResultFlash("win");
           safePlaySound("win");
 
-          if (typeof tradeMessage !== "undefined" && tradeMessage) {
-            tradeMessage.style.color = "#00c853";
-            tradeMessage.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
-            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+          var tm7 = document.getElementById("trade-message");
+          if (tm7) {
+            tm7.style.color = "#00c853";
+            tm7.textContent = "🎉 জিতেছেন! +$" + netProfit.toFixed(2);
+            setTimeout(function() {
+              var tm7b = document.getElementById("trade-message");
+              if (tm7b) tm7b.textContent = "";
+            }, 3500);
           }
         }
       } else {
         safeShowResultFlash("loss");
         safePlaySound("loss");
 
-        if (typeof tradeMessage !== "undefined" && tradeMessage) {
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
-          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+        var tm8 = document.getElementById("trade-message");
+        if (tm8) {
+          tm8.style.color = "#ff5252";
+          tm8.textContent = "😔 হেরেছেন -$" + trade.amount.toFixed(2);
+          setTimeout(function() {
+            var tm8b = document.getElementById("trade-message");
+            if (tm8b) tm8b.textContent = "";
+          }, 3500);
         }
       }
     } catch (err) {
@@ -3448,20 +3488,28 @@ async function processTradeResultsV2() {
           if (typeof showResultFlash === "function") showResultFlash("win");
           if (typeof playSound === "function") playSound("win");
 
-          if (tradeMessage) {
-            tradeMessage.style.color = "#00c853";
-            tradeMessage.textContent = " PROFIT! +$" + netProfit.toFixed(2);
-            setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+          var tm9 = document.getElementById("trade-message");
+          if (tm9) {
+            tm9.style.color = "#00c853";
+            tm9.textContent = " PROFIT! +$" + netProfit.toFixed(2);
+            setTimeout(function() {
+              var tm9b = document.getElementById("trade-message");
+              if (tm9b) tm9b.textContent = "";
+            }, 3500);
           }
         }
       } else {
         if (typeof showResultFlash === "function") showResultFlash("loss");
         if (typeof playSound === "function") playSound("loss");
 
-        if (tradeMessage) {
-          tradeMessage.style.color = "#ff5252";
-          tradeMessage.textContent = "Loss -$" + trade.amount.toFixed(2);
-          setTimeout(function() { tradeMessage.textContent = ""; }, 3500);
+        var tm10 = document.getElementById("trade-message");
+        if (tm10) {
+          tm10.style.color = "#ff5252";
+          tm10.textContent = "Loss -$" + trade.amount.toFixed(2);
+          setTimeout(function() {
+            var tm10b = document.getElementById("trade-message");
+            if (tm10b) tm10b.textContent = "";
+          }, 3500);
         }
       }
     } catch (err) {
