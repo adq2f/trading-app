@@ -3206,8 +3206,10 @@ input, select {
   cursor: pointer;
 }
 /* ============================================
-   MSG 7 FINAL: Tick Mark + Dot Trail + Entry Line
+   MSG 7 UNIVERSAL: Tick Mark + Dot Trail + Entry Line
    ============================================ */
+
+#chart-wrapper { position: relative !important; }
 
 .qx-tick-mark {
   position: absolute;
@@ -3223,18 +3225,11 @@ input, select {
   font-weight: 700;
   z-index: 24;
   pointer-events: none;
-  animation: tickPop 0.4s ease-out;
   font-family: Inter, sans-serif;
+  animation: tickPop 0.4s ease-out;
 }
-.qx-tick-mark.call {
-  background: #00c853;
-  box-shadow: 0 0 10px #00c853;
-}
-.qx-tick-mark.put {
-  background: #ff5252;
-  box-shadow: 0 0 10px #ff5252;
-}
-
+.qx-tick-mark.call { background: #00c853; box-shadow: 0 0 10px #00c853; }
+.qx-tick-mark.put { background: #ff5252; box-shadow: 0 0 10px #ff5252; }
 @keyframes tickPop {
   0% { transform: scale(0) rotate(-180deg); opacity: 0; }
   70% { transform: scale(1.15) rotate(10deg); opacity: 1; }
@@ -3249,19 +3244,9 @@ input, select {
   z-index: 23;
   pointer-events: none;
 }
-.qx-dot-trail.put {
-  flex-direction: row;
-}
-.qx-dot-trail.call {
-  flex-direction: row-reverse;
-}
-
-.qx-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  opacity: 0.5;
-}
+.qx-dot-trail.call { flex-direction: row-reverse; }
+.qx-dot-trail.put { flex-direction: row; }
+.qx-dot { border-radius: 50%; }
 .qx-dot-trail.call .qx-dot { background: #00c853; }
 .qx-dot-trail.put .qx-dot { background: #ff5252; }
 .qx-dot-trail.call .qx-dot-0 { width: 4px; height: 4px; opacity: 0.4; }
@@ -3279,8 +3264,6 @@ input, select {
   z-index: 18;
   pointer-events: none;
   border-top: 1.5px dashed;
-  mask-image: linear-gradient(to right, #000 75%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, #000 75%, transparent 100%);
 }
 .qx-entry-line.call { border-color: #00c853; }
 .qx-entry-line.put { border-color: #ff5252; }
@@ -3295,7 +3278,6 @@ input, select {
   border-radius: 4px;
   z-index: 25;
   pointer-events: none;
-  letter-spacing: 0.3px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 .qx-entry-label.call { background: #00c853; }
