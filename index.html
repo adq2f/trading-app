@@ -44,9 +44,10 @@
   <!-- ========== TRADING PAGE ========== -->
   <div id="dashboard-page" class="hidden">
 
-    <!-- ===== TOP BAR (Quotex-style) ===== -->
+    <!-- ===== TOP BAR (Quotex-style v23) ===== -->
     <header class="qx-top-bar">
       <button class="qx-account-btn" id="balance-chip">
+        <span class="qx-launch-icon">🚀</span>
         <span class="qx-badge" id="qx-account-type">DEMO</span>
         <span class="qx-balance">$<span id="balance">10,000.00</span></span>
         <span class="qx-caret">▾</span>
@@ -56,6 +57,9 @@
         <span class="qx-bell-icon">🔔</span>
         <span class="qx-bell-badge" id="notif-badge">0</span>
       </button>
+
+      <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
+    </header>
 
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
@@ -125,8 +129,26 @@
 
       </section>
 
-      <!-- ===== TRADE PANEL ===== -->
+      <!-- ===== TRADE PANEL (Quotex-style v23) ===== -->
       <section class="qx-trade-panel">
+
+        <!-- Symbol + Pending Trade header -->
+        <div class="qx-trade-header">
+          <div class="qx-trade-symbol">
+            <span class="qx-trade-flag">◉</span>
+            <select id="trade-symbol-select" class="qx-trade-symbol-select">
+              <option value="BTCUSDT">BTC/USDT</option>
+              <option value="ETHUSDT">ETH/USDT</option>
+              <option value="BNBUSDT">BNB/USDT</option>
+            </select>
+            <span class="qx-trade-payout-badge">60%</span>
+          </div>
+
+          <div class="qx-pending-toggle">
+            <span class="qx-pending-label">PENDING TRADE</span>
+            <button class="qx-toggle-btn active" id="pending-toggle" type="button"></button>
+          </div>
+        </div>
 
         <!-- Timer + Investment Row -->
         <div class="qx-trade-row">
@@ -159,11 +181,11 @@
         <!-- Up/Down Buttons -->
         <div class="qx-trade-actions">
           <button id="call-btn" class="qx-up-btn">
-            <span class="qx-btn-text">Up</span>
+            <span class="qx-btn-text">Buy</span>
             <span class="qx-btn-icon">↑</span>
           </button>
           <button id="put-btn" class="qx-down-btn">
-            <span class="qx-btn-text">Down</span>
+            <span class="qx-btn-text">Sell</span>
             <span class="qx-btn-icon">↓</span>
           </button>
         </div>
@@ -171,7 +193,6 @@
         <p id="trade-message"></p>
 
       </section>
-
       <!-- ===== BOTTOM NAV ===== -->
       <nav class="qx-bottom-nav">
         <button class="qx-nav-btn" data-nav="history" type="button">
