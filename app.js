@@ -2372,12 +2372,10 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
   // ===== 1. BOTTOM NAV BUTTONS =====
   var navBtns = document.querySelectorAll(".qx-nav-btn");
   navBtns.forEach(function(btn) {
-    // Purono listener remove korte na parleo, notun listener add korbo
     var newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
   });
 
-  // Re-query after clone
   var freshNavBtns = document.querySelectorAll(".qx-nav-btn");
   freshNavBtns.forEach(function(btn) {
     btn.addEventListener("click", function(e) {
@@ -2387,18 +2385,14 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
       var nav = btn.dataset.nav;
       console.log("[FIX] Nav clicked:", nav);
 
-      // Active state
       freshNavBtns.forEach(function(b) { b.classList.remove("active"); });
       btn.classList.add("active");
 
-      // ===== ACTIONS =====
       if (nav === "more") {
         var moreMenu = document.getElementById("more-menu");
         if (moreMenu) {
           moreMenu.classList.remove("hidden");
           console.log("[FIX] More menu opened");
-        } else {
-          console.warn("[FIX] more-menu element not found");
         }
       } 
       else if (nav === "tournament") {
@@ -2406,8 +2400,6 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
         if (tourPopup) {
           tourPopup.classList.remove("hidden");
           console.log("[FIX] Tournament popup opened");
-        } else {
-          console.warn("[FIX] tournament-popup not found");
         }
       } 
       else if (nav === "help") {
@@ -2415,18 +2407,12 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
         if (chatPopup) {
           chatPopup.classList.remove("hidden");
           console.log("[FIX] Chat popup opened");
-        } else {
-          console.warn("[FIX] chat-popup not found");
         }
       } 
       else if (nav === "history") {
         var tradesSection = document.querySelector(".qx-trades-section");
         if (tradesSection) {
           tradesSection.scrollIntoView({ behavior: "smooth" });
-        } else {
-          // Fallback: history tab e switch
-          var historyTab = document.querySelector('[data-trades-tab="history"]');
-          if (historyTab) historyTab.click();
         }
       } 
       else if (nav === "profile") {
@@ -2452,7 +2438,6 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
       try { localStorage.setItem("bonusBannerClosed", "1"); } catch(err) {}
       console.log("[FIX] Bonus banner closed");
     });
-    // Auto hide if already closed
     try {
       if (localStorage.getItem("bonusBannerClosed") === "1") {
         bonusBanner.classList.add("hidden");
@@ -2485,16 +2470,13 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
     newChip.addEventListener("click", function(e) {
       e.preventDefault();
       e.stopPropagation();
-      var accPopup = document.getElementById("account-popup");
       var balPopup = document.getElementById("balance-popup");
+      var bpv = document.getElementById("balance-popup-value");
       if (balPopup) {
-        var bpv = document.getElementById("balance-popup-value");
         if (bpv && typeof userBalance !== "undefined") {
           bpv.textContent = Number(userBalance).toFixed(2);
         }
         balPopup.classList.remove("hidden");
-      } else if (accPopup) {
-        accPopup.classList.remove("hidden");
       }
       console.log("[FIX] Balance chip clicked");
     });
@@ -2519,537 +2501,6 @@ console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
   console.log("[FIX] All buttons force-bound successfully");
 })();
 
-// ===== RE-BIND AFTER 2 SECONDS (jodi dynamic content load hoy) =====
-setTimeout(function() {
-  console.log("[FIX] Re-binding buttons after 2s...");
-  
-  // Re-bind More Menu Close
-  var moreClose = document.getElementById("more-menu-close");
-  var moreMenu = document.getElementById("more-menu");
-  if (moreClose && moreMenu && moreClose.dataset.bound !== "1") {
-    moreClose.dataset.bound = "1";
-    moreClose.addEventListener("click", function(e) {
-      e.preventDefault();
-      moreMenu.classList.add("hidden");
-    });
-  }
-
-  // Re-bind More Menu Items
-  var menuItems = document.querySelectorAll(".more-menu-item");
-  menuItems.forEach(function(item) {
-    if (item.dataset.bound === "1") return;
-    item.dataset.bound = "1";
-    item.addEventListener("click", function(e) {
-      e.preventDefault();
-      var menu = item.dataset.menu;
-      console.log("[FIX] Menu item:", menu);
-      
-      if (moreMenu) moreMenu.classList.add("hidden");
-
-      if (menu === "deposit") {
-        var dp = document.getElementById("deposit-popup");
-        if (dp) dp.classList.remove("hidden");
-      } else if (menu === "withdraw") {
-        var wp = document.getElementById("withdraw-popup");
-        if (wp) wp.classList.remove("hidden");
-      } else if (menu === "referral") {
-        var rp = document.getElementById("referral-popup");
-        if (rp) rp.classList.remove("hidden");
-      } else if (menu === "chat") {
-        var cp = document.getElementById("chat-popup");
-        if (cp) cp.classList.remove("hidden");
-      } else if (menu === "trades") {
-        var ts = document.querySelector(".qx-trades-section");
-        if (ts) ts.scrollIntoView({ behavior: "smooth" });
-      } else if (menu === "logout") {
-        if (typeof auth !== "undefined" && typeof signOut === "function") {
-          signOut(auth);
-        }
-      }
-    });
-  });
-
-  // Re-bind popup overlays (click outside to close)
-  document.querySelectorAll(".popup-overlay, .more-menu-overlay").forEach(function(overlay) {
-    if (overlay.dataset.bound === "1") return;
-    overlay.dataset.bound = "1";
-    overlay.addEventListener("click", function() {
-      var parent = overlay.closest(".popup, .more-menu");
-      if (parent) parent.classList.add("hidden");
-    });
-  });
-
-  // Re-bind popup close buttons
-  document.querySelectorAll(".popup-close").forEach(function(btn) {
-    if (btn.dataset.bound === "1") return;
-    btn.dataset.bound = "1";
-    btn.addEventListener("click", function() {
-      var parent = btn.closest(".popup");
-      if (parent) parent.classList.add("hidden");
-    });
-  });
-
-  console.log("[FIX] Re-binding complete");
-}, 2000);
-
-console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
-// ===== ON-SCREEN CONSOLE (Mobile Debug) =====
-(function onScreenConsole() {
-  var logBox = document.createElement("div");
-  logBox.id = "debug-log-box";
-  logBox.style.cssText = 
-    "position:fixed;top:60px;left:8px;right:8px;max-height:200px;" +
-    "background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;" +
-    "font-size:10px;padding:8px;border-radius:8px;z-index:99999;" +
-    "overflow-y:auto;display:none;pointer-events:auto;";
-  logBox.innerHTML = '<div style="color:#fff;font-weight:bold;margin-bottom:4px;">DEBUG LOG (tap to close)</div>';
-  document.body.appendChild(logBox);
-
-  // Toggle button
-  var toggleBtn = document.createElement("button");
-  toggleBtn.textContent = "🐛";
-  toggleBtn.style.cssText = 
-    "position:fixed;bottom:70px;right:8px;width:36px;height:36px;" +
-    "background:#ff5252;color:#fff;border:none;border-radius:50%;" +
-    "font-size:16px;z-index:99998;cursor:pointer;";
-  toggleBtn.onclick = function() {
-    logBox.style.display = logBox.style.display === "none" ? "block" : "none";
-  };
-  document.body.appendChild(toggleBtn);
-
-  logBox.onclick = function() { logBox.style.display = "none"; };
-
-  // Override console.log
-  var origLog = console.log;
-  var origErr = console.error;
-  var origWarn = console.warn;
-
-  function addLine(text, color) {
-    try {
-      var line = document.createElement("div");
-      line.style.color = color || "#0f0";
-      line.style.borderBottom = "1px solid #333";
-      line.style.padding = "2px 0";
-      line.textContent = text;
-      logBox.appendChild(line);
-      logBox.scrollTop = logBox.scrollHeight;
-      if (logBox.children.length > 50) {
-        logBox.removeChild(logBox.children[1]);
-      }
-    } catch(e) {}
-  }
-
-  console.log = function() {
-    var args = Array.prototype.slice.call(arguments);
-    addLine("> " + args.join(" "), "#0f0");
-    origLog.apply(console, args);
-  };
-  console.error = function() {
-    var args = Array.prototype.slice.call(arguments);
-    addLine("! " + args.join(" "), "#ff5252");
-    origErr.apply(console, args);
-  };
-  console.warn = function() {
-    var args = Array.prototype.slice.call(arguments);
-    addLine("? " + args.join(" "), "#ffb300");
-    origWarn.apply(console, args);
-  };
-
-  console.log("[DEBUG] On-screen console active. Tap 🐛 to view.");
-})();
-// ============================================
-// ON-SCREEN DEBUG BOX (Mobile Friendly)
-// ============================================
-(function createDebugBox() {
-  // Purono box remove
-  var old = document.getElementById("debug-box");
-  if (old) old.remove();
-  var oldBtn = document.getElementById("debug-toggle-btn");
-  if (oldBtn) oldBtn.remove();
-
-  // Debug box
-  var box = document.createElement("div");
-  box.id = "debug-box";
-  box.style.cssText = "position:fixed;top:60px;left:6px;right:6px;height:180px;" +
-    "background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:10px;" +
-    "padding:8px;border-radius:8px;z-index:999999;overflow-y:auto;" +
-    "display:none;border:1px solid #0f0;";
-  box.innerHTML = '<div style="color:#fff;font-weight:bold;margin-bottom:6px;">DEBUG LOG (tap to close)</div>';
-  document.body.appendChild(box);
-
-  // Toggle button
-  var btn = document.createElement("button");
-  btn.id = "debug-toggle-btn";
-  btn.textContent = "🐛";
-  btn.style.cssText = "position:fixed;bottom:75px;right:8px;width:40px;height:40px;" +
-    "background:#ff5252;color:#fff;border:2px solid #fff;border-radius:50%;" +
-    "font-size:18px;z-index:999998;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.5);";
-  btn.onclick = function() {
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  };
-  document.body.appendChild(btn);
-
-  box.onclick = function() { box.style.display = "none"; };
-
-  // Override console
-  var origLog = console.log;
-  var origErr = console.error;
-  var origWarn = console.warn;
-
-  function addLine(text, color) {
-    try {
-      var line = document.createElement("div");
-      line.style.color = color;
-      line.style.borderBottom = "1px solid #222";
-      line.style.padding = "2px 0";
-      line.style.wordBreak = "break-all";
-      line.textContent = text;
-      box.appendChild(line);
-      box.scrollTop = box.scrollHeight;
-      while (box.children.length > 60) {
-        box.removeChild(box.children[1]);
-      }
-    } catch(e) {}
-  }
-
-  console.log = function() {
-    var a = Array.prototype.slice.call(arguments);
-    addLine("> " + a.join(" "), "#0f0");
-    origLog.apply(console, arguments);
-  };
-  console.error = function() {
-    var a = Array.prototype.slice.call(arguments);
-    addLine("! " + a.join(" "), "#ff5252");
-    origErr.apply(console, arguments);
-  };
-  console.warn = function() {
-    var a = Array.prototype.slice.call(arguments);
-    addLine("? " + a.join(" "), "#ffb300");
-    origWarn.apply(console, arguments);
-  };
-
-  console.log("=== DEBUG BOX READY ===");
-  console.log("Tap 🐛 button to view logs");
-})();
-
-// ============================================
-// TEST: Button bind check
-// ============================================
-setTimeout(function() {
-  console.log("=== BUTTON BIND CHECK ===");
-
-  var navBtns = document.querySelectorAll(".qx-nav-btn");
-  console.log("Nav buttons found: " + navBtns.length);
-
-  var moreBtn = document.querySelector('.qx-nav-btn[data-nav="more"]');
-  console.log("More button: " + (moreBtn ? "FOUND" : "NOT FOUND"));
-
-  var moreMenu = document.getElementById("more-menu");
-  console.log("More menu: " + (moreMenu ? "FOUND" : "NOT FOUND"));
-
-  var tourPopup = document.getElementById("tournament-popup");
-  console.log("Tournament popup: " + (tourPopup ? "FOUND" : "NOT FOUND"));
-
-  var chatPopup = document.getElementById("chat-popup");
-  console.log("Chat popup: " + (chatPopup ? "FOUND" : "NOT FOUND"));
-
-  // Force bind More button
-  if (moreBtn && moreMenu) {
-    moreBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[TEST] More button clicked!");
-      moreMenu.classList.remove("hidden");
-    };
-    console.log("More button FORCE bound");
-  }
-
-  // Force bind Tournament
-  var tourBtn = document.querySelector('.qx-nav-btn[data-nav="tournament"]');
-  if (tourBtn && tourPopup) {
-    tourBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[TEST] Tournament clicked!");
-      tourPopup.classList.remove("hidden");
-    };
-    console.log("Tournament FORCE bound");
-  }
-
-  // Force bind Help
-  var helpBtn = document.querySelector('.qx-nav-btn[data-nav="help"]');
-  if (helpBtn && chatPopup) {
-    helpBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[TEST] Help clicked!");
-      chatPopup.classList.remove("hidden");
-    };
-    console.log("Help FORCE bound");
-  }
-
-  // Force bind History
-  var histBtn = document.querySelector('.qx-nav-btn[data-nav="history"]');
-  if (histBtn) {
-    histBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[TEST] History clicked!");
-      var ts = document.querySelector(".qx-trades-section");
-      if (ts) ts.scrollIntoView({ behavior: "smooth" });
-    };
-    console.log("History FORCE bound");
-  }
-
-  // Force bind Profile
-  var profBtn = document.querySelector('.qx-nav-btn[data-nav="profile"]');
-  if (profBtn) {
-    profBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[TEST] Profile clicked!");
-      var ap = document.getElementById("account-popup");
-      if (ap) ap.classList.remove("hidden");
-    };
-    console.log("Profile FORCE bound");
-  }
-
-  console.log("=== BIND COMPLETE ===");
-}, 3000);
-
-console.log("=== DEBUG SCRIPT LOADED ===");
-// ============================================
-// FINAL FIX: Balance Chip + Popup Z-Index + Trade Card
-// ============================================
-
-// ===== 1. BALANCE CHIP FIX =====
-(function fixBalanceChip() {
-  var chip = document.getElementById("balance-chip");
-  if (!chip) {
-    console.warn("[FINAL] balance-chip NOT FOUND in DOM");
-    return;
-  }
-  
-  // Clone kore purono listener remove
-  var newChip = chip.cloneNode(true);
-  chip.parentNode.replaceChild(newChip, chip);
-  
-  newChip.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("[FINAL] Balance chip clicked");
-    
-    var balPopup = document.getElementById("balance-popup");
-    var accPopup = document.getElementById("account-popup");
-    var bpv = document.getElementById("balance-popup-value");
-    
-    // Balance popup age
-    if (balPopup) {
-      if (bpv && typeof userBalance !== "undefined") {
-        bpv.textContent = Number(userBalance).toFixed(2);
-      }
-      balPopup.classList.remove("hidden");
-      balPopup.style.zIndex = "9500";
-      console.log("[FINAL] Balance popup opened");
-    } 
-    // Na thakle account popup
-    else if (accPopup) {
-      accPopup.classList.remove("hidden");
-      accPopup.style.zIndex = "9500";
-      console.log("[FINAL] Account popup opened");
-    } 
-    else {
-      console.warn("[FINAL] No popup found!");
-    }
-  });
-  
-  console.log("[FINAL] Balance chip fixed");
-})();
-
-// ===== 2. POPUP Z-INDEX FORCE =====
-setInterval(function() {
-  try {
-    var popups = document.querySelectorAll(".popup");
-    popups.forEach(function(p) {
-      if (!p.classList.contains("hidden")) {
-        p.style.zIndex = "9500";
-      }
-    });
-  } catch(e) {}
-}, 1000);
-
-// ===== 3. TRADE CARD RENDER FIX =====
-(function fixTradeCardRender() {
-  // active-trades-list e purono HTML replace
-  var origLoadActive = window.loadActiveTrades;
-  if (typeof origLoadActive !== "function") {
-    console.warn("[FINAL] loadActiveTrades not found");
-    return;
-  }
-  
-  window.loadActiveTrades = function() {
-    if (!currentUser) return;
-    var q = query(
-      collection(db, "trades"),
-      where("userId", "==", currentUser.uid),
-      where("status", "==", "pending")
-    );
-    if (activeTradesUnsub) {
-      try { activeTradesUnsub(); } catch(e) {}
-    }
-    activeTradesUnsub = onSnapshot(q, function(snapshot) {
-      activeTradesLocal = [];
-      var listEl = document.getElementById("active-trades-list");
-      if (listEl) listEl.innerHTML = "";
-      
-      if (snapshot.empty) {
-        if (listEl) listEl.innerHTML = '<p class="empty-text">No active trades</p>';
-        if (activeCount) activeCount.textContent = "0";
-        if (bigTimer) bigTimer.classList.add("hidden");
-        updateTradeMarkers();
-        return;
-      }
-      
-      snapshot.forEach(function(docSnap) {
-        var trade = Object.assign({ id: docSnap.id }, docSnap.data());
-        activeTradesLocal.push(trade);
-        if (listEl && typeof renderTradeCard === "function") {
-          listEl.appendChild(renderTradeCard(trade, false));
-        }
-      });
-      
-      if (activeCount) activeCount.textContent = activeTradesLocal.length;
-      updateBigTimer();
-      updateTradeMarkers();
-    });
-  };
-  
-  console.log("[FINAL] Trade card render fixed");
-})();
-
-// ===== 4. TRADE BUTTON FORCE BIND (Already bound, but double-check) =====
-setTimeout(function() {
-  var callBtn = document.getElementById("call-btn");
-  var putBtn = document.getElementById("put-btn");
-  
-  if (callBtn && callBtn.dataset.finalBound !== "1") {
-    callBtn.dataset.finalBound = "1";
-    callBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[FINAL] CALL clicked");
-      if (typeof placeTrade === "function") placeTrade("call");
-    };
-  }
-  if (putBtn && putBtn.dataset.finalBound !== "1") {
-    putBtn.dataset.finalBound = "1";
-    putBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[FINAL] PUT clicked");
-      if (typeof placeTrade === "function") placeTrade("put");
-    };
-  }
-  
-  console.log("[FINAL] Trade buttons bound");
-}, 1000);
-
-console.log("===== FINAL FIX LOADED =====");
-// ============================================
-// FINAL FIX: Balance Chip + Popup + Trade Card
-// ============================================
-console.log("===== FINAL FIX STARTING =====");
-
-(function fixBalanceChip() {
-  var chip = document.getElementById("balance-chip");
-  if (!chip) {
-    console.warn("[FINAL] balance-chip NOT FOUND");
-    return;
-  }
-  var newChip = chip.cloneNode(true);
-  chip.parentNode.replaceChild(newChip, chip);
-  newChip.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("[FINAL] Balance chip clicked");
-    var balPopup = document.getElementById("balance-popup");
-    var accPopup = document.getElementById("account-popup");
-    var bpv = document.getElementById("balance-popup-value");
-    if (balPopup) {
-      if (bpv && typeof userBalance !== "undefined") {
-        bpv.textContent = Number(userBalance).toFixed(2);
-      }
-      balPopup.classList.remove("hidden");
-      balPopup.style.zIndex = "9500";
-      console.log("[FINAL] Balance popup opened");
-    } else if (accPopup) {
-      accPopup.classList.remove("hidden");
-      accPopup.style.zIndex = "9500";
-      console.log("[FINAL] Account popup opened");
-    } else {
-      console.warn("[FINAL] No popup found");
-    }
-  });
-  console.log("[FINAL] Balance chip fixed");
-})();
-
-(function fixTradeCardRender() {
-  if (typeof window.loadActiveTrades !== "function") {
-    console.warn("[FINAL] loadActiveTrades not found");
-    return;
-  }
-  window.loadActiveTrades = function() {
-    if (!currentUser) return;
-    var q = query(
-      collection(db, "trades"),
-      where("userId", "==", currentUser.uid),
-      where("status", "==", "pending")
-    );
-    if (activeTradesUnsub) {
-      try { activeTradesUnsub(); } catch(e) {}
-    }
-    activeTradesUnsub = onSnapshot(q, function(snapshot) {
-      activeTradesLocal = [];
-      var listEl = document.getElementById("active-trades-list");
-      if (listEl) listEl.innerHTML = "";
-      if (snapshot.empty) {
-        if (listEl) listEl.innerHTML = '<p class="empty-text">No active trades</p>';
-        if (activeCount) activeCount.textContent = "0";
-        if (bigTimer) bigTimer.classList.add("hidden");
-        updateTradeMarkers();
-        return;
-      }
-      snapshot.forEach(function(docSnap) {
-        var trade = Object.assign({ id: docSnap.id }, docSnap.data());
-        activeTradesLocal.push(trade);
-        if (listEl && typeof renderTradeCard === "function") {
-          listEl.appendChild(renderTradeCard(trade, false));
-        }
-      });
-      if (activeCount) activeCount.textContent = activeTradesLocal.length;
-      updateBigTimer();
-      updateTradeMarkers();
-    });
-  };
-  console.log("[FINAL] Trade card render fixed");
-})();
-
-setTimeout(function() {
-  var callBtn = document.getElementById("call-btn");
-  var putBtn = document.getElementById("put-btn");
-  if (callBtn && callBtn.dataset.finalBound !== "1") {
-    callBtn.dataset.finalBound = "1";
-    callBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[FINAL] CALL clicked");
-      if (typeof placeTrade === "function") placeTrade("call");
-    };
-  }
-  if (putBtn && putBtn.dataset.finalBound !== "1") {
-    putBtn.dataset.finalBound = "1";
-    putBtn.onclick = function(e) {
-      e.preventDefault();
-      console.log("[FINAL] PUT clicked");
-      if (typeof placeTrade === "function") placeTrade("put");
-    };
-  }
-  console.log("[FINAL] Trade buttons bound");
-}, 1000);
-
-console.log("===== FINAL FIX LOADED =====");
 // ===== BALANCE POPUP BIND =====
 setTimeout(function() {
   var balClose = document.getElementById("balance-popup-close");
@@ -3081,3 +2532,62 @@ setTimeout(function() {
 
   console.log("[FINAL] Balance popup buttons bound");
 }, 2000);
+
+// ===== MORE MENU BIND =====
+setTimeout(function() {
+  var moreClose = document.getElementById("more-menu-close");
+  var moreMenu = document.getElementById("more-menu");
+  if (moreClose && moreMenu) {
+    moreClose.onclick = function() { moreMenu.classList.add("hidden"); };
+  }
+  
+  var menuItems = document.querySelectorAll(".more-menu-item");
+  menuItems.forEach(function(item) {
+    item.addEventListener("click", function(e) {
+      e.preventDefault();
+      var menu = item.dataset.menu;
+      if (moreMenu) moreMenu.classList.add("hidden");
+
+      if (menu === "deposit") {
+        var dp = document.getElementById("deposit-popup");
+        if (dp) dp.classList.remove("hidden");
+      } else if (menu === "withdraw") {
+        var wp = document.getElementById("withdraw-popup");
+        if (wp) wp.classList.remove("hidden");
+      } else if (menu === "referral") {
+        var rp = document.getElementById("referral-popup");
+        if (rp) rp.classList.remove("hidden");
+      } else if (menu === "chat") {
+        var cp = document.getElementById("chat-popup");
+        if (cp) cp.classList.remove("hidden");
+      } else if (menu === "trades") {
+        var ts = document.querySelector(".qx-trades-section");
+        if (ts) ts.scrollIntoView({ behavior: "smooth" });
+      } else if (menu === "logout") {
+        if (typeof auth !== "undefined" && typeof signOut === "function") {
+          signOut(auth);
+        }
+      }
+    });
+  });
+  console.log("[FINAL] More menu bound");
+}, 2500);
+
+// ===== ALL POPUP OVERLAY + CLOSE (Generic) =====
+setTimeout(function() {
+  document.querySelectorAll(".popup-overlay").forEach(function(overlay) {
+    overlay.onclick = function() {
+      var parent = overlay.closest(".popup");
+      if (parent) parent.classList.add("hidden");
+    };
+  });
+  document.querySelectorAll(".popup-close").forEach(function(btn) {
+    btn.onclick = function() {
+      var parent = btn.closest(".popup");
+      if (parent) parent.classList.add("hidden");
+    };
+  });
+  console.log("[FINAL] All popups bound");
+}, 3000);
+
+console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
