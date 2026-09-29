@@ -2947,3 +2947,17 @@ setTimeout(function() {
 }, 8000);
 
 console.log("===== MSG 7 TEST LOADED =====");
+// ============================================
+// MSG 7 ALERT TEST — Direct Check
+// ============================================
+
+setTimeout(function() {
+  var msg = "=== MSG 7 CHECK ===\n";
+  msg += "renderTickMark: " + typeof window.renderTickMark + "\n";
+  msg += "renderAllTradeMarkers: " + typeof window.renderAllTradeMarkers + "\n";
+  msg += "chart: " + (window.chart ? "READY" : "NULL") + "\n";
+  msg += "candleSeries: " + (window.candleSeries ? "READY" : "NULL") + "\n";
+  msg += "chart-wrapper: " + (document.getElementById("chart-wrapper") ? "FOUND" : "NOT FOUND") + "\n";
+  msg += "activeTradesLocal: " + (typeof activeTradesLocal !== "undefined" ? activeTradesLocal.length : "undefined") + "\n";
+  alert(msg);
+}, 6000);
