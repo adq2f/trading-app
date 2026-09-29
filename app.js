@@ -2259,3 +2259,105 @@ window.formatDateBadge = formatDateBadge;
 window.updateDateBadge = updateDateBadge;
 
 console.log("===== MSG 4: Trade List + Toast + Trades Tab LOADED =====");
+// ============================================
+// MSG 5: TOP BAR + BONUS BANNER + BOTTOM NAV
+// ============================================
+
+// ===== BONUS BANNER CLOSE =====
+(function initBonusBanner() {
+  var closeBtn = document.getElementById("bonus-close");
+  var banner = document.getElementById("bonus-banner");
+  if (closeBtn && banner) {
+    closeBtn.addEventListener("click", function() {
+      banner.classList.add("hidden");
+      try { localStorage.setItem("bonusBannerClosed", "1"); } catch(e) {}
+      console.log("[MSG5] Bonus banner closed");
+    });
+    try {
+      if (localStorage.getItem("bonusBannerClosed") === "1") {
+        banner.classList.add("hidden");
+      }
+    } catch(e) {}
+  }
+  console.log("[MSG5] Bonus banner initialized");
+})();
+
+// ===== BOTTOM NAV BUTTONS =====
+(function initBottomNav() {
+  var navBtns = document.querySelectorAll(".qx-nav-btn");
+
+  navBtns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var nav = btn.dataset.nav;
+
+      // Active state
+      navBtns.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+
+      // Actions
+      if (nav === "more") {
+        var moreMenu = document.getElementById("more-menu");
+        if (moreMenu) moreMenu.classList.remove("hidden");
+      } else if (nav === "tournament") {
+        var tourPopup = document.getElementById("tournament-popup");
+        if (tourPopup) tourPopup.classList.remove("hidden");
+      } else if (nav === "help") {
+        var chatPopup = document.getElementById("chat-popup");
+        if (chatPopup) chatPopup.classList.remove("hidden");
+      } else if (nav === "history") {
+        // Scroll to trades section
+        var tradesSection = document.querySelector(".qx-trades-section");
+        if (tradesSection) tradesSection.scrollIntoView({ behavior: "smooth" });
+      }
+
+      console.log("[MSG5] Nav clicked:", nav);
+    });
+  });
+
+  console.log("[MSG5] Bottom nav initialized");
+})();
+
+// ===== TOP BAR — NOTIFICATION BELL =====
+(function initNotifBell() {
+  var bellBtn = document.getElementById("notif-btn");
+  if (!bellBtn) return;
+
+  bellBtn.addEventListener("click", function() {
+    var badge = document.getElementById("notif-badge");
+    if (badge) {
+      badge.textContent = "0";
+      badge.style.display = "none";
+    }
+    console.log("[MSG5] Notifications cleared");
+  });
+
+  console.log("[MSG5] Notif bell initialized");
+})();
+
+// ===== UPDATE ACCOUNT TYPE BADGE (DEMO/REAL) =====
+setInterval(function() {
+  try {
+    var badge = document.getElementById("qx-account-type");
+    if (badge && typeof accountType !== "undefined") {
+      badge.textContent = accountType === "demo" ? "DEMO" : "LIVE";
+      badge.style.background = accountType === "demo"
+        ? "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)"
+        : "linear-gradient(135deg, #00c853 0%, #00a844 100%)";
+    }
+  } catch(e) {}
+}, 1500);
+
+// ===== BALANCE UPDATE =====
+setInterval(function() {
+  try {
+    var balEl = document.getElementById("balance");
+    if (balEl && typeof userBalance !== "undefined" && userBalance !== null) {
+      var expected = Number(userBalance).toFixed(2);
+      if (balEl.textContent !== expected) {
+        balEl.textContent = expected;
+      }
+    }
+  } catch(e) {}
+}, 1000);
+
+console.log("===== MSG 5: Top Bar + Bonus Banner + Bottom Nav LOADED =====");
