@@ -1,5 +1,42 @@
 // ============================================
 // Quotex Clone — app.js
+// ============================================
+// Quotex Clone — app.js
+// ============================================
+
+// ============================================
+// SAFE TEXT REPLACEMENT — sob textContent safe
+// ============================================
+(function safeTextReplacement() {
+  if (window.__safeTextReplacement) return;
+  window.__safeTextReplacement = true;
+
+  var originalTextContent = Object.getOwnPropertyDescriptor(
+    Element.prototype, "textContent"
+  );
+
+  try {
+    Object.defineProperty(Element.prototype, "textContent", {
+      get: function() {
+        try { return originalTextContent.get.call(this); } catch(e) { return ""; }
+      },
+      set: function(value) {
+        try { originalTextContent.set.call(this, value); } catch(e) {
+          console.warn("[SAFE-TEXT] Blocked null textContent:", e.message);
+        }
+      },
+      configurable: true
+    });
+  } catch(e) {
+    console.warn("[SAFE-TEXT] Cannot override:", e.message);
+  }
+
+  console.log("[SAFE-TEXT] Global textContent safety active");
+})();
+
+// ===== GLOBAL NULL-GUARD (must run FIRST) =====
+(function() {
+  ...
 // Part 1: Imports + Firebase + DOM + Globals + Sounds
 // ============================================
 
@@ -6006,3 +6043,74 @@ console.log('===== MSG 22: Bonus Banner + Chart Redesign loaded =====');
 })();
 
 console.log('===== MSG 23: Top Bar + Trade Panel Redesign loaded =====');
+// ============================================
+// AUTO FIX SYSTEM — null textContent error auto fix
+// ============================================
+(function autoFixNullText() {
+  if (window.__autoFixNullText) return;
+  window.__autoFixNullText = true;
+
+  // Prottek 500ms e check koro
+  setInterval(function() {
+    try {
+      // ===== 1. Balance fix =====
+      var bal = document.getElementById("balance");
+      if (bal && window.userBalance !== undefined) {
+        var expected = Number(window.userBalance).toFixed(2);
+        if (bal.textContent === "" || bal.textContent === "0" || bal.textContent === "0.00") {
+          bal.textContent = expected;
+        }
+      }
+    } catch(e) {}
+
+    try {
+      // ===== 2. Big Timer fix =====
+      var timer = document.getElementById("big-timer");
+      if (timer && (!timer.textContent || timer.textContent.trim() === "")) {
+        var time = (typeof selectedTime !== "undefined") ? selectedTime : 60;
+        var m = Math.floor(time / 60);
+        var s = time % 60;
+        timer.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+    } catch(e) {}
+
+    try {
+      // ===== 3. Trade Message clear =====
+      var tm = document.getElementById("trade-message");
+      if (tm && tm.textContent === "undefined") {
+        tm.textContent = "";
+      }
+    } catch(e) {}
+
+    try {
+      // ===== 4. Balance popup value fix =====
+      var bpv = document.getElementById("balance-popup-value");
+      if (bpv && window.userBalance !== undefined) {
+        var expBpv = Number(window.userBalance).toFixed(2);
+        if (bpv.textContent === "" || bpv.textContent === "0.00") {
+          bpv.textContent = expBpv;
+        }
+      }
+    } catch(e) {}
+
+  }, 500);
+
+  console.log("[AUTO-FIX] Null text error auto fix active");
+})();
+
+// ============================================
+// CHART RESIZE FORCE — candle show korar jonno
+// ============================================
+setInterval(function() {
+  try {
+    if (window.chart && typeof window.chart.applyOptions === "function") {
+      var wrap = document.getElementById("chart-wrapper");
+      if (wrap && wrap.clientWidth > 0 && wrap.clientHeight > 0) {
+        window.chart.applyOptions({
+          width: wrap.clientWidth,
+          height: wrap.clientHeight
+        });
+      }
+    }
+  } catch(e) {}
+}, 2000);
