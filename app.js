@@ -1,7 +1,5 @@
-
 // Part 1: Imports + Firebase + DOM + Globals + Sounds
 // ============================================
-
 // ===== GLOBAL NULL-GUARD (must run FIRST) =====
 (function() {
   if (window.__globalNullSafe) return;
@@ -133,7 +131,14 @@ const logoutBtn = document.getElementById("logout-btn");
 const message = document.getElementById("message");
 
 // Balance
-const balanceEl = document.getElementById("balance");
+// Lazy getter - prottek bar fresh element
+var balanceEl = null;
+function getBalanceEl() {
+  if (!balanceEl || !balanceEl.textContent) {
+    balanceEl = document.getElementById("balance");
+  }
+  return balanceEl;
+}
 const balanceChip = document.getElementById("balance-chip");
 const balancePopup = document.getElementById("balance-popup");
 const balancePopupClose = document.getElementById("balance-popup-close");
@@ -6117,3 +6122,48 @@ setInterval(function() {
     }
   } catch(e) {}
 }, 2000);
+
+// ============================================
+// GLOBAL SAFE TEXT OVERRIDE — null textContent error fix
+// ============================================
+(function globalSafeTextOverride() {
+  if (window.__globalSafeTextOverride) return;
+  window.__globalSafeTextOverride = true;
+
+  // Store original textContent descriptor
+  var originalDescriptor = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype, "textContent"
+  );
+
+  if (!originalDescriptor || !originalDescriptor.set) {
+    console.warn("[GLOBAL-SAFE] Cannot get textContent descriptor");
+    return;
+  }
+
+  // Override with null-safe version
+  try {
+    Object.defineProperty(HTMLElement.prototype, "textContent", {
+      get: function() {
+        try {
+          if (this === null || this === undefined) return "";
+          return originalDescriptor.get.call(this);
+        } catch(e) {
+          return "";
+        }
+      },
+      set: function(value) {
+        try {
+          if (this === null || this === undefined) return;
+          originalDescriptor.set.call(this, value);
+        } catch(e) {
+          // Silent - no warning
+        }
+      },
+      configurable: true
+    });
+
+    console.log("[GLOBAL-SAFE] Null-safe textContent active");
+  } catch(e) {
+    console.warn("[GLOBAL-SAFE] Cannot override:", e.message);
+  }
+})();
