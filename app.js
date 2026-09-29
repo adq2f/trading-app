@@ -679,7 +679,7 @@ function initChart() {
     }
   });
 
-  candleSeries = chart.addCandlestickSeries({
+    candleSeries = chart.addCandlestickSeries({
     upColor: "#00c853",
     downColor: "#ff5252",
     borderUpColor: "#00c853",
@@ -689,6 +689,8 @@ function initChart() {
     priceLineVisible: false,
     lastValueVisible: false
   });
+  window.candleSeries = candleSeries;
+  console.log("[FIX] window.candleSeries EXPOSED");
 
   // ===== QUOTEX WATERMARK =====
   try {
