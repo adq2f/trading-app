@@ -3050,3 +3050,34 @@ setTimeout(function() {
 }, 1000);
 
 console.log("===== FINAL FIX LOADED =====");
+// ===== BALANCE POPUP BIND =====
+setTimeout(function() {
+  var balClose = document.getElementById("balance-popup-close");
+  var balOverlay = document.getElementById("balance-popup-overlay");
+  var balPopup = document.getElementById("balance-popup");
+  var balDeposit = document.getElementById("balance-popup-deposit");
+  var balWithdraw = document.getElementById("balance-popup-withdraw");
+
+  if (balClose && balPopup) {
+    balClose.onclick = function() { balPopup.classList.add("hidden"); };
+  }
+  if (balOverlay && balPopup) {
+    balOverlay.onclick = function() { balPopup.classList.add("hidden"); };
+  }
+  if (balDeposit && balPopup) {
+    balDeposit.onclick = function() {
+      balPopup.classList.add("hidden");
+      var dp = document.getElementById("deposit-popup");
+      if (dp) dp.classList.remove("hidden");
+    };
+  }
+  if (balWithdraw && balPopup) {
+    balWithdraw.onclick = function() {
+      balPopup.classList.add("hidden");
+      var wp = document.getElementById("withdraw-popup");
+      if (wp) wp.classList.remove("hidden");
+    };
+  }
+
+  console.log("[FINAL] Balance popup buttons bound");
+}, 2000);
