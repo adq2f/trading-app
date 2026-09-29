@@ -73,27 +73,40 @@ import {
   if (window.__safeTextReplacement) return;
   window.__safeTextReplacement = true;
 
+  // HTMLElement.prototype use koro, Element.prototype na
   var originalTextContent = Object.getOwnPropertyDescriptor(
-    Element.prototype, "textContent"
+    HTMLElement.prototype, "textContent"
   );
 
+  if (!originalTextContent || !originalTextContent.set) {
+    console.warn("[SAFE-TEXT] Cannot get textContent descriptor");
+    return;
+  }
+
   try {
-    Object.defineProperty(Element.prototype, "textContent", {
+    Object.defineProperty(HTMLElement.prototype, "textContent", {
       get: function() {
-        try { return originalTextContent.get.call(this); } catch(e) { return ""; }
+        try {
+          return originalTextContent.get.call(this);
+        } catch(e) {
+          return "";
+        }
       },
       set: function(value) {
-        try { originalTextContent.set.call(this, value); } catch(e) {
+        try {
+          // Original set use koro
+          originalTextContent.set.call(this, value);
+        } catch(e) {
           console.warn("[SAFE-TEXT] Blocked null textContent:", e.message);
         }
       },
       configurable: true
     });
+
+    console.log("[SAFE-TEXT] Global textContent safety active");
   } catch(e) {
     console.warn("[SAFE-TEXT] Cannot override:", e.message);
   }
-
-  console.log("[SAFE-TEXT] Global textContent safety active");
 })();
 // ===== Firebase Config =====
 const firebaseConfig = {
