@@ -2333,3 +2333,257 @@ input, select {
   margin-top: -2px;
   color: #ff5252;
 }
+/* ============================================
+   MSG 4: TRADES TAB + TRADE LIST + TOAST
+   ============================================ */
+
+.qx-trades-section {
+  display: flex;
+  flex-direction: column;
+  background: #0e1320;
+  border-top: 1px solid #1a2333;
+  flex-shrink: 0;
+  max-height: 220px;
+}
+
+.qx-trades-tabs {
+  display: flex;
+  background: #141a2a;
+  border-bottom: 1px solid #1a2333;
+  flex-shrink: 0;
+}
+
+.qx-trades-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  color: #6b7a90;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  cursor: pointer;
+}
+
+.qx-trades-tab.active {
+  color: #58a6ff;
+}
+
+.qx-trades-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: #58a6ff;
+  border-radius: 2px 2px 0 0;
+}
+
+.qx-clock-icon { font-size: 15px; }
+
+.qx-trades-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #1a2333;
+  color: #8b98ab;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 9px;
+}
+
+.qx-trades-tab.active .qx-trades-count {
+  background: #58a6ff;
+  color: #fff;
+}
+
+.qx-trades-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 10px 10px;
+}
+
+.qx-trades-pane { display: none; }
+.qx-trades-pane.active { display: block; }
+
+.qx-trades-date-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+  border-bottom: 1px solid #1f2a3d;
+  margin-bottom: 6px;
+}
+
+.qx-trades-date-badge span:first-child {
+  font-size: 11px;
+  font-weight: 800;
+  color: #8b98ab;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.qx-date-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #1a2333;
+  color: #8b98ab;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 10px;
+}
+
+.qx-trades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qx-trade-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  gap: 10px;
+}
+
+.qx-trade-card.win { border-color: rgba(0, 200, 83, 0.4); }
+.qx-trade-card.loss { border-color: rgba(255, 82, 82, 0.4); }
+
+.qx-tc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.qx-tc-symbol {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qx-tc-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.qx-tc-type-badge.call {
+  background: rgba(0, 200, 83, 0.15);
+  color: #00c853;
+}
+
+.qx-tc-type-badge.put {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+}
+
+.qx-tc-time {
+  font-size: 11px;
+  color: #6b7a90;
+  font-weight: 600;
+}
+
+.qx-tc-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.qx-tc-amount {
+  font-size: 13px;
+  font-weight: 800;
+  color: #e6edf3;
+}
+
+.qx-tc-timer {
+  font-size: 13px;
+  font-weight: 800;
+  color: #58a6ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.qx-tc-pl {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.qx-tc-pl.win { color: #00c853; }
+.qx-tc-pl.loss { color: #ff5252; }
+
+.qx-toast {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.qx-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.qx-toast.opened {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.qx-toast.win,
+.qx-toast.loss {
+  font-size: 18px;
+  font-weight: 800;
+  padding: 16px 28px;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%) scale(0.9);
+}
+
+.qx-toast.win.show,
+.qx-toast.loss.show {
+  transform: translateX(-50%) translateY(-50%) scale(1);
+}
+
+.qx-toast.win {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+}
+
+.qx-toast.loss {
+  background: linear-gradient(135deg, #ff3b30 0%, #d32f2f 100%);
+}
