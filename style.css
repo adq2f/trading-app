@@ -1,6 +1,6 @@
 /* ============================================
    QUOTEX CLONE — Complete Stylesheet v21
-   Quotex-style Redesign
+   Quotex-style Redesign + Bottom Nav Fix
    ============================================ */
 
 * {
@@ -24,6 +24,7 @@ body {
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   padding: 0;
+  padding-bottom: 56px;
 }
 
 .hidden {
@@ -171,6 +172,7 @@ input, select {
   max-height: 100vh;
   max-width: 100%;
   overflow: hidden;
+  padding-bottom: 56px;
 }
 
 /* ===== TOP BAR ===== */
@@ -277,6 +279,7 @@ input, select {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  padding-bottom: 56px;
 }
 
 /* ===== CHART SECTION ===== */
@@ -402,13 +405,13 @@ input, select {
   50% { opacity: 0.4; }
 }
 
-/* Timeframe on chart bottom */
+/* Timeframe on chart bottom (moved above time axis) */
 .qx-chart-timeframe {
   position: absolute;
-  bottom: 8px;
+  bottom: 45px;
   left: 8px;
   display: flex;
-  gap: 3px;
+  gap: 4px;
   z-index: 10;
 }
 
@@ -627,19 +630,22 @@ input, select {
   margin-top: -2px;
 }
 
-/* ===== BOTTOM NAV ===== */
+/* ===== BOTTOM NAV (FIXED) ===== */
 .qx-bottom-nav {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  height: 54px;
+  height: 56px;
   background: #141a2a;
   border-top: 1px solid #1f2a3d;
   padding: 0 4px;
-  position: sticky;
+  position: fixed;
   bottom: 0;
-  z-index: 100;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   flex-shrink: 0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .qx-nav-btn {
@@ -652,9 +658,10 @@ input, select {
   gap: 2px;
   height: 100%;
   color: #6b7a90;
-  font-size: 22px;
-  padding: 6px 4px;
+  font-size: 20px;
+  padding: 0;
   border-radius: 10px;
+  max-width: 80px;
 }
 
 .qx-nav-btn.active {
@@ -668,7 +675,7 @@ input, select {
 .qx-nav-badge {
   position: absolute;
   top: 4px;
-  right: 14px;
+  right: calc(50% - 22px);
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
@@ -1593,8 +1600,8 @@ input, select {
 
 @media (max-width: 500px) {
   .qx-chart-wrapper {
-    height: 40vh;
-    min-height: 230px;
+    height: 38vh;
+    min-height: 220px;
   }
 
   .qx-trade-actions {
@@ -1609,6 +1616,15 @@ input, select {
 
   .qx-btn-text {
     font-size: 14px;
+  }
+
+  .qx-tf-btn {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+
+  .qx-chart-timeframe {
+    bottom: 42px;
   }
 }
 
