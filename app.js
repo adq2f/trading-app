@@ -13,7 +13,7 @@
   document.getElementById = function(id) {
     var el = origGetById(id);
     if (!el) {
-      console.warn('[NULL-GUARD] Missing:', id);
+      // Warning disabled - silent skip missing elements
       return {
         addEventListener: function() {},
         removeEventListener: function() {},
