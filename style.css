@@ -1,7 +1,7 @@
 /* ============================================
-   Quotex Clone — Master Stylesheet
-   Part 1: Base + Login Page
-============================================ */
+   QUOTEX CLONE — Complete Stylesheet v21
+   Quotex-style Redesign
+   ============================================ */
 
 * {
   box-sizing: border-box;
@@ -13,17 +13,17 @@
 html, body {
   overscroll-behavior: none;
   touch-action: manipulation;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0b1220;
+  background: #0e1320;
   color: #e6edf3;
-  padding: 6px;
   min-height: 100vh;
   overflow-x: hidden;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  padding: 0;
 }
 
 .hidden {
@@ -88,7 +88,6 @@ input, select {
   font-size: 12px;
 }
 
-/* ইনপুট গ্রুপ */
 .input-group {
   margin-bottom: 14px;
 }
@@ -112,11 +111,9 @@ input, select {
   border-radius: 10px;
   color: #e6edf3;
   font-size: 15px;
-  transition: border-color 0.2s;
 }
 
-.input-group input:focus,
-.input-group select:focus {
+.input-group input:focus {
   border-color: #00c853;
 }
 
@@ -124,7 +121,6 @@ input, select {
   color: #4a5568;
 }
 
-/* বাটন */
 .primary-btn {
   width: 100%;
   padding: 14px;
@@ -133,9 +129,7 @@ input, select {
   border-radius: 10px;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.3px;
   margin-bottom: 10px;
-  transition: transform 0.1s;
 }
 
 .primary-btn:active {
@@ -154,10 +148,6 @@ input, select {
   margin-bottom: 10px;
 }
 
-.secondary-btn:active {
-  background: #243044;
-}
-
 #message {
   color: #ff5252;
   font-size: 12px;
@@ -166,339 +156,189 @@ input, select {
   min-height: 16px;
   font-weight: 500;
 }
-/* ============================================
-   Part 2: Dashboard + Left Sidebar + Top Bar
-============================================ */
 
-/* ===== ড্যাশবোর্ড লেআউট ===== */
+/* ============================================
+   QUOTEX-STYLE DASHBOARD
+   ============================================ */
+
 #dashboard-page {
   display: flex;
-  gap: 6px;
-  max-width: 900px;
-  margin: 0 auto;
-  min-height: calc(100vh - 12px);
-}
-
-/* ===== বাম সাইডবার (উল্লম্ব) ===== */
-.left-sidebar {
-  width: 48px;
-  flex-shrink: 0;
-  background: #0d1522;
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 6px 4px;
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: fit-content;
-  position: sticky;
-  top: 6px;
+  min-height: 100vh;
+  max-width: 100%;
 }
 
-.side-icon {
-  width: 38px;
-  height: 38px;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 9px;
-  font-size: 16px;
-  color: #8b98ab;
+/* ===== TOP BAR ===== */
+.qx-top-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  padding: 0;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #141a2a;
+  border-bottom: 1px solid #1f2a3d;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-.side-icon:active {
-  background: #1f2a3d;
-}
-
-.side-icon.active {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  border-color: #00c853;
-  color: #fff;
-  box-shadow: 0 0 10px rgba(0, 200, 83, 0.4);
-}
-
-.side-icon.logout-icon {
-  margin-top: auto;
-  color: #ff5252;
-}
-
-.side-icon.logout-icon:active {
-  background: #3a1220;
-}
-
-/* ===== মূল কনটেন্ট ===== */
-.main-content {
+.qx-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 13px;
+  font-weight: 700;
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
-/* ===== টপ বার ===== */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #0d1522;
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 8px 12px;
-}
-
-.top-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-logo {
+.qx-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, #00c853 0%, #00893a 100%);
-  border-radius: 8px;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
   color: #fff;
-  font-size: 15px;
+  font-size: 10px;
   font-weight: 800;
-  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.35);
+  border-radius: 4px;
+  letter-spacing: 0.5px;
 }
 
-.brand-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.top-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ===== ব্যালেন্স চিপ (Quotex-এর মতো ছোট) ===== */
-.balance-chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, #141d2e 0%, #0d1522 100%);
-  border: 1px solid #1f2a3d;
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #00c853;
+.qx-balance {
+  flex: 1;
+  text-align: left;
   font-variant-numeric: tabular-nums;
-  transition: all 0.15s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
 }
 
-.balance-chip:active {
-  background: #1a2333;
-  border-color: #00c853;
-  box-shadow: 0 0 12px rgba(0, 200, 83, 0.4);
-}
-
-.chip-arrow {
-  font-size: 9px;
+.qx-caret {
+  font-size: 10px;
   color: #6b7a90;
 }
 
-.balance-amount {
-  letter-spacing: 0.3px;
-}
-
-/* ===== স্ট্যাটিক ব্যাকগ্রাউন্ড ইফেক্ট ===== */
-.top-bar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #00c853, transparent);
-  opacity: 0.5;
-}
-
-.top-bar {
+.qx-bell-btn {
   position: relative;
-  overflow: hidden;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  font-size: 18px;
 }
-/* ============================================
-   Part 3: Chart Section + Drawing Toolbar
-============================================ */
 
-/* ===== চার্ট সেকশন ===== */
-.chart-section {
-  background: #0d1522;
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 10px;
+.qx-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ff5252;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #141a2a;
+}
+
+.qx-deposit-btn {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 8px;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.3);
+}
+
+/* ===== MAIN ===== */
+.qx-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  min-height: 0;
 }
 
-/* চার্ট হেডার */
-.chart-header {
+/* ===== CHART SECTION ===== */
+.qx-chart-section {
+  display: flex;
+  flex-direction: column;
+  background: #0e1320;
+}
+
+.qx-chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #1a2333;
 }
 
-.asset-picker {
+.qx-symbol-picker {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 8px;
-  padding: 6px 10px;
-  position: relative;
 }
 
-.asset-dot {
-  width: 8px;
-  height: 8px;
-  background: #f7931a;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #f7931a;
-  flex-shrink: 0;
+.qx-flag {
+  font-size: 14px;
+  color: #f0b90b;
 }
 
-.asset-select {
+.qx-symbol-select {
   background: transparent;
   color: #fff;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   border: none;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 14px;
+  padding: 4px 0;
   cursor: pointer;
 }
 
-.asset-select option {
-  background: #141d2e;
-  color: #fff;
-}
-
-.asset-arrow {
-  color: #6b7a90;
-  font-size: 10px;
-  position: absolute;
-  right: 8px;
-  pointer-events: none;
-}
-
-/* প্রাইস ডিসপ্লে */
-.price-box {
+.qx-price-display {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 17px;
+  gap: 4px;
+  font-size: 16px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-}
-
-#current-price {
   color: #00c853;
-  transition: color 0.2s;
 }
 
-.price-arrow {
+.qx-price-arrow {
   font-size: 11px;
 }
 
-.price-arrow.up {
-  color: #00c853;
-}
-
-.price-arrow.down {
-  color: #ff5252;
-}
-
-/* ===== চার্ট মেইন (টুলবার + চার্ট) ===== */
-.chart-main {
-  display: flex;
-  gap: 6px;
-}
-
-/* ড্রয়িং টুলবার (বাম দিকে উল্লম্ব) */
-.drawing-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: #0b1220;
-  border: 1px solid #1a2436;
-  border-radius: 10px;
-  padding: 4px;
-  flex-shrink: 0;
-  height: fit-content;
-  max-height: 290px;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.drawing-toolbar::-webkit-scrollbar {
-  display: none;
-}
-
-.drawing-btn {
-  width: 34px;
-  height: 34px;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 7px;
-  color: #8b98ab;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-.drawing-btn:active {
-  background: #1f2a3d;
-}
-
-.drawing-btn.active {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  border-color: #2196f3;
-  color: #fff;
-  box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
-}
-
-/* চার্ট র্যাপার (chart + canvas একসাথে) */
-#chart-wrapper {
+/* ===== CHART WRAPPER (Quotex-style, full height) ===== */
+.qx-chart-wrapper {
   position: relative;
-  flex: 1;
-  min-width: 0;
-  height: 290px;
-  border-radius: 10px;
+  width: 100%;
+  height: 55vh;
+  min-height: 300px;
+  max-height: 500px;
+  background: #0e1320;
   overflow: hidden;
-  background: #0a0f1a;
 }
 
 #chart {
   width: 100%;
   height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
 }
 
-/* ড্রয়িং ওভারলে ক্যানভাস */
 #drawing-canvas {
   position: absolute;
   top: 0;
@@ -519,420 +359,322 @@ input, select {
   display: none !important;
 }
 
-/* ===== টাইমফ্রেম (৫ সেকেন্ড থেকে ৪ ঘণ্টা) ===== */
-.chart-timeframe {
+/* Timer on chart */
+.qx-chart-timer {
+  position: absolute;
+  top: 10px;
+  left: 10px;
   display: flex;
-  gap: 4px;
-  padding: 0 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.chart-timeframe::-webkit-scrollbar {
-  display: none;
-}
-
-.tf-btn {
-  flex: 0 0 auto;
-  min-width: 42px;
-  padding: 8px 6px;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 7px;
-  color: #8b98ab;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(20, 26, 42, 0.9);
+  border: 1px solid #2a3648;
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 700;
+  color: #e6edf3;
+  font-variant-numeric: tabular-nums;
+  z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
-.tf-btn.active {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  border-color: #2196f3;
+.qx-timer-dot {
+  width: 6px;
+  height: 6px;
+  background: #00c853;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00c853;
+  animation: qxTimerPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes qxTimerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Timeframe on chart bottom */
+.qx-chart-timeframe {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.qx-tf-btn {
+  padding: 5px 10px;
+  background: rgba(20, 26, 42, 0.9);
+  border: 1px solid #2a3648;
+  border-radius: 6px;
+  color: #8b98ab;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.qx-tf-btn.active {
+  background: #58a6ff;
   color: #fff;
-  box-shadow: 0 0 10px rgba(33, 150, 243, 0.35);
+  border-color: #58a6ff;
 }
 
-.tf-btn:active {
-  background: #1f2a3d;
+/* Chart menu btn */
+.qx-chart-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  background: rgba(20, 26, 42, 0.9);
+  border: 1px solid #2a3648;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 18px;
+  font-weight: 800;
+  z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
-.tf-btn.active:active {
-  background: #1976d2;
-}
-/* ============================================
-   Part 4: Trade Panel + CALL/PUT + Tabs
-============================================ */
-
-/* ===== ট্রেড প্যানেল ===== */
-.trade-panel {
-  background: #0d1522;
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 12px;
+/* ===== TRADE PANEL (Quotex-style) ===== */
+.qx-trade-panel {
+  background: #141a2a;
+  padding: 12px 12px 8px;
+  border-top: 1px solid #1a2333;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.trade-row {
+.qx-trade-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.qx-field-group {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 4px;
 }
 
-.trade-label {
+.qx-field-label {
   font-size: 11px;
   color: #6b7a90;
   font-weight: 600;
-  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.qx-field-value {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  background: #0e1320;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  padding: 0 4px;
+}
+
+.qx-timer-value {
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #58a6ff;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 1px;
 }
 
-/* ===== পরিমাণ ইনপুট ===== */
-.amount-input-wrap {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.qx-investment-value {
+  justify-content: space-between;
 }
 
-.amount-input-wrap input {
+.qx-inc-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a2333;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.qx-inc-btn:active {
+  background: #2a3648;
+}
+
+#trade-amount {
   flex: 1;
   text-align: center;
-  font-size: 18px;
-  font-weight: 800;
-  padding: 11px;
-  background: #0b1220;
-  border: 1px solid #1f2a3d;
-  border-radius: 10px;
+  background: transparent;
   color: #fff;
+  font-size: 16px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  width: 100%;
 }
 
-.amount-input-wrap input:focus {
-  border-color: #00c853;
-}
-
-.amount-input-wrap input::-webkit-outer-spin-button,
-.amount-input-wrap input::-webkit-inner-spin-button {
+#trade-amount::-webkit-outer-spin-button,
+#trade-amount::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.amount-input-wrap input[type=number] {
-  -moz-appearance: textfield;
-}
-
-.amount-btn {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 10px;
-  color: #e6edf3;
-  font-size: 22px;
-  font-weight: 700;
+/* Payout Row */
+.qx-payout-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  padding: 4px 0;
 }
 
-.amount-btn:active {
-  background: #1f2a3d;
-}
-
-/* ===== টাইম বাটন (৮টি) ===== */
-.time-buttons {
-  display: flex;
-  gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.time-buttons::-webkit-scrollbar {
-  display: none;
-}
-
-.time-btn {
-  flex: 0 0 auto;
-  min-width: 48px;
-  padding: 10px 6px;
-  background: #141d2e;
-  border: 1px solid #1f2a3d;
-  border-radius: 9px;
-  color: #8b98ab;
+.qx-payout-label {
   font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  color: #8b98ab;
+  font-weight: 600;
 }
 
-.time-btn.active {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  border-color: #2196f3;
-  color: #fff;
-  box-shadow: 0 0 10px rgba(33, 150, 243, 0.4);
-}
-
-.time-btn:active {
-  background: #1f2a3d;
-}
-
-.time-btn.active:active {
-  background: #1976d2;
-}
-
-/* ===== বড় টাইমার ===== */
-.big-timer {
-  text-align: center;
-  font-size: 36px;
-  font-weight: 800;
-  color: #58a6ff;
-  padding: 12px;
-  background: #0b1220;
-  border: 2px solid #1f6feb;
-  border-radius: 12px;
-  letter-spacing: 3px;
-  font-variant-numeric: tabular-nums;
-  animation: timerPulse 1s ease-in-out infinite;
-  text-shadow: 0 0 16px rgba(88, 166, 255, 0.5);
-}
-
-@keyframes timerPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
-}
-
-/* ===== CALL / PUT বাটন ===== */
-.trade-buttons {
+.qx-payout-value {
   display: flex;
-  gap: 8px;
-}
-
-.call-btn,
-.put-btn {
-  flex: 1;
-  padding: 14px 6px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #00c853;
+  font-variant-numeric: tabular-nums;
+}
+
+.qx-switch-btn {
+  padding: 3px 8px;
+  background: transparent;
+  color: #58a6ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  border: none;
+  text-decoration: underline;
+}
+
+/* Up/Down Buttons */
+.qx-trade-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.qx-up-btn,
+.qx-down-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 10px;
   color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
   transition: transform 0.1s;
 }
 
-.call-btn {
+.qx-up-btn {
   background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  box-shadow: 0 4px 16px rgba(0, 200, 83, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 200, 83, 0.35);
 }
 
-.put-btn {
-  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
-  box-shadow: 0 4px 16px rgba(255, 82, 82, 0.35);
+.qx-down-btn {
+  background: linear-gradient(135deg, #ff3b30 0%, #d32f2f 100%);
+  box-shadow: 0 4px 14px rgba(255, 82, 82, 0.35);
 }
 
-.call-btn:active,
-.put-btn:active {
-  transform: scale(0.96);
+.qx-up-btn:active,
+.qx-down-btn:active {
+  transform: scale(0.97);
 }
 
-.call-btn .arrow,
-.put-btn .arrow {
-  font-size: 18px;
-  line-height: 1;
+.qx-btn-text {
+  font-size: 17px;
 }
 
-.call-btn .btn-label,
-.put-btn .btn-label {
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-}
-
-.call-btn .btn-payout,
-.put-btn .btn-payout {
-  font-size: 10px;
-  font-weight: 700;
-  opacity: 0.85;
+.qx-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  font-size: 15px;
 }
 
 #trade-message {
   text-align: center;
   font-size: 13px;
   font-weight: 700;
-  min-height: 16px;
-  margin-top: -4px;
+  min-height: 18px;
+  margin-top: -2px;
 }
 
-/* ===== ট্যাব ===== */
-.trades-section {
-  background: #0d1522;
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 8px;
+/* ===== BOTTOM NAV (Quotex-style) ===== */
+.qx-bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 58px;
+  background: #141a2a;
+  border-top: 1px solid #1f2a3d;
+  padding: 0 4px;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.qx-nav-btn {
+  position: relative;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.tabs {
-  display: flex;
-  gap: 5px;
-  background: #0b1220;
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid #1a2436;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 9px;
-  background: transparent;
-  border: none;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
   color: #6b7a90;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  font-size: 22px;
+  padding: 6px 4px;
+  border-radius: 10px;
 }
 
-.tab-btn.active {
-  background: #1a2333;
-  color: #fff;
+.qx-nav-btn.active {
+  color: #58a6ff;
 }
 
-.tab-btn span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #00c853;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 8px;
-  min-width: 18px;
+.qx-nav-icon {
+  line-height: 1;
+}
+
+.qx-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 14px;
+  min-width: 16px;
   height: 16px;
-}
-
-.tab-content {
-  min-height: 100px;
-}
-
-.tab-pane {
-  display: none;
-}
-
-.tab-pane.active {
-  display: block;
-}
-
-.empty-text {
-  text-align: center;
-  color: #4a5568;
-  font-size: 12px;
-  padding: 24px 10px;
-  font-weight: 500;
-}
-/* ============================================
-   Part 5: Trade Items + Popups + Flash + Mobile
-============================================ */
-
-/* ===== ট্রেড আইটেম ===== */
-.trade-item {
-  background: #141d2e;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
+  padding: 0 4px;
+  background: #ff5252;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 8px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  border-left: 3px solid #2a3648;
-  font-size: 13px;
-}
-
-.trade-item:last-child {
-  margin-bottom: 0;
-}
-
-.trade-item.call {
-  border-left-color: #00c853;
-}
-
-.trade-item.put {
-  border-left-color: #ff5252;
-}
-
-.trade-item.win {
-  background: linear-gradient(90deg, #0a2818 0%, #141d2e 100%);
-  border-left-color: #00c853;
-}
-
-.trade-item.loss {
-  background: linear-gradient(90deg, #2a1014 0%, #141d2e 100%);
-  border-left-color: #ff5252;
-}
-
-.trade-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  min-width: 0;
-}
-
-.trade-type {
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-}
-
-.trade-type.call {
-  color: #00c853;
-}
-
-.trade-type.put {
-  color: #ff5252;
-}
-
-.trade-time {
-  font-size: 10px;
-  color: #6b7a90;
-  font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.trade-result {
-  text-align: right;
-  font-weight: 800;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-
-.trade-result.win {
-  color: #00c853;
-}
-
-.trade-result.loss {
-  color: #ff5252;
-}
-
-.trade-result.pending {
-  color: #ffb300;
-  font-size: 12px;
+  justify-content: center;
+  border: 2px solid #141a2a;
 }
 
 /* ============================================
-   POPUPS
-============================================ */
+   POPUPS (Quotex-style)
+   ============================================ */
 
 .popup {
   position: fixed;
@@ -953,15 +695,14 @@ input, select {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
 }
 
 .popup-content {
   position: relative;
-  background: linear-gradient(160deg, #151d2e 0%, #0b1220 100%);
-  border: 1px solid #1f2a3d;
+  background: linear-gradient(160deg, #1a2333 0%, #0e1320 100%);
+  border: 1px solid #2a3648;
   border-radius: 16px;
   padding: 18px;
   width: 100%;
@@ -970,11 +711,6 @@ input, select {
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
   animation: popupSlideIn 0.25s ease-out;
-  scrollbar-width: none;
-}
-
-.popup-content::-webkit-scrollbar {
-  display: none;
 }
 
 .popup-content.small {
@@ -1016,11 +752,6 @@ input, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-}
-
-.popup-close:active {
-  background: #243044;
 }
 
 .popup-note {
@@ -1029,114 +760,12 @@ input, select {
   line-height: 1.5;
   margin-bottom: 14px;
   padding: 10px;
-  background: #0b1220;
+  background: #0e1320;
   border-radius: 8px;
-  border-left: 3px solid #2196f3;
+  border-left: 3px solid #58a6ff;
 }
 
-/* ===== ডেমো/রিয়েল টগল (পপআপে) ===== */
-.account-toggle-popup {
-  display: flex;
-  gap: 6px;
-  background: #0b1220;
-  padding: 4px;
-  border-radius: 10px;
-  margin-bottom: 14px;
-  border: 1px solid #1a2436;
-}
-
-.acc-btn-popup {
-  flex: 1;
-  padding: 9px 8px;
-  background: transparent;
-  color: #6b7a90;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 7px;
-  transition: all 0.2s;
-}
-
-.acc-btn-popup.active {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(0, 200, 83, 0.35);
-}
-
-/* ===== পপআপ ব্যালেন্স ===== */
-.popup-balance {
-  text-align: center;
-  padding: 12px 0 16px;
-}
-
-.popup-balance-label {
-  font-size: 11px;
-  color: #6b7a90;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.popup-balance-value {
-  font-size: 32px;
-  font-weight: 800;
-  color: #00c853;
-  letter-spacing: -0.5px;
-  text-shadow: 0 0 20px rgba(0, 200, 83, 0.3);
-}
-
-/* ===== পপআপ অ্যাকশন ===== */
-.popup-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.action-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.action-btn.deposit {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-}
-
-.action-btn.deposit:active {
-  background: #00a844;
-}
-
-.action-btn.withdraw {
-  background: #1a2333;
-  border: 1px solid #2a3648;
-  color: #c9d4e3;
-}
-
-.action-btn.withdraw:active {
-  background: #243044;
-}
-
-/* ===== পপআপ লিংক ===== */
-.popup-link {
-  width: 100%;
-  padding: 10px;
-  background: transparent;
-  border: 1px dashed #2a3648;
-  border-radius: 8px;
-  color: #8b98ab;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.popup-link:active {
-  background: #1a2333;
-}
-
-/* ===== অ্যাকাউন্ট অপশন ===== */
+/* Account option */
 .account-option {
   display: flex;
   align-items: center;
@@ -1148,22 +777,15 @@ input, select {
   border-radius: 12px;
   margin-bottom: 8px;
   text-align: left;
-  transition: all 0.15s;
 }
 
 .account-option.active {
   background: linear-gradient(135deg, #0a2818 0%, #141d2e 100%);
   border-color: #00c853;
-  box-shadow: 0 0 12px rgba(0, 200, 83, 0.25);
-}
-
-.account-option:active {
-  transform: scale(0.98);
 }
 
 .acc-icon {
   font-size: 24px;
-  flex-shrink: 0;
 }
 
 .acc-info {
@@ -1186,16 +808,15 @@ input, select {
   font-size: 16px;
   color: #00c853;
   opacity: 0;
-  flex-shrink: 0;
 }
 
 .account-option.active .acc-check {
   opacity: 1;
 }
 
-/* ===== পেমেন্ট ইনফো ===== */
+/* Payment info */
 .payment-info {
-  background: #0b1220;
+  background: #0e1320;
   border-radius: 10px;
   padding: 12px;
   margin-bottom: 14px;
@@ -1224,7 +845,6 @@ input, select {
   color: #00c853;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.5px;
 }
 
 #deposit-message,
@@ -1236,7 +856,580 @@ input, select {
   margin-top: 6px;
 }
 
-/* ===== রেজাল্ট ফ্ল্যাশ ===== */
+/* ============================================
+   MORE MENU (Drawer)
+   ============================================ */
+
+.more-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8000;
+}
+
+.more-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.more-menu-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 85%;
+  max-width: 380px;
+  background: #141a2a;
+  display: flex;
+  flex-direction: column;
+  animation: moreMenuSlideIn 0.3s ease-out;
+}
+
+@keyframes moreMenuSlideIn {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}
+
+.more-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #1f2a3d;
+}
+
+.more-menu-header h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.more-menu-close {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #8b98ab;
+  font-size: 20px;
+}
+
+.more-menu-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 12px;
+  background: transparent;
+  border-radius: 10px;
+  color: #e6edf3;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.more-menu-item:active {
+  background: #1a2333;
+}
+
+.more-menu-item.logout {
+  color: #ff5252;
+}
+
+.menu-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.menu-text {
+  flex: 1;
+}
+
+.menu-arrow {
+  font-size: 18px;
+  color: #6b7a90;
+}
+
+.more-menu-divider {
+  height: 1px;
+  background: #1f2a3d;
+  margin: 8px 0;
+}
+
+/* ============================================
+   ENTRY/EXIT LABELS
+   ============================================ */
+
+.entry-exit-label {
+  position: absolute;
+  right: 60px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.entry-exit-label.entry {
+  background: linear-gradient(135deg, #1f6feb 0%, #1554c4 100%);
+  color: #fff;
+  border: 1px solid #3b82f6;
+}
+
+.entry-exit-label.exit {
+  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
+  color: #0e1320;
+  border: 1px solid #fbbf24;
+}
+
+/* ============================================
+   USER CHAT
+   ============================================ */
+
+.user-chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #0e1320;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-chat-msg {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  word-wrap: break-word;
+}
+
+.user-chat-msg.from-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+}
+
+.user-chat-msg.from-admin {
+  align-self: flex-start;
+  background: #1a2333;
+  color: #e6edf3;
+}
+
+.user-chat-msg .chat-msg-time {
+  display: block;
+  font-size: 9px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.user-chat-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.user-chat-input {
+  flex: 1;
+  padding: 12px;
+  background: #0e1320;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #e6edf3;
+  font-size: 13px;
+}
+
+.user-chat-send-btn {
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ============================================
+   TOURNAMENT
+   ============================================ */
+
+.tournament-tabs {
+  display: flex;
+  gap: 4px;
+  background: #0e1320;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.tour-tab-btn {
+  flex: 1;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  color: #6b7a90;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 7px;
+}
+
+.tour-tab-btn.active {
+  background: #1a2333;
+  color: #fff;
+}
+
+.tour-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.tour-card {
+  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tour-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f0b90b, #ff9800, #f0b90b);
+}
+
+.tour-card.live::before {
+  background: linear-gradient(90deg, #ff5252, #ff9800, #ff5252);
+}
+
+.tour-card.upcoming::before {
+  background: linear-gradient(90deg, #2196f3, #00c853, #2196f3);
+}
+
+.tour-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.tour-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+}
+
+.tour-status-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tour-status-badge.live {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.4);
+}
+
+.tour-status-badge.upcoming {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+  border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.tour-status-badge.finished {
+  background: rgba(107, 122, 144, 0.15);
+  color: #8b98ab;
+  border: 1px solid rgba(107, 122, 144, 0.3);
+}
+
+.tour-card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1a2436;
+}
+
+.tour-stat-label {
+  font-size: 10px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+}
+
+.tour-stat-value {
+  font-size: 14px;
+  color: #e6edf3;
+  font-weight: 800;
+}
+
+.tour-stat-value.gold { color: #f0b90b; }
+.tour-stat-value.green { color: #00c853; }
+.tour-stat-value.blue { color: #58a6ff; }
+
+.tour-countdown {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffb300;
+  background: rgba(255, 179, 0, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.tour-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tour-btn {
+  flex: 1;
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.tour-btn.join {
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+}
+
+.tour-btn.view {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: #fff;
+}
+
+/* ============================================
+   REFERRAL
+   ============================================ */
+
+.ref-hero {
+  text-align: center;
+  padding: 16px 0 20px;
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.08) 0%, rgba(33, 150, 243, 0.08) 100%);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(0, 200, 83, 0.2);
+}
+
+.ref-hero-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.ref-hero-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.ref-hero-subtitle {
+  font-size: 12px;
+  color: #8b98ab;
+}
+
+.ref-code-box {
+  background: linear-gradient(135deg, #0e1320 0%, #141d2e 100%);
+  border: 2px dashed #00c853;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.ref-code-label {
+  font-size: 10px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.ref-code-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #00c853;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+}
+
+.ref-copy-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ref-link-box {
+  display: flex;
+  gap: 6px;
+  background: #0e1320;
+  border: 1px solid #1a2436;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.ref-link-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #8b98ab;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  min-width: 0;
+}
+
+.ref-link-copy {
+  padding: 6px 10px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ref-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ref-stat {
+  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%);
+  border: 1px solid #1f2a3d;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.ref-stat-label {
+  font-size: 10px;
+  color: #6b7a90;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ref-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #00c853;
+  font-variant-numeric: tabular-nums;
+}
+
+.ref-stat-value.blue {
+  color: #58a6ff;
+}
+
+.ref-share-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ref-share-btn {
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ref-share-btn .icon {
+  font-size: 18px;
+}
+
+.ref-share-whatsapp {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+}
+
+.ref-share-telegram {
+  background: linear-gradient(135deg, #229ed9 0%, #1976a4 100%);
+}
+
+.ref-share-native {
+  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
+  color: #0e1320;
+}
+
+.ref-note {
+  background: rgba(33, 150, 243, 0.08);
+  border: 1px solid rgba(33, 150, 243, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 11px;
+  color: #8b98ab;
+  line-height: 1.6;
+}
+
+.ref-note strong {
+  color: #58a6ff;
+}
+
+.ref-note .ref-bonus {
+  color: #00c853;
+  font-weight: 700;
+}
+
+/* ============================================
+   RESULT FLASH
+   ============================================ */
+
 .result-flash {
   position: fixed;
   top: 0;
@@ -1262,1957 +1455,45 @@ input, select {
 }
 
 /* ============================================
-   MSG 10: TRUE TRADE MECHANIC STYLES
+   MOBILE
    ============================================ */
 
-/* ===== Top-Left Countdown Timer (Quotex-style) ===== */
-.top-countdown-timer {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(13, 21, 34, 0.9);
-  border: 1px solid #1f2a3d;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #e6edf3;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  pointer-events: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-.top-countdown-timer.hidden {
-  display: none !important;
-}
-
-.top-countdown-timer #countdown-symbol {
-  color: #58a6ff;
-  font-weight: 800;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.top-countdown-timer #countdown-time {
-  color: #00c853;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 1px;
-}
-
-.top-countdown-timer.warning #countdown-time {
-  color: #ffb300;
-  animation: timerPulse 0.5s ease-in-out infinite;
-}
-
-.top-countdown-timer.critical #countdown-time {
-  color: #ff5252;
-  animation: timerPulse 0.3s ease-in-out infinite;
-}
-
-/* ===== Trade Info Badge (current trade indicator) ===== */
-.trade-info-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(13, 21, 34, 0.9);
-  border: 1px solid #1f2a3d;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  pointer-events: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-.trade-info-badge.hidden {
-  display: none !important;
-}
-
-.trade-info-badge.call {
-  color: #00c853;
-  border-color: rgba(0, 200, 83, 0.5);
-}
-
-.trade-info-badge.put {
-  color: #ff5252;
-  border-color: rgba(255, 82, 82, 0.5);
-}
-
-.trade-info-badge #trade-info-arrow {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.trade-info-badge #trade-info-text {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* ===== Trade List — per-trade countdown ===== */
-.trade-item .trade-countdown {
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  font-weight: 800;
-  color: #58a6ff;
-  text-align: right;
-  margin-left: 8px;
-}
-
-.trade-item .trade-countdown.warning {
-  color: #ffb300;
-}
-
-.trade-item .trade-countdown.critical {
-  color: #ff5252;
-  animation: timerPulse 0.3s ease-in-out infinite;
-}
-
-/* ===== Result flash (existing improved) ===== */
-.result-flash.win {
-  background: radial-gradient(circle at center,
-    rgba(0, 200, 83, 0.4) 0%,
-    rgba(0, 200, 83, 0.1) 40%,
-    transparent 70%);
-}
-
-.result-flash.loss {
-  background: radial-gradient(circle at center,
-    rgba(255, 82, 82, 0.4) 0%,
-    rgba(255, 82, 82, 0.1) 40%,
-    transparent 70%);
-}
-/* ===== মোবাইল অপটিমাইজ ===== */
 @media (max-width: 500px) {
-  .left-sidebar {
-    width: 44px;
-    padding: 5px 3px;
+  .qx-chart-wrapper {
+    height: 50vh;
+    min-height: 280px;
   }
 
-  .side-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 14px;
+  .qx-trade-actions {
+    gap: 8px;
   }
 
-  #chart-wrapper {
-    height: 240px;
+  .qx-up-btn,
+  .qx-down-btn {
+    padding: 12px 14px;
+    font-size: 16px;
   }
 
-  .drawing-toolbar {
-    max-height: 240px;
-  }
-
-  .drawing-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 13px;
-  }
-
-  .big-timer {
-    font-size: 30px;
-    padding: 10px;
-  }
-
-  .balance-chip {
-    padding: 5px 10px;
-    font-size: 12px;
-  }
-
-  .brand-name {
-    font-size: 13px;
-  }
-
-  .popup-balance-value {
-    font-size: 28px;
+  .qx-btn-text {
+    font-size: 15px;
   }
 }
 
-/* ===== স্ক্রলবার লুকানো ===== */
 ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-/* ===== সিলেকশন ===== */
-::selection {
-  background: #00c853;
-  color: #fff;
-}
-
-/* ===== পপআপ ফিক্স ===== */
-.popup.hidden {
-  display: none !important;
-}
-
-
-/* ============================================
-   MSG 14: User Chat Styles
-   ============================================ */
-
-.user-chat-messages {
-  height: 300px;
-  overflow-y: auto;
-  padding: 10px;
-  background: #0b1220;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.user-chat-msg {
-  max-width: 75%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  word-wrap: break-word;
-  line-height: 1.4;
-}
-
-.user-chat-msg.from-user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  color: #fff;
-  border-bottom-right-radius: 2px;
-}
-
-.user-chat-msg.from-admin {
-  align-self: flex-start;
-  background: #141d2e;
-  color: #e6edf3;
-  border: 1px solid #1f2a3d;
-  border-bottom-left-radius: 2px;
-}
-
-.user-chat-msg .chat-msg-time {
-  display: block;
-  font-size: 9px;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-.user-chat-input-row {
-  display: flex;
-  gap: 6px;
-}
-
-.user-chat-input {
-  flex: 1;
-  padding: 12px;
-  background: #0b1220;
-  border: 1px solid #1f2a3d;
-  border-radius: 8px;
-  color: #e6edf3;
-  font-size: 13px;
-}
-
-.user-chat-input:focus {
-  outline: none;
-  border-color: #00c853;
-}
-
-.user-chat-send-btn {
-  padding: 12px 18px;
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  color: #fff;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-
-/* ============================================
-   MSG 15: DESIGN OVERHAUL — Inter Font + Better Layout
-   ============================================ */
-
-/* ===== Inter Font (Global) ===== */
-body,
-button,
-input,
-select,
-textarea {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-feature-settings: 'cv11', 'ss01';
-  font-variation-settings: 'opsz' 32;
-}
-
-/* ===== Better Typography ===== */
-body {
-  font-size: 13.5px;
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-}
-
-/* ===== Dashboard Layout — 70% Chart ===== */
-@media (min-width: 768px) {
-  #dashboard-page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 12px;
-  }
-
-  .main-content {
-    max-width: 100%;
-  }
-
-  /* Chart larger on desktop */
-  #chart-wrapper {
-    height: 500px !important;
-  }
-
-  .chart-section {
-    padding: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  #chart-wrapper {
-    height: 550px !important;
-  }
-
-  .left-sidebar {
-    width: 60px;
-  }
-
-  .side-icon {
-    width: 46px;
-    height: 46px;
-    font-size: 18px;
-  }
-}
-
-/* ===== Top Bar — Better Look ===== */
-.top-bar {
-  padding: 10px 16px !important;
-  background: linear-gradient(180deg, #0f1728 0%, #0d1522 100%) !important;
-  border-color: #1f2a3d !important;
-}
-
-.brand-name {
-  font-weight: 800 !important;
-  letter-spacing: -0.02em !important;
-}
-
-/* ===== Balance Chip — Modern ===== */
-.balance-chip {
-  padding: 8px 14px !important;
-  font-size: 14px !important;
-  font-weight: 800 !important;
-  background: linear-gradient(135deg, #0f2818 0%, #0d1522 100%) !important;
-  border: 1px solid rgba(0, 200, 83, 0.4) !important;
-}
-
-.balance-chip:hover {
-  border-color: #00c853 !important;
-  box-shadow: 0 0 12px rgba(0, 200, 83, 0.35) !important;
-}
-
-/* ===== Chart Header — Cleaner ===== */
-.chart-header {
-  padding: 4px 6px 10px !important;
-  border-bottom: 1px solid #1a2436;
-  margin-bottom: 8px;
-}
-
-.asset-picker {
-  background: #141d2e !important;
-  border: 1px solid #1f2a3d !important;
-  padding: 8px 12px !important;
-  border-radius: 10px !important;
-}
-
-.asset-select {
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
-}
-
-.price-box {
-  font-size: 20px !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.03em !important;
-}
-
-/* ===== Time Labels Under Chart (Quotex-style) ===== */
-.chart-time-labels {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 12px 0;
-  font-size: 11px;
-  color: #6b7a90;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.3px;
-  border-top: 1px solid #1a2436;
-  margin-top: 4px;
-}
-
-.chart-time-labels span {
-  flex: 1;
-  text-align: center;
-}
-
-/* ===== Timeframe Buttons — Better ===== */
-.tf-btn {
-  font-weight: 700 !important;
-  font-size: 12px !important;
-  letter-spacing: 0.3px !important;
-  transition: all 0.15s ease;
-}
-
-.tf-btn.active {
-  box-shadow: 0 2px 12px rgba(33, 150, 243, 0.45) !important;
-}
-
-/* ===== Trade Panel — Modern ===== */
-.trade-panel {
-  padding: 16px !important;
-  gap: 14px !important;
-}
-
-.trade-label {
-  font-size: 11px !important;
-  letter-spacing: 1.2px !important;
-  font-weight: 700 !important;
-  color: #8b98ab !important;
-}
-
-.amount-input-wrap input {
-  font-size: 20px !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.02em !important;
-}
-
-.amount-btn {
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  transition: all 0.15s ease;
-}
-
-.amount-btn:hover {
-  background: #1f2a3d !important;
-}
-
-/* ===== CALL/PUT Buttons — Modern ===== */
-.call-btn,
-.put-btn {
-  padding: 16px 10px !important;
-  border-radius: 14px !important;
-  transition: all 0.2s ease;
-}
-
-.call-btn .btn-label,
-.put-btn .btn-label {
-  font-size: 15px !important;
-  font-weight: 800 !important;
-  letter-spacing: 1.5px !important;
-}
-
-.call-btn .btn-payout,
-.put-btn .btn-payout {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-}
-
-.call-btn:hover,
-.put-btn:hover {
-  transform: translateY(-2px);
-}
-
-.call-btn:active,
-.put-btn:active {
-  transform: scale(0.97);
-}
-
-/* ===== Trades Section — Better ===== */
-.trades-section {
-  padding: 12px !important;
-}
-
-.tabs {
-  padding: 5px !important;
-}
-
-.tab-btn {
-  font-weight: 700 !important;
-  letter-spacing: 0.2px !important;
-  transition: all 0.15s ease;
-}
-
-/* ===== Popup — Modern ===== */
-.popup-content {
-  border-radius: 18px !important;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85) !important;
-  animation: popupSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-@keyframes popupSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.popup-header h3 {
-  font-weight: 800 !important;
-  letter-spacing: -0.02em !important;
-}
-
-/* ===== Countdown Timer — Better Position ===== */
-.top-countdown-timer {
-  top: 12px !important;
-  left: 12px !important;
-  padding: 8px 12px !important;
-  border-radius: 10px !important;
-  background: rgba(11, 18, 32, 0.95) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
-}
-
-.top-countdown-timer #countdown-time {
-  font-size: 16px !important;
-  font-weight: 800 !important;
-  letter-spacing: 1px !important;
-}
-
-/* ===== Trade Info Badge — Better ===== */
-.trade-info-badge {
-  top: 12px !important;
-  right: 12px !important;
-  padding: 8px 12px !important;
-  border-radius: 10px !important;
-  background: rgba(11, 18, 32, 0.95) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
-}
-
-.trade-info-badge #trade-info-text {
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.5px !important;
-}
-
-/* ===== Smooth Transitions Everywhere ===== */
-button,
-input,
-select {
-  transition: background-color 0.15s ease,
-              border-color 0.15s ease,
-              transform 0.15s ease,
-              box-shadow 0.2s ease;
-}
-
-/* ===== Better Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b1220;
+  background: #0e1320;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #1f2a3d;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #2a3648;
-}
-
-/* ===== Mobile Refinement ===== */
-@media (max-width: 500px) {
-  body {
-    font-size: 13px;
-    padding: 6px;
-  }
-
-  .chart-header {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .price-box {
-    font-size: 18px !important;
-  }
-
-  .amount-input-wrap input {
-    font-size: 18px !important;
-  }
-
-  .call-btn,
-  .put-btn {
-    padding: 14px 8px !important;
-  }
-
-  .call-btn .btn-label,
-  .put-btn .btn-label {
-    font-size: 14px !important;
-  }
-}
-
-/* ===== Fix: Number Precision Display ===== */
-.price-display {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* ===== Smooth Chart Container ===== */
-#chart-wrapper {
-  transition: height 0.3s ease;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-}
-/* ============================================
-   MSG 16 — DESIGN PART 3+4
-   Entry/Exit Labels + Bottom Nav + Modals
-   ============================================ */
-
-/* ===== Entry/Exit Price Labels on Chart ===== */
-.entry-exit-label {
-  position: absolute;
-  right: 60px;
-  z-index: 15;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-family: 'Inter', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  animation: labelPulse 1.5s ease-in-out infinite;
-}
-
-.entry-exit-label.entry {
-  background: linear-gradient(135deg, #1f6feb 0%, #1554c4 100%);
-  color: #fff;
-  border: 1px solid #3b82f6;
-}
-
-.entry-exit-label.exit {
-  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
-  color: #0b1220;
-  border: 1px solid #fbbf24;
-}
-
-.entry-exit-label .label-arrow {
-  font-size: 10px;
-  opacity: 0.9;
-}
-
-.entry-exit-label .label-price {
-  font-variant-numeric: tabular-nums;
-}
-
-@keyframes labelPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
-}
-
-/* ===== Bottom Navigation Bar (Quotex-style) ===== */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 58px;
-  background: linear-gradient(180deg, #0d1522 0%, #0a0f1a 100%);
-  border-top: 1px solid #1f2a3d;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 100;
-  padding: 0 4px;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-  transition: transform 0.3s ease;
-}
-
-.bottom-nav.hidden {
-  transform: translateY(100%);
-}
-
-.bottom-nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 6px 4px;
-  background: transparent;
-  border: none;
-  color: #6b7a90;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-  position: relative;
-  max-width: 80px;
-}
-
-.bottom-nav-btn .nav-icon {
-  font-size: 20px;
-  line-height: 1;
-  transition: transform 0.2s ease;
-}
-
-.bottom-nav-btn .nav-label {
-  font-size: 10px;
-  letter-spacing: 0.2px;
-}
-
-.bottom-nav-btn:active {
-  background: rgba(33, 150, 243, 0.1);
-}
-
-.bottom-nav-btn.active {
-  color: #2196f3;
-}
-
-.bottom-nav-btn.active .nav-icon {
-  transform: translateY(-2px);
-}
-
-.bottom-nav-btn.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30px;
-  height: 2px;
-  background: #2196f3;
-  border-radius: 0 0 4px 4px;
-  box-shadow: 0 0 8px #2196f3;
-}
-
-/* Bottom nav এ badge (notification) */
-.bottom-nav-btn .nav-badge {
-  position: absolute;
-  top: 4px;
-  right: 12px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  background: #ff5252;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 800;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-/* ===== Body padding so content not hidden behind nav ===== */
-body.has-bottom-nav #dashboard-page {
-  padding-bottom: 70px;
-}
-
-/* ===== Desktop এ bottom nav দেখাব না ===== */
-@media (min-width: 768px) {
-  .bottom-nav {
-    display: none;
-  }
-  body.has-bottom-nav #dashboard-page {
-    padding-bottom: 0;
-  }
-}
-
-/* ===== Modal Improvement (Quotex-style) ===== */
-.popup-content {
-  border: 1px solid #2a3648 !important;
-  background: linear-gradient(160deg, #0f1828 0%, #0b1220 100%) !important;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9),
-              inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-}
-
-.popup-header {
-  border-bottom: 1px solid #1a2436;
-  padding-bottom: 12px;
-  margin-bottom: 14px !important;
-}
-
-.popup-header h3 {
-  font-size: 17px !important;
-  letter-spacing: -0.02em;
-  color: #fff;
-}
-
-/* Modal hint (small helper text below title) */
-.popup-hint {
-  font-size: 11px;
-  color: #6b7a90;
-  margin-top: -6px;
-  margin-bottom: 12px;
-  font-style: italic;
-}
-
-/* ===== Better Primary Button (Quotex-style) ===== */
-.primary-btn {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.2s ease !important;
-}
-
-.primary-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 200, 83, 0.4);
-}
-
-.primary-btn:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.primary-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255,255,255,0.3);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.5s, height 0.5s;
-}
-
-.primary-btn:active::after {
-  width: 300px;
-  height: 300px;
-}
-
-/* ===== Better Tab Buttons ===== */
-.tab-btn {
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.tab-btn.active {
-  background: linear-gradient(135deg, #1a2333 0%, #0d1522 100%) !important;
-}
-
-/* ===== Amount +/- Buttons — Modern ===== */
-.amount-btn {
-  font-size: 26px !important;
-  font-weight: 400 !important;
-  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%) !important;
-  border: 1px solid #2a3648 !important;
-  transition: all 0.15s ease;
-}
-
-.amount-btn:hover {
-  background: #1f2a3d !important;
-  border-color: #3b82f6 !important;
-}
-
-.amount-btn:active {
-  transform: scale(0.92);
-}
-
-/* ===== Trade Amount Input — Cleaner ===== */
-.amount-input-wrap input {
-  background: linear-gradient(145deg, #0b1220 0%, #0a0f1a 100%) !important;
-  border: 1px solid #2a3648 !important;
-  letter-spacing: -0.02em;
-  transition: all 0.2s ease;
-}
-
-.amount-input-wrap input:focus {
-  border-color: #2196f3 !important;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
-}
-
-/* ===== Chart Time Labels — Better visibility ===== */
-.chart-time-labels {
-  background: linear-gradient(180deg, transparent 0%, rgba(11, 18, 32, 0.5) 100%);
-  border-top: 1px solid #1a2436 !important;
-  margin-top: 0 !important;
-  padding: 6px 14px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-}
-
-.chart-time-labels span {
-  color: #8b98ab;
-  transition: color 0.2s ease;
-}
-
-.chart-time-labels #timeCenter {
-  color: #00c853 !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.5px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ===== Mobile optimization ===== */
-@media (max-width: 768px) {
-  .bottom-nav {
-    height: 62px;
-  }
-
-  .bottom-nav-btn .nav-icon {
-    font-size: 22px;
-  }
-
-  .bottom-nav-btn .nav-label {
-    font-size: 9px;
-  }
-}
-
-@media (max-width: 380px) {
-  .bottom-nav-btn {
-    padding: 4px 2px;
-  }
-  .bottom-nav-btn .nav-icon {
-    font-size: 20px;
-  }
-  .bottom-nav-btn .nav-label {
-    font-size: 8px;
-  }
-}
-/* ============================================
-   MSG 17 — DESIGN PART 5
-   Trade List + Timer Grid (Quotex-style)
-   ============================================ */
-
-/* ===== Trade List — Modern Cards ===== */
-.trade-item {
-  position: relative;
-  overflow: hidden;
-  padding: 12px 14px !important;
-  border-radius: 12px !important;
-  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%) !important;
-  border: 1px solid #1f2a3d;
-  border-left-width: 4px !important;
-  margin-bottom: 8px !important;
-  transition: all 0.25s ease;
-}
-
-.trade-item:hover {
-  transform: translateX(2px);
-  border-color: #2a3648;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.trade-item.call {
-  border-left-color: #00c853 !important;
-  background: linear-gradient(135deg, #0f2418 0%, #0f1828 100%) !important;
-}
-
-.trade-item.put {
-  border-left-color: #ff5252 !important;
-  background: linear-gradient(135deg, #2a1014 0%, #0f1828 100%) !important;
-}
-
-.trade-item.win {
-  border-left-color: #00c853 !important;
-  background: linear-gradient(135deg, #0a2818 0%, #0f1828 100%) !important;
-}
-
-.trade-item.loss {
-  border-left-color: #ff5252 !important;
-  background: linear-gradient(135deg, #2a1014 0%, #0f1828 100%) !important;
-}
-
-/* Trade type badge */
-.trade-item .trade-type {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.8px;
-  width: fit-content;
-}
-
-.trade-item.call .trade-type {
-  background: rgba(0, 200, 83, 0.15);
-  color: #00c853;
-}
-
-.trade-item.put .trade-type {
-  background: rgba(255, 82, 82, 0.15);
-  color: #ff5252;
-}
-
-.trade-item .trade-time {
-  font-size: 11px !important;
-  color: #8b98ab;
-  line-height: 1.6;
-}
-
-.trade-item .trade-time strong {
-  color: #e6edf3;
-}
-
-/* Trade result pill */
-.trade-result {
-  padding: 6px 12px !important;
-  border-radius: 20px;
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  min-width: 80px;
-  text-align: center;
-  letter-spacing: -0.02em;
-}
-
-.trade-result.win {
-  background: linear-gradient(135deg, rgba(0, 200, 83, 0.2) 0%, rgba(0, 168, 68, 0.15) 100%);
-  color: #00c853;
-  border: 1px solid rgba(0, 200, 83, 0.4);
-  box-shadow: 0 0 12px rgba(0, 200, 83, 0.2);
-}
-
-.trade-result.loss {
-  background: linear-gradient(135deg, rgba(255, 82, 82, 0.2) 0%, rgba(211, 47, 47, 0.15) 100%);
-  color: #ff5252;
-  border: 1px solid rgba(255, 82, 82, 0.4);
-}
-
-.trade-result.pending {
-  background: linear-gradient(135deg, rgba(255, 179, 0, 0.15) 0%, rgba(245, 124, 0, 0.1) 100%);
-  color: #ffb300;
-  border: 1px solid rgba(255, 179, 0, 0.3);
-  font-variant-numeric: tabular-nums;
-  animation: pendingPulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pendingPulse {
-  0%, 100% { 
-    opacity: 1; 
-    box-shadow: 0 0 0 rgba(255, 179, 0, 0);
-  }
-  50% { 
-    opacity: 0.85;
-    box-shadow: 0 0 12px rgba(255, 179, 0, 0.3);
-  }
-}
-
-/* ===== Timer Grid — Quotex Style ===== */
-.time-buttons {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 6px !important;
-  overflow: visible !important;
-}
-
-.time-btn {
-  flex: unset !important;
-  min-width: unset !important;
-  padding: 11px 4px !important;
-  background: linear-gradient(145deg, #141d2e 0%, #0d1522 100%) !important;
-  border: 1px solid #2a3648 !important;
-  border-radius: 10px !important;
-  color: #8b98ab;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.3px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.time-btn:hover {
-  border-color: #3b82f6 !important;
-  color: #e6edf3;
-  transform: translateY(-1px);
-}
-
-.time-btn.active {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%) !important;
-  border-color: #3b82f6 !important;
-  color: #fff !important;
-  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.45) !important;
-  transform: translateY(-1px);
-}
-
-.time-btn.active::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 6px;
-  height: 6px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 6px #fff;
-  animation: activePulse 1.5s ease-in-out infinite;
-}
-
-@keyframes activePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.8); }
-}
-
-/* ===== Amount buttons — Better spacing ===== */
-.amount-input-wrap input {
-  font-size: 22px !important;
-  padding: 14px !important;
-}
-
-/* ===== Tabs — Modern look ===== */
-.tabs {
-  background: linear-gradient(135deg, #0a0f1a 0%, #0d1522 100%) !important;
-  border: 1px solid #1a2436 !important;
-  padding: 5px !important;
-  border-radius: 12px !important;
-}
-
-.tab-btn {
-  padding: 11px !important;
-  font-size: 13px !important;
-  border-radius: 9px !important;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.tab-btn.active {
-  background: linear-gradient(135deg, #1a2333 0%, #141d2e 100%) !important;
-  color: #fff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.tab-btn.active::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 2px;
-  background: linear-gradient(90deg, #2196f3, #00c853);
-  border-radius: 2px 2px 0 0;
-}
-
-.tab-btn span {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%) !important;
-  font-size: 10px !important;
-  padding: 2px 7px !important;
-  box-shadow: 0 2px 6px rgba(0, 200, 83, 0.3);
-}
-
-/* ===== Empty state ===== */
-.empty-text {
-  color: #6b7a90 !important;
-  font-size: 13px !important;
-  padding: 40px 20px !important;
-  text-align: center;
-  position: relative;
-}
-
-.empty-text::before {
-  content: '📊';
-  display: block;
-  font-size: 32px;
-  margin-bottom: 10px;
-  opacity: 0.5;
-}
-
-/* ===== Timer Display (big-timer) — Better ===== */
-.big-timer {
-  font-family: 'Inter', monospace !important;
-  font-size: 42px !important;
-  font-weight: 800 !important;
-  letter-spacing: 4px !important;
-  background: linear-gradient(135deg, #0a0f1a 0%, #0d1522 100%) !important;
-  border: 2px solid transparent !important;
-  background-clip: padding-box;
-  position: relative;
-  text-shadow: 0 0 24px rgba(88, 166, 255, 0.6);
-}
-
-.big-timer::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 12px;
-  padding: 2px;
-  background: linear-gradient(135deg, #1f6feb, #00c853, #1f6feb);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  animation: timerGradient 3s linear infinite;
-}
-
-@keyframes timerGradient {
-  0%, 100% { filter: hue-rotate(0deg); }
-  50% { filter: hue-rotate(30deg); }
-}
-
-/* ===== Mobile Refinement for Timer Grid ===== */
-@media (max-width: 400px) {
-  .time-buttons {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 4px !important;
-  }
-  .time-btn {
-    padding: 10px 2px !important;
-    font-size: 11px !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .time-buttons {
-    grid-template-columns: repeat(8, 1fr) !important;
-  }
-}
-
-/* ===== Trade item — Better responsive ===== */
-@media (max-width: 500px) {
-  .trade-item {
-    padding: 10px 12px !important;
-  }
-  .trade-result {
-    min-width: 70px;
-    font-size: 12px !important;
-    padding: 5px 10px !important;
-  }
-}
-/* ============================================
-   MSG 18 — TOURNAMENT STYLES
-   ============================================ */
-
-/* ===== Tournament Popup Tabs ===== */
-.tournament-tabs {
-  display: flex;
-  gap: 4px;
-  background: #0a0f1a;
-  padding: 4px;
-  border-radius: 10px;
-  margin-bottom: 14px;
-  border: 1px solid #1a2436;
-}
-
-.tour-tab-btn {
-  flex: 1;
-  padding: 10px 8px;
-  background: transparent;
-  border: none;
-  color: #6b7a90;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 7px;
-  transition: all 0.2s ease;
-  letter-spacing: 0.2px;
-}
-
-.tour-tab-btn.active {
-  background: linear-gradient(135deg, #1a2333 0%, #141d2e 100%);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* ===== Tournament List Container ===== */
-.tour-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 420px;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.tour-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.tour-list::-webkit-scrollbar-thumb {
-  background: #1f2a3d;
-  border-radius: 2px;
-}
-
-/* ===== Tournament Card ===== */
-.tour-card {
-  position: relative;
-  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%);
-  border: 1px solid #1f2a3d;
-  border-radius: 12px;
-  padding: 14px;
-  transition: all 0.25s ease;
-  overflow: hidden;
-}
-
-.tour-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #f0b90b, #ff9800, #f0b90b);
-  opacity: 0.8;
-}
-
-.tour-card:hover {
-  border-color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-.tour-card.live::before {
-  background: linear-gradient(90deg, #ff5252, #ff9800, #ff5252);
-  animation: tourLivePulse 2s ease-in-out infinite;
-}
-
-.tour-card.upcoming::before {
-  background: linear-gradient(90deg, #2196f3, #00c853, #2196f3);
-}
-
-.tour-card.finished::before {
-  background: linear-gradient(90deg, #6b7a90, #4a5568, #6b7a90);
-  opacity: 0.5;
-}
-
-@keyframes tourLivePulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-/* Card Header */
-.tour-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-  gap: 8px;
-}
-
-.tour-card-title {
-  font-size: 14px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.01em;
-  flex: 1;
-}
-
-.tour-status-badge {
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-}
-
-.tour-status-badge.live {
-  background: rgba(255, 82, 82, 0.15);
-  color: #ff5252;
-  border: 1px solid rgba(255, 82, 82, 0.4);
-  animation: liveBadgeBlink 1.5s ease-in-out infinite;
-}
-
-.tour-status-badge.upcoming {
-  background: rgba(33, 150, 243, 0.15);
-  color: #2196f3;
-  border: 1px solid rgba(33, 150, 243, 0.4);
-}
-
-.tour-status-badge.finished {
-  background: rgba(107, 122, 144, 0.15);
-  color: #8b98ab;
-  border: 1px solid rgba(107, 122, 144, 0.3);
-}
-
-@keyframes liveBadgeBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
-}
-
-/* Card Body */
-.tour-card-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #1a2436;
-}
-
-.tour-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.tour-stat-label {
-  font-size: 10px;
-  color: #6b7a90;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 700;
-}
-
-.tour-stat-value {
-  font-size: 14px;
-  color: #e6edf3;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-}
-
-.tour-stat-value.gold {
-  color: #f0b90b;
-}
-
-.tour-stat-value.green {
-  color: #00c853;
-}
-
-.tour-stat-value.blue {
-  color: #58a6ff;
-}
-
-/* Countdown inside card */
-.tour-countdown {
-  font-size: 12px;
-  font-weight: 700;
-  color: #ffb300;
-  background: rgba(255, 179, 0, 0.1);
-  border: 1px solid rgba(255, 179, 0, 0.3);
-  padding: 4px 10px;
-  border-radius: 6px;
-  display: inline-block;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.5px;
-}
-
-/* Card Actions */
-.tour-card-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.tour-btn {
-  flex: 1;
-  padding: 11px 12px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.tour-btn.join {
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
-}
-
-.tour-btn.join:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 200, 83, 0.45);
-}
-
-.tour-btn.join:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.tour-btn.view {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-  color: #fff;
-}
-
-.tour-btn.joined {
-  background: rgba(0, 200, 83, 0.1);
-  color: #00c853;
-  border: 1px solid rgba(0, 200, 83, 0.4);
-  cursor: default;
-}
-
-.tour-btn.disabled {
-  background: #1a2333;
-  color: #4a5568;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* ===== Tournament Detail ===== */
-.tour-detail-section {
-  margin-bottom: 16px;
-}
-
-.tour-detail-section h4 {
-  font-size: 12px;
-  font-weight: 800;
-  color: #8b98ab;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #1a2436;
-}
-
-.tour-detail-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  font-size: 13px;
-  border-bottom: 1px dashed #1a2436;
-}
-
-.tour-detail-row:last-child {
-  border-bottom: none;
-}
-
-.tour-detail-row .label {
-  color: #6b7a90;
-  font-weight: 600;
-}
-
-.tour-detail-row .value {
-  color: #e6edf3;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.tour-detail-row .value.gold {
-  color: #f0b90b;
-}
-
-.tour-detail-row .value.green {
-  color: #00c853;
-}
-
-.tour-detail-row .value.blue {
-  color: #58a6ff;
-}
-
-/* ===== Leaderboard ===== */
-.tour-leaderboard {
-  background: #0a0f1a;
-  border-radius: 10px;
-  padding: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.tour-lb-row {
-  display: grid;
-  grid-template-columns: 32px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 8px;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-
-.tour-lb-row:not(:last-child) {
-  border-bottom: 1px solid #1a2436;
-}
-
-.tour-lb-row.me {
-  background: linear-gradient(90deg, rgba(33, 150, 243, 0.15) 0%, transparent 100%);
-  border-left: 3px solid #2196f3;
-}
-
-.tour-lb-rank {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-  color: #8b98ab;
-  background: #141d2e;
-  border-radius: 8px;
-  border: 1px solid #1f2a3d;
-}
-
-.tour-lb-rank.gold {
-  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
-  color: #0b1220;
-  border-color: #f0b90b;
-  box-shadow: 0 0 12px rgba(240, 185, 11, 0.5);
-}
-
-.tour-lb-rank.silver {
-  background: linear-gradient(135deg, #c0c0c0 0%, #8a8a8a 100%);
-  color: #0b1220;
-  border-color: #c0c0c0;
-}
-
-.tour-lb-rank.bronze {
-  background: linear-gradient(135deg, #cd7f32 0%, #a05f1f 100%);
-  color: #0b1220;
-  border-color: #cd7f32;
-}
-
-.tour-lb-name {
-  font-size: 13px;
-  color: #e6edf3;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tour-lb-profit {
-  font-size: 13px;
-  font-weight: 800;
-  color: #00c853;
-  font-variant-numeric: tabular-nums;
-}
-
-.tour-lb-profit.negative {
-  color: #ff5252;
-}
-
-/* ===== Join Confirmation ===== */
-.tour-join-confirm {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.tour-join-icon {
-  font-size: 56px;
-  margin-bottom: 12px;
-  filter: drop-shadow(0 0 20px rgba(240, 185, 11, 0.4));
-}
-
-.tour-join-amount {
-  font-size: 28px;
-  font-weight: 800;
-  color: #f0b90b;
-  margin: 10px 0;
-  letter-spacing: -0.02em;
-}
-
-.tour-join-hint {
-  font-size: 12px;
-  color: #8b98ab;
-  margin-bottom: 16px;
-}
-
-/* ===== Mobile refinement ===== */
-@media (max-width: 500px) {
-  .tour-card-body {
-    grid-template-columns: 1fr 1fr;
-  }
-  .tour-stat-value {
-    font-size: 13px;
-  }
-}
-/* ============================================
-   MSG 20 — REFERRAL SYSTEM STYLES
-   ============================================ */
-
-/* ===== Referral Popup ===== */
-.ref-popup-content {
-  max-width: 420px !important;
-}
-
-.ref-hero {
-  text-align: center;
-  padding: 16px 0 20px;
-  background: linear-gradient(135deg, rgba(0, 200, 83, 0.08) 0%, rgba(33, 150, 243, 0.08) 100%);
-  border-radius: 12px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(0, 200, 83, 0.2);
-}
-
-.ref-hero-icon {
-  font-size: 48px;
-  line-height: 1;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 20px rgba(0, 200, 83, 0.4));
-}
-
-.ref-hero-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 4px;
-  letter-spacing: -0.02em;
-}
-
-.ref-hero-subtitle {
-  font-size: 12px;
-  color: #8b98ab;
-  font-weight: 500;
-}
-
-/* ===== Referral Code Box ===== */
-.ref-code-box {
-  background: linear-gradient(135deg, #0a0f1a 0%, #141d2e 100%);
-  border: 2px dashed #00c853;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  margin-bottom: 12px;
-  position: relative;
-  overflow: hidden;
-}
-
-.ref-code-box::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(0, 200, 83, 0.1) 0%, transparent 70%);
-  animation: refShine 4s linear infinite;
-}
-
-@keyframes refShine {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.ref-code-label {
-  font-size: 10px;
-  color: #6b7a90;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.ref-code-value {
-  font-size: 24px;
-  font-weight: 800;
-  color: #00c853;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 4px;
-  margin-bottom: 10px;
-  position: relative;
-  z-index: 1;
-  text-shadow: 0 0 20px rgba(0, 200, 83, 0.5);
-}
-
-.ref-copy-btn {
-  position: relative;
-  z-index: 1;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.ref-copy-btn:active {
-  transform: scale(0.96);
-}
-
-/* ===== Referral Link Box ===== */
-.ref-link-box {
-  display: flex;
-  gap: 6px;
-  background: #0a0f1a;
-  border: 1px solid #1a2436;
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin-bottom: 12px;
-  align-items: center;
-}
-
-.ref-link-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: #8b98ab;
-  font-size: 11px;
-  font-family: 'Courier New', monospace;
-  outline: none;
-  padding: 4px 0;
-  min-width: 0;
-}
-
-.ref-link-copy {
-  padding: 6px 10px;
-  background: #1a2333;
-  border: 1px solid #2a3648;
-  border-radius: 6px;
-  color: #e6edf3;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-/* ===== Referral Stats ===== */
-.ref-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.ref-stat {
-  background: linear-gradient(135deg, #141d2e 0%, #0f1828 100%);
-  border: 1px solid #1f2a3d;
-  border-radius: 10px;
-  padding: 12px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.ref-stat::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: linear-gradient(180deg, #00c853, #2196f3);
-}
-
-.ref-stat-label {
-  font-size: 10px;
-  color: #6b7a90;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.ref-stat-value {
-  font-size: 20px;
-  font-weight: 800;
-  color: #00c853;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.ref-stat-value.blue {
-  color: #58a6ff;
-}
-
-/* ===== Share Buttons ===== */
-.ref-share-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.ref-share-btn {
-  padding: 10px 8px;
-  border-radius: 10px;
-  border: none;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s ease;
-}
-
-.ref-share-btn:active {
-  transform: scale(0.96);
-}
-
-.ref-share-btn .icon {
-  font-size: 18px;
-}
-
-.ref-share-whatsapp {
-  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-}
-
-.ref-share-telegram {
-  background: linear-gradient(135deg, #229ed9 0%, #1976a4 100%);
-}
-
-.ref-share-native {
-  background: linear-gradient(135deg, #f0b90b 0%, #c98f00 100%);
-  color: #0b1220;
-}
-
-/* ===== Referral Info Note ===== */
-.ref-note {
-  background: rgba(33, 150, 243, 0.08);
-  border: 1px solid rgba(33, 150, 243, 0.25);
-  border-radius: 10px;
-  padding: 12px;
-  font-size: 11px;
-  color: #8b98ab;
-  line-height: 1.6;
-}
-
-.ref-note strong {
-  color: #58a6ff;
-}
-
-.ref-note .ref-bonus {
-  color: #00c853;
-  font-weight: 700;
-}
-
-/* ===== Referral Badge (sidebar) ===== */
-.ref-badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
+::selection {
   background: #00c853;
-  border-radius: 50%;
-  border: 2px solid #0b1220;
-  box-shadow: 0 0 8px rgba(0, 200, 83, 0.8);
-  animation: refBadgePulse 2s ease-in-out infinite;
-}
-
-@keyframes refBadgePulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-}
-
-/* ===== Mobile refinement ===== */
-@media (max-width: 500px) {
-  .ref-code-value {
-    font-size: 20px;
-    letter-spacing: 3px;
-  }
-  .ref-hero-icon {
-    font-size: 40px;
-  }
-  .ref-stat-value {
-    font-size: 18px;
-  }
-  .ref-share-row {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .ref-share-btn .icon {
-    font-size: 16px;
-  }
+  color: #fff;
 }
