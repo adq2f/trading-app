@@ -2844,195 +2844,223 @@ console.log("===== MSG 5 FIX: Force Button Binding LOADED =====");
   console.log("[QX-BAL] Quotex-style balance popup ready");
 })();
 // ============================================
-// MSG 7 CLEAN: Trade Marker + Tick Mark
+// MSG 7 UNIVERSAL: Tick Mark + Entry Line (v4/v5)
 // ============================================
+console.log("===== MSG 7 UNIVERSAL STARTING =====");
 
-// ============================================
-// MSG 7 FINAL: Tick Mark + Entry Line (Quotex Style)
-// ============================================
-console.log("===== MSG 7 FINAL STARTING =====");
-
-// ===== Ensure candleSeries exposed =====
-setInterval(function() {
+// ===== Universal coordinate helper =====
+function getChartCoords(entryTime, entryPrice) {
   try {
-    if (!window.candleSeries && chart && chart._private__seriesMap) {
-      chart._private__seriesMap.forEach(function(s) {
-        if (s && s.priceToCoordinate) {
-          window.candleSeries = s;
-          console.log("[MSG7] candleSeries exposed");
-        }
-      });
-    }
-  } catch(e) {}
-}, 500);
+    if (!window.chart || !window.candleSeries) return null;
 
-// ===== 1. Tick Mark (entry candle er nice/upore) =====
+    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+    var x = null, y = null;
+
+    // X coordinate — try multiple API forms
+    try {
+      if (typeof window.chart.timeScale === "function") {
+        var ts = window.chart.timeScale();
+        if (ts && typeof ts.timeToCoordinate === "function") {
+          x = ts.timeToCoordinate(entrySec);
+        }
+      }
+    } catch(e) { console.warn("[COORD] x-1 fail:", String(e)); }
+
+    if ((x === null || x === undefined) && typeof window.chart.timeToCoordinate === "function") {
+      try { x = window.chart.timeToCoordinate(entrySec); } catch(e) {}
+    }
+
+    // Y coordinate
+    try {
+      if (typeof window.candleSeries.priceToCoordinate === "function") {
+        y = window.candleSeries.priceToCoordinate(entryPrice);
+      }
+    } catch(e) { console.warn("[COORD] y fail:", String(e)); }
+
+    if (x === null || x === undefined || y === null || y === undefined) {
+      console.warn("[COORD] null — x:", x, "y:", y);
+      return null;
+    }
+    return { x: x, y: y };
+  } catch(e) {
+    console.error("[COORD] error:", String(e), e.message, e.stack);
+    return null;
+  }
+}
+
+// ===== 1. Tick Mark =====
 function renderTickMark(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap || !window.candleSeries || !window.chart) return;
-    if (!entryTime || !entryPrice) return;
+    if (!chartWrap) return;
 
     var old = chartWrap.querySelectorAll(".qx-tick-mark");
     old.forEach(function(m) { m.remove(); });
 
-    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+    var coords = getChartCoords(entryTime, entryPrice);
+    if (!coords) return;
 
     var tick = document.createElement("div");
     tick.className = "qx-tick-mark " + type;
-    tick.style.left = (xPos - 11) + "px";
-    tick.style.top = type === "call" ? (yPos + 18) + "px" : (yPos - 30) + "px";
+    tick.style.left = (coords.x - 11) + "px";
+    tick.style.top = type === "call" ? (coords.y + 18) + "px" : (coords.y - 30) + "px";
     tick.textContent = "\u2713";
     chartWrap.appendChild(tick);
-  } catch(e) { console.warn("[MSG7] tick error:", e); }
+    console.log("[TICK] Rendered at", coords.x, coords.y);
+  } catch(e) {
+    console.error("[TICK] ERROR:", String(e), e.message, e.stack);
+  }
 }
 
-// ===== 2. Dot Trail (4 dot, tick theke bahire) =====
+// ===== 2. Dot Trail =====
 function renderDotTrail(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap || !window.candleSeries || !window.chart) return;
-    if (!entryTime || !entryPrice) return;
+    if (!chartWrap) return;
 
     var old = chartWrap.querySelectorAll(".qx-dot-trail");
     old.forEach(function(m) { m.remove(); });
 
-    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+    var coords = getChartCoords(entryTime, entryPrice);
+    if (!coords) return;
 
     var trail = document.createElement("div");
     trail.className = "qx-dot-trail " + type;
     for (var i = 0; i < 4; i++) {
-      var dot = document.createElement("div");
-      dot.className = "qx-dot qx-dot-" + i;
-      trail.appendChild(dot);
+      var d = document.createElement("div");
+      d.className = "qx-dot qx-dot-" + i;
+      trail.appendChild(d);
     }
     if (type === "call") {
-      trail.style.left = (xPos - 62) + "px";
-      trail.style.top = (yPos + 18) + "px";
+      trail.style.left = (coords.x - 62) + "px";
+      trail.style.top = (coords.y + 18) + "px";
     } else {
-      trail.style.left = (xPos + 12) + "px";
-      trail.style.top = (yPos - 28) + "px";
+      trail.style.left = (coords.x + 12) + "px";
+      trail.style.top = (coords.y - 28) + "px";
     }
     chartWrap.appendChild(trail);
-  } catch(e) { console.warn("[MSG7] trail error:", e); }
+  } catch(e) {
+    console.error("[TRAIL] ERROR:", String(e), e.message);
+  }
 }
 
-// ===== 3. Entry Line (shudhu entry candle theke dane) =====
+// ===== 3. Entry Line + Label =====
 function renderEntryLine(type, entryPrice, entryTime) {
   try {
     var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap || !window.candleSeries || !window.chart) return;
-    if (!entryPrice || !entryTime) return;
+    if (!chartWrap) return;
 
-    var old = chartWrap.querySelectorAll(".qx-entry-line");
+    var old = chartWrap.querySelectorAll(".qx-entry-line, .qx-entry-label");
     old.forEach(function(m) { m.remove(); });
 
-    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chart.timeScale().timeToCoordinate(entrySec);
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+    var coords = getChartCoords(entryTime, entryPrice);
+    if (!coords) return;
 
     var line = document.createElement("div");
     line.className = "qx-entry-line " + type;
-    line.style.left = xPos + "px";
+    line.style.left = coords.x + "px";
     line.style.right = "60px";
-    line.style.top = yPos + "px";
+    line.style.top = coords.y + "px";
     chartWrap.appendChild(line);
 
     var label = document.createElement("div");
     label.className = "qx-entry-label " + type;
     label.textContent = Number(entryPrice).toFixed(2);
-    label.style.left = (xPos + 4) + "px";
-    label.style.top = (yPos - 22) + "px";
+    label.style.left = (coords.x + 4) + "px";
+    label.style.top = (coords.y - 22) + "px";
     chartWrap.appendChild(label);
-  } catch(e) { console.warn("[MSG7] line error:", e); }
+  } catch(e) {
+    console.error("[LINE] ERROR:", String(e), e.message);
+  }
 }
 
-// ===== 4. Render all =====
+// ===== 4. Render All =====
 function renderAllTradeMarkers(type, entryPrice, entryTime) {
   renderTickMark(type, entryPrice, entryTime);
   renderDotTrail(type, entryPrice, entryTime);
   renderEntryLine(type, entryPrice, entryTime);
 }
 
-// ===== 5. Auto render check (har 1s) =====
-setInterval(function() {
+// ===== 5. Auto render (poll Firestore every 2s) =====
+setInterval(async function() {
   try {
+    if (!window.currentUser) return;
     if (!window.chart || !window.candleSeries) return;
-    if (typeof activeTradesLocal === "undefined") return;
-    if (activeTradesLocal.length === 0) return;
 
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
+    var wrap = document.getElementById("chart-wrapper");
+    if (!wrap) return;
 
-    var existing = chartWrap.querySelectorAll(".qx-tick-mark");
+    var q = window.query(
+      window.collection(window.db, "trades"),
+      window.where("userId", "==", window.currentUser.uid),
+      window.where("status", "==", "pending")
+    );
+    var snap = await window.getDocs(q);
+
+    if (snap.empty) {
+      wrap.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-entry-line, .qx-entry-label").forEach(function(el) {
+        el.remove();
+      });
+      return;
+    }
+
+    var existing = wrap.querySelectorAll(".qx-tick-mark");
     if (existing.length > 0) return;
 
-    activeTradesLocal.forEach(function(trade) {
-      if (trade.status !== "pending") return;
+    snap.forEach(function(docSnap) {
+      var trade = docSnap.data();
+      if (!trade.entryPrice || !trade.entryTime) return;
       renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
     });
-  } catch(e) {}
-}, 1000);
+  } catch(e) {
+    console.error("[MSG7-POLL] err:", String(e), e.message);
+  }
+}, 2000);
 
 // ===== 6. Patch placeTrade =====
-(function patchPlaceTradeFinal() {
+(function patchPlaceTradeUniversal() {
   if (typeof window.placeTrade !== "function") {
-    setTimeout(patchPlaceTradeFinal, 1000);
+    setTimeout(patchPlaceTradeUniversal, 1000);
     return;
   }
   var _orig = window.placeTrade;
   window.placeTrade = async function(type) {
-    var before = activeTradesLocal.length;
     await _orig(type);
     setTimeout(function() {
-      if (activeTradesLocal.length > before) {
-        var last = activeTradesLocal[activeTradesLocal.length - 1];
-        if (last) {
-          renderAllTradeMarkers(last.type, last.entryPrice, last.entryTime);
+      try {
+        if (typeof activeTradesLocal !== "undefined" && activeTradesLocal.length > 0) {
+          var last = activeTradesLocal[activeTradesLocal.length - 1];
+          if (last && last.status === "pending") {
+            renderAllTradeMarkers(last.type, last.entryPrice, last.entryTime);
+          }
         }
-      }
-    }, 1000);
+      } catch(e) {}
+    }, 1500);
   };
   console.log("[MSG7] placeTrade patched");
 })();
-
-// ===== 7. Initial render =====
-setTimeout(function() {
-  try {
-    if (activeTradesLocal && activeTradesLocal.length > 0) {
-      activeTradesLocal.forEach(function(trade) {
-        if (trade.status !== "pending") return;
-        renderAllTradeMarkers(trade.type, trade.entryPrice, trade.entryTime);
-      });
-    }
-  } catch(e) {}
-}, 5000);
-
-// ===== 8. Cleanup expired =====
-setInterval(function() {
-  try {
-    if (typeof activeTradesLocal === "undefined") return;
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
-    if (activeTradesLocal.length === 0) {
-      chartWrap.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-entry-line, .qx-entry-label").forEach(function(el) {
-        el.remove();
-      });
-    }
-  } catch(e) {}
-}, 2000);
 
 // ===== Expose =====
 window.renderTickMark = renderTickMark;
 window.renderDotTrail = renderDotTrail;
 window.renderEntryLine = renderEntryLine;
 window.renderAllTradeMarkers = renderAllTradeMarkers;
+window.getChartCoords = getChartCoords;
 
-console.log("===== MSG 7 FINAL LOADED =====");
+// ===== Manual test command =====
+window.testTickMark = function() {
+  console.log("=== MANUAL TEST ===");
+  var c = getChartCoords(new Date().toISOString(), 83000);
+  console.log("Coords:", c);
+  if (c) {
+    renderAllTradeMarkers("call", 83000, new Date().toISOString());
+    setTimeout(function() {
+      console.log("Tick marks found:", document.querySelectorAll(".qx-tick-mark").length);
+    }, 500);
+  } else {
+    console.error("Coords NULL — API issue");
+  }
+};
+
+console.log("===== MSG 7 UNIVERSAL LOADED =====");
+console.log("Type testTickMark() in console to test");
