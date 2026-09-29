@@ -2857,31 +2857,6 @@ input, select {
   justify-content: center;
   border: 2px solid #141a2a;
 }
-/* ===== BALANCE POPUP ===== */
-.balance-popup-display {
-  text-align: center;
-  padding: 20px 0;
-  background: linear-gradient(135deg, #0a2818 0%, #141d2e 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 200, 83, 0.3);
-  margin-bottom: 8px;
-}
-
-.balance-popup-label {
-  font-size: 11px;
-  color: #6b7a90;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.balance-popup-amount {
-  font-size: 32px;
-  font-weight: 800;
-  color: #00c853;
-  font-variant-numeric: tabular-nums;
-}
 /* ============================================
    BALANCE POPUP — QUOTEX STYLE
    ============================================ */
@@ -2977,6 +2952,183 @@ input, select {
 }
 
 /* Edit Box */
+.qx-balance-edit-box {
+  background: #0e1320;
+  border: 1px solid #58a6ff;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  animation: editBoxIn 0.2s ease-out;
+}
+
+@keyframes editBoxIn {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.qx-edit-label {
+  display: block;
+  font-size: 11px;
+  color: #8b98ab;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.qx-edit-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #141d2e;
+  border: 1px solid #2a3648;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.qx-edit-input:focus {
+  border-color: #58a6ff;
+}
+
+.qx-edit-input::-webkit-outer-spin-button,
+.qx-edit-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qx-edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.qx-edit-cancel {
+  padding: 10px;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #8b98ab;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.qx-edit-save {
+  padding: 10px;
+  background: linear-gradient(135deg, #00c853 0%, #00a844 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+/* ============================================
+   BALANCE POPUP — QUOTEX STYLE
+   ============================================ */
+
+.qx-acc-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  background: #141d2e;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qx-acc-option.active {
+  background: linear-gradient(135deg, #0a2818 0%, #141d2e 100%);
+  border-color: #00c853;
+}
+
+.qx-acc-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #2a3648;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.qx-acc-option.active .qx-acc-radio {
+  border-color: #00c853;
+}
+
+.qx-acc-option.active .qx-acc-radio::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: #00c853;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00c853;
+}
+
+.qx-acc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.qx-acc-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 3px;
+}
+
+.qx-acc-balance {
+  font-size: 15px;
+  font-weight: 800;
+  color: #00c853;
+  font-variant-numeric: tabular-nums;
+}
+
+.qx-acc-option[data-acc-type="real"] .qx-acc-balance {
+  color: #ffb300;
+}
+
+.qx-acc-option[data-acc-type="real"] .qx-acc-balance::after {
+  content: ' 🔒';
+  font-size: 10px;
+  color: #6b7a90;
+  margin-left: 4px;
+}
+
+.qx-acc-edit {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a2333;
+  border: 1px solid #2a3648;
+  border-radius: 8px;
+  color: #58a6ff;
+  font-size: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.qx-acc-edit:active {
+  background: #2a3648;
+}
+
 .qx-balance-edit-box {
   background: #0e1320;
   border: 1px solid #58a6ff;
