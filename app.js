@@ -577,35 +577,130 @@ onAuthStateChanged(auth, async (user) => {
 
 function initChart() {
   if (!chartEl) return;
+
   chartEl.innerHTML = "";
-  if (chart) { try { chart.remove(); } catch (e) {} chart = null; }
+
+  if (chart) {
+    try { chart.remove(); } catch (e) {}
+    chart = null;
+  }
+
   const wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 290;
+
   chart = LightweightCharts.createChart(chartEl, {
-    width: chartEl.clientWidth, height: wrapperHeight,
-    layout: { background: { color: "#0a0f1a" }, textColor: "#8b98ab", fontSize: 11 },
-    grid: { vertLines: { color: "#131a26" }, horzLines: { color: "#131a26" } },
+    width: chartEl.clientWidth,
+    height: wrapperHeight,
+    layout: {
+      background: { color: "#0a0f1a" },
+      textColor: "#6b7a90",
+      fontSize: 11
+    },
+    grid: {
+      vertLines: { color: "#131a26", style: 0 },
+      horzLines: { color: "#131a26", style: 0 }
+    },
     crosshair: {
       mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: { color: "#58a6ff", width: 1, style: 2, labelBackgroundColor: "#1f6feb" },
-      horzLine: { color: "#58a6ff", width: 1, style: 2, labelBackgroundColor: "#1f6feb" }
+      vertLine: {
+        color: "#58a6ff",
+        width: 1,
+        style: 2,
+        labelBackgroundColor: "#1f6feb"
+      },
+      horzLine: {
+        color: "#58a6ff",
+        width: 1,
+        style: 2,
+        labelBackgroundColor: "#1f6feb"
+      }
     },
-    rightPriceScale: { borderColor: "#1f2a3d", scaleMargins: { top: 0.1, bottom: 0.1 } },
-    timeScale: { borderColor: "#1f2a3d", timeVisible: true, secondsVisible: true },
-    handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-    handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true }
+    rightPriceScale: {
+      borderColor: "#1f2a3d",
+      scaleMargins: { top: 0.1, bottom: 0.1 }
+    },
+    timeScale: {
+      borderColor: "#1f2a3d",
+      timeVisible: true,
+      secondsVisible: false,
+      rightOffset: 5,
+      barSpacing: 8,
+      fixLeftEdge: false,
+      lockVisibleTimeRangeOnResize: true,
+      rightBarStaysOnScroll: true,
+      borderVisible: false,
+      visible: false
+    },
+    handleScroll: {
+      mouseWheel: true,
+      pressedMouseMove: true,
+      horzTouchDrag: true,
+      vertTouchDrag: false
+    },
+    handleScale: {
+      axisPressedMouseMove: true,
+      mouseWheel: true,
+      pinch: true
+    }
   });
+
   candleSeries = chart.addCandlestickSeries({
-    upColor: "#00c853", downColor: "#ff5252",
-    borderUpColor: "#00c853", borderDownColor: "#ff5252",
-    wickUpColor: "#00c853", wickDownColor: "#ff5252"
+    upColor: "#00c853",
+    downColor: "#ff5252",
+    borderUpColor: "#00c853",
+    borderDownColor: "#ff5252",
+    wickUpColor: "#00c853",
+    wickDownColor: "#ff5252",
+    priceLineVisible: false,
+    lastValueVisible: false
   });
+
+  // ===== QUOTEX WATERMARK =====
+  try {
+    var chartWatermark = document.createElement("div");
+    chartWatermark.className = "qx-chart-watermark";
+    chartWatermark.innerHTML = "QUOTEX";
+    chartEl.appendChild(chartWatermark);
+  } catch(e) {}
+
+  // ===== TIME LABELS =====
+  try {
+    var timeLabels = document.createElement("div");
+    timeLabels.className = "qx-time-labels";
+    timeLabels.id = "qx-time-labels";
+    chartEl.appendChild(timeLabels);
+  } catch(e) {}
+
+  // Update time labels
+  setInterval(function() {
+    try {
+      var labelsEl = document.getElementById("qx-time-labels");
+      if (!labelsEl) return;
+      var now = new Date();
+      var labels = [];
+      for (var i = -2; i <= 2; i++) {
+        var t = new Date(now.getTime() + i * 2 * 60 * 1000);
+        var hh = String(t.getHours()).padStart(2, "0");
+        var mm = String(t.getMinutes()).padStart(2, "0");
+        labels.push(hh + ":" + mm);
+      }
+      labelsEl.innerHTML = labels.map(function(l, i) {
+        return '<span class="qx-time-label' + (i === 2 ? " active" : "") + '">' + l + '</span>';
+      }).join("");
+    } catch(e) {}
+  }, 1000);
+
   chart.timeScale().subscribeVisibleTimeRangeChange(() => {
     if (typeof redrawDrawings === "function") redrawDrawings();
   });
+
   if (typeof initDrawingSystem === "function") initDrawingSystem();
+
   window.addEventListener("resize", () => {
     if (chart && chartWrapper) {
-      chart.applyOptions({ width: chartEl.clientWidth, height: chartWrapper.clientHeight });
+      chart.applyOptions({
+        width: chartEl.clientWidth,
+        height: chartWrapper.clientHeight
+      });
       if (typeof resizeDrawingCanvas === "function") resizeDrawingCanvas();
     }
   });
