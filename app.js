@@ -1344,6 +1344,62 @@ function updateTradeMarkers() {
   }
 }
 
+// ===== Entry Marker Draw (Chart e Arrow + Line) =====
+function drawEntryMarker(type, entryPrice, amount) {
+  if (!window.candleSeries) {
+    console.warn("[Marker] candleSeries nei");
+    return;
+  }
+
+  var now = Math.floor(Date.now() / 1000);
+
+  // Arrow Marker
+  var marker = {
+    time: now,
+    position: type === "call" ? "belowBar" : "aboveBar",
+    color: type === "call" ? "#00c853" : "#ff5252",
+    shape: type === "call" ? "arrowUp" : "arrowDown",
+    text: (type === "call" ? "BUY" : "SELL") + " $" + amount
+  };
+
+  try {
+    var existingMarkers = window.__tradeMarkers || [];
+    existingMarkers.push(marker);
+    existingMarkers.sort(function(a, b) { return a.time - b.time; });
+    window.__tradeMarkers = existingMarkers;
+    window.candleSeries.setMarkers(existingMarkers);
+    console.log("[Marker] Added:", marker.text, "@ $" + entryPrice.toFixed(2));
+  } catch (e) {
+    console.error("[Marker] Error:", e.message);
+  }
+
+  // Entry Price Line
+  try {
+    if (window.candleSeries.createPriceLine) {
+      if (window.__entryLines && window.__entryLines.length > 0) {
+        window.__entryLines.forEach(function(line) {
+          try { window.candleSeries.removePriceLine(line); } catch(e) {}
+        });
+      }
+      window.__entryLines = [];
+
+      var priceLine = window.candleSeries.createPriceLine({
+        price: entryPrice,
+        color: type === "call" ? "#00c853" : "#ff5252",
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: type === "call" ? "BUY" : "SELL"
+      });
+
+      window.__entryLines.push(priceLine);
+      console.log("[Marker] Entry line drawn @ $" + entryPrice.toFixed(2));
+    }
+  } catch (e) {
+    console.error("[Marker] Line error:", e.message);
+  }
+}
+
 // ===== ট্রেড প্লেস =====
 async function placeTrade(type) {
   if (!currentUser) return;
@@ -1352,17 +1408,28 @@ async function placeTrade(type) {
   if (now - lastTradeTime < 500) return;
   lastTradeTime = now;
 
-  const amount = parseFloat(tradeAmountInput.value);
+  // Safe element access
+  const amountInput = document.getElementById("trade-amount");
+  const msgEl = document.getElementById("trade-message");
+  const balEl = document.getElementById("balance");
+
+  const amount = amountInput ? parseFloat(amountInput.value) : 1;
+
+  function showMsg(text, color) {
+    if (msgEl) {
+      msgEl.style.color = color || "#ff5252";
+      msgEl.textContent = text;
+    }
+    console.log("[Trade]", text);
+  }
 
   if (!amount || amount < 1) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = "সর্বনিম্ন $1 ট্রেড করুন";
+    showMsg("সর্বনিম্ন $1 ট্রেড করুন", "#ff5252");
     return;
   }
 
   if (amount > userBalance) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = "পর্যাপ্ত ব্যালেন্স নেই";
+    showMsg("পর্যাপ্ত ব্যালেন্স নেই", "#ff5252");
     return;
   }
 
@@ -1382,9 +1449,14 @@ async function placeTrade(type) {
     });
 
     userBalance = newBalance;
-    balanceEl.textContent = userBalance.toFixed(2);
+    window.userBalance = newBalance;
+
+    if (balEl) balEl.textContent = userBalance.toFixed(2);
     if (balancePopupValue) balancePopupValue.textContent = userBalance.toFixed(2);
-    animateBalanceChange(-amount);
+
+    if (typeof animateBalanceChange === "function") {
+      animateBalanceChange(-amount);
+    }
 
     await addDoc(collection(db, "trades"), {
       userId: currentUser.uid,
@@ -1402,19 +1474,55 @@ async function placeTrade(type) {
       createdAt: entryTime
     });
 
-    tradeMessage.style.color = type === "call" ? "#00c853" : "#ff5252";
-    tradeMessage.textContent = `${type.toUpperCase()} $${amount} প্লেস হয়েছে`;
+    showMsg(
+      type.toUpperCase() + " $" + amount + " প্লেস হয়েছে",
+      type === "call" ? "#00c853" : "#ff5252"
+    );
 
-    setTimeout(() => { tradeMessage.textContent = ""; }, 2000);
+    setTimeout(function() {
+      if (msgEl) msgEl.textContent = "";
+    }, 2000);
+
+    // Chart e Entry Marker Draw
+    drawEntryMarker(type, entryPrice, amount);
+
+    console.log("[Trade] Placed:", type, "$" + amount, "@ $" + entryPrice.toFixed(2));
 
   } catch (error) {
-    tradeMessage.style.color = "#ff5252";
-    tradeMessage.textContent = error.message;
+    showMsg(error.message, "#ff5252");
+    console.error("[Trade] Error:", error);
   }
 }
 
-if (callBtn) callBtn.addEventListener("click", () => placeTrade("call"));
-if (putBtn) putBtn.addEventListener("click", () => placeTrade("put"));
+// ===== Button Binding =====
+function bindTradeButtons() {
+  var callBtnEl = document.getElementById("call-btn");
+  var putBtnEl = document.getElementById("put-btn");
+
+  if (callBtnEl && callBtnEl.dataset.tradeBound !== "1") {
+    callBtnEl.dataset.tradeBound = "1";
+    callBtnEl.addEventListener("click", function(e) {
+      e.preventDefault();
+      console.log("[Trade] CALL button clicked");
+      placeTrade("call");
+    });
+    console.log("[Trade] CALL button bound");
+  }
+
+  if (putBtnEl && putBtnEl.dataset.tradeBound !== "1") {
+    putBtnEl.dataset.tradeBound = "1";
+    putBtnEl.addEventListener("click", function(e) {
+      e.preventDefault();
+      console.log("[Trade] PUT button clicked");
+      placeTrade("put");
+    });
+    console.log("[Trade] PUT button bound");
+  }
+}
+
+bindTradeButtons();
+setTimeout(bindTradeButtons, 1500);
+setTimeout(bindTradeButtons, 3000);
 
 // ===== ট্রেড এক্সপায়ারি =====
 async function checkExpiredTrades() {
@@ -1593,10 +1701,17 @@ setInterval(() => {
   }
 }, 1000);
 
-// ============================================
-// UPDATE Part 1: Settings Listen + Admin Force
-// ============================================
+// ===== EXPOSE =====
+window.placeTrade = placeTrade;
+window.drawEntryMarker = drawEntryMarker;
+window.bindTradeButtons = bindTradeButtons;
+window.updateBigTimer = updateBigTimer;
+window.updateTradeMarkers = updateTradeMarkers;
+window.loadActiveTrades = loadActiveTrades;
+window.loadHistory = loadHistory;
+window.checkExpiredTrades = checkExpiredTrades;
 
+console.log("===== Part 5: Trade Logic + Timer + History + Entry Marker loaded =====");
 // ===== Admin Settings Globals =====
 let adminWinRate = 50;
 let adminPayout = 85;
