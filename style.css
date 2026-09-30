@@ -2382,3 +2382,24 @@ input, select {
   70% { transform: scale(1.2) rotate(10deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
+/* ============================================
+   FORCE ENTRY MARKER VISIBLE
+   ============================================ */
+.qx-tick-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  pointer-events: none !important;
+  z-index: 100 !important;
+  overflow: visible !important;
+}
+
+.qx-entry-mark {
+  z-index: 40 !important;
+}
+
+.qx-entry-tick {
+  z-index: 41 !important;
+}
