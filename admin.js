@@ -5685,6 +5685,314 @@ window.getBehaviorParams = getBehaviorParams;
 window.createNewCandle = createNewCandle;
 
 console.log('===== admin.js v33-clean — AUTO RUNNER LOADED =====');
+
+// ============================================================
+// CLEANUP SYSTEM — Auto-delete old candles
+// Keep only last N candles per market (Firestore free-friendly)
+// ============================================================
+
+window.cleanupState = {
+  active: false,
+  interval: null,
+  maxCandlesPerMarket: 1000,
+  checkIntervalMs: 60000,
+  lastCleanup: {},
+  totalDeleted: 0
+};
+
+// ============================================================
+// CLEANUP 1 — Single Market
+// ============================================================
+
+async function cleanupMarketCandles(marketId) {
+  if (!marketId) return 0;
+
+  try {
+    var snap = await getDocs(
+      collection(db, 'markets', marketId, 'liveCandles')
+    );
+
+    if (snap.size <= window.cleanupState.maxCandlesPerMarket) {
+      return 0;
+    }
+
+    var candles = [];
+    snap.forEach(function(d) {
+      var data = d.data();
+      candles.push({
+        id: d.id,
+        startTime: data.startTime || 0
+      });
+    });
+
+    candles.sort(function(a, b) {
+      return a.startTime - b.startTime;
+    });
+
+    var keep = window.cleanupState.maxCandlesPerMarket;
+    var toDelete = candles.slice(0, candles.length - keep);
+
+    if (toDelete.length === 0) return 0;
+
+    var deleted = 0;
+    var batchSize = 100;
+
+    for (var i = 0; i < toDelete.length; i += batchSize) {
+      var batch = toDelete.slice(i, i + batchSize);
+      var promises = batch.map(function(c) {
+        return deleteDoc(doc(db, 'markets', marketId, 'liveCandles', c.id));
+      });
+
+      try {
+        await Promise.all(promises);
+        deleted += batch.length;
+      } catch (err) {
+        console.error('[Cleanup] Batch delete error:', err.message);
+      }
+    }
+
+    window.cleanupState.totalDeleted += deleted;
+    window.cleanupState.lastCleanup[marketId] = Date.now();
+
+    console.log('[Cleanup] ' + marketId + ': deleted ' + deleted + ' old candles (kept ' + keep + ')');
+    return deleted;
+  } catch (err) {
+    console.error('[Cleanup] Market error:', err.message);
+    return 0;
+  }
+}
+
+// ============================================================
+// CLEANUP 2 — All Markets
+// ============================================================
+
+async function cleanupAllMarkets() {
+  try {
+    var marketsSnap = await getDocs(collection(db, 'markets'));
+    var totalDeleted = 0;
+
+    for (var i = 0; i < marketsSnap.docs.length; i++) {
+      var marketId = marketsSnap.docs[i].id;
+      var deleted = await cleanupMarketCandles(marketId);
+      totalDeleted += deleted;
+    }
+
+    if (totalDeleted > 0) {
+      console.log('[Cleanup] Total deleted across all markets:', totalDeleted);
+    }
+
+    return totalDeleted;
+  } catch (err) {
+    console.error('[Cleanup] All markets error:', err.message);
+    return 0;
+  }
+}
+
+// ============================================================
+// CLEANUP 3 — Start Auto-Cleanup
+// ============================================================
+
+function startAutoCleanup() {
+  if (window.cleanupState.active) {
+    console.log('[Cleanup] Already running');
+    return;
+  }
+
+  window.cleanupState.active = true;
+  console.log('[Cleanup] Started — every ' + (window.cleanupState.checkIntervalMs / 1000) + 's');
+
+  // Initial cleanup after 10s
+  setTimeout(function() {
+    cleanupAllMarkets();
+  }, 10000);
+
+  // Loop
+  window.cleanupState.interval = setInterval(function() {
+    cleanupAllMarkets();
+  }, window.cleanupState.checkIntervalMs);
+
+  updateCleanupUI();
+}
+
+// ============================================================
+// CLEANUP 4 — Stop Auto-Cleanup
+// ============================================================
+
+function stopAutoCleanup() {
+  if (!window.cleanupState.active) return;
+
+  if (window.cleanupState.interval) {
+    clearInterval(window.cleanupState.interval);
+    window.cleanupState.interval = null;
+  }
+
+  window.cleanupState.active = false;
+  console.log('[Cleanup] Stopped');
+  updateCleanupUI();
+}
+
+// ============================================================
+// CLEANUP 5 — Toggle
+// ============================================================
+
+function toggleAutoCleanup() {
+  if (window.cleanupState.active) stopAutoCleanup();
+  else startAutoCleanup();
+}
+
+// ============================================================
+// CLEANUP 6 — Update UI
+// ============================================================
+
+function updateCleanupUI() {
+  var btn = document.getElementById('cleanup-toggle');
+  var status = document.getElementById('cleanup-status');
+  var deletedEl = document.getElementById('cleanup-deleted');
+
+  if (btn) {
+    if (window.cleanupState.active) {
+      btn.textContent = 'STOP Cleanup';
+      btn.style.background = 'linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)';
+    } else {
+      btn.textContent = 'START Cleanup';
+      btn.style.background = 'linear-gradient(135deg, #00c853 0%, #00a844 100%)';
+    }
+  }
+
+  if (status) {
+    status.textContent = window.cleanupState.active ? 'ACTIVE' : 'IDLE';
+    status.style.color = window.cleanupState.active ? '#00c853' : '#6b7a90';
+  }
+
+  if (deletedEl) {
+    deletedEl.textContent = window.cleanupState.totalDeleted;
+  }
+}
+
+// ============================================================
+// CLEANUP 7 — Save Max Candles
+// ============================================================
+
+async function saveCleanupMax() {
+  var input = document.getElementById('cleanup-max-input');
+  if (!input) return;
+
+  var val = parseInt(input.value);
+  if (isNaN(val) || val < 100 || val > 10000) {
+    alert('Max candles: 100-10000');
+    return;
+  }
+
+  window.cleanupState.maxCandlesPerMarket = val;
+
+  try {
+    await setDoc(
+      doc(db, 'settings', 'global'),
+      { maxCandlesPerMarket: val, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+    alert('Max candles saved: ' + val);
+  } catch (err) {
+    alert('Save error: ' + err.message);
+  }
+
+  updateCleanupUI();
+}
+
+// ============================================================
+// CLEANUP 8 — Load Setting
+// ============================================================
+
+async function loadCleanupSetting() {
+  try {
+    var sDoc = await getDoc(doc(db, 'settings', 'global'));
+    if (sDoc.exists()) {
+      var d = sDoc.data();
+      if (d.maxCandlesPerMarket) {
+        window.cleanupState.maxCandlesPerMarket = d.maxCandlesPerMarket;
+      }
+    }
+  } catch (err) {
+    console.error('[Cleanup] Load error:', err.message);
+  }
+
+  var input = document.getElementById('cleanup-max-input');
+  if (input) {
+    input.value = window.cleanupState.maxCandlesPerMarket;
+  }
+  updateCleanupUI();
+}
+
+// ============================================================
+// CLEANUP 9 — Bind Buttons
+// ============================================================
+
+function bindCleanupButtons() {
+  var toggleBtn = document.getElementById('cleanup-toggle');
+  if (toggleBtn && toggleBtn.dataset.bound !== '1') {
+    toggleBtn.dataset.bound = '1';
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      toggleAutoCleanup();
+    });
+    console.log('[Cleanup] Toggle bound');
+  }
+
+  var saveBtn = document.getElementById('save-cleanup-max');
+  if (saveBtn && saveBtn.dataset.bound !== '1') {
+    saveBtn.dataset.bound = '1';
+    saveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      saveCleanupMax();
+    });
+    console.log('[Cleanup] Save button bound');
+  }
+
+  var runNowBtn = document.getElementById('run-cleanup-now');
+  if (runNowBtn && runNowBtn.dataset.bound !== '1') {
+    runNowBtn.dataset.bound = '1';
+    runNowBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      runNowBtn.disabled = true;
+      runNowBtn.textContent = 'Running...';
+      var deleted = await cleanupAllMarkets();
+      runNowBtn.disabled = false;
+      runNowBtn.textContent = 'Run Cleanup Now';
+      updateCleanupUI();
+      alert('Cleanup done!\n\nDeleted: ' + deleted + ' candles\nTotal deleted so far: ' + window.cleanupState.totalDeleted);
+    });
+    console.log('[Cleanup] Run-now button bound');
+  }
+}
+
+// ============================================================
+// CLEANUP 10 — Auto-Init
+// ============================================================
+
+setTimeout(function() {
+  loadCleanupSetting();
+  bindCleanupButtons();
+}, 3000);
+
+setTimeout(function() {
+  loadCleanupSetting();
+  bindCleanupButtons();
+}, 6000);
+
+// ============================================================
+// CLEANUP 11 — Expose
+// ============================================================
+
+window.cleanupState = window.cleanupState;
+window.cleanupMarketCandles = cleanupMarketCandles;
+window.cleanupAllMarkets = cleanupAllMarkets;
+window.startAutoCleanup = startAutoCleanup;
+window.stopAutoCleanup = stopAutoCleanup;
+window.toggleAutoCleanup = toggleAutoCleanup;
+window.saveCleanupMax = saveCleanupMax;
+window.bindCleanupButtons = bindCleanupButtons;
+
+console.log('===== CLEANUP SYSTEM LOADED =====');
 // ============================================================
 // FIX: Expose all Firebase functions to window
 // ============================================================
