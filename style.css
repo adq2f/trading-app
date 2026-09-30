@@ -756,8 +756,8 @@ input, select {
 /* ===== TIMEFRAME BADGE (bottom-left) ===== */
 .qx-tf-badge {
   position: absolute;
-  bottom: 32px;
-  left: 10px;
+  top: 10px;
+  left: 92px;
   padding: 5px 10px;
   background: rgba(20, 29, 46, 0.92);
   border: 1px solid #1f2a3d;
@@ -1452,11 +1452,11 @@ input, select {
 .qx-trades-section {
   background: #0e1320;
   border-top: 1px solid #1f2a3d;
-  flex: 1;
-  min-height: 180px;
+  max-height: 42vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .qx-trades-header {
