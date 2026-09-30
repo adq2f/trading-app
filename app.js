@@ -10,7 +10,7 @@
   if (window.__safeTextGuard) return;
   window.__safeTextGuard = true;
 
-  function renderTickMark(type, entryPrice, entryTime) {window.safeSetTextDirect = function(el, text) {
+  window.safeSetTextDirect = function(el, text) {
     if (!el) return;
     try { el.textContent = text; } catch(e) {}
   };
@@ -1354,16 +1354,11 @@ function clearEntryLine() {
 window.__activeVLines = null;
 
 function renderVerticalLines(startTime, endTime) {
-  try {
-    console.log("[VLine] render called", startTime, endTime);
-    window.__activeVLines = {
-      startTime: startTime,
-      endTime: endTime
-    };
-    refreshVerticalLines();
-  } catch(e) {
-    console.error("[VLine] render error:", String(e));
-  }
+  window.__activeVLines = {
+    startTime: startTime,
+    endTime: endTime
+  };
+  refreshVerticalLines();
 }
 
 function refreshVerticalLines() {
@@ -1430,58 +1425,55 @@ function renderTickMark(type, entryPrice, entryTime) {
     var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot");
     old.forEach(function(m) { m.remove(); });
 
-    if (!window.chartRef || !window.candleSeries) {
-      console.warn("[TickMark] chart not ready");
-      return;
-    }
+    if (!window.chartRef || !window.candleSeries) return;
     if (!entryTime || !entryPrice) return;
 
     var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
     var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
 
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) {
-      console.warn("[TickMark] coords null");
-      return;
-    }
+    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
 
-    // ===== Main tick dot =====
+    // ===== Small colored dot (12px, no big circle) =====
     var mark = document.createElement("div");
     mark.className = "qx-tick-mark " + type;
-    mark.style.cssText =
-      "position:absolute;" +
-      "width:12px;height:12px;border-radius:50%;" +
-      "left:" + (xPos - 6) + "px;" +
-      "top:" + (type === "call" ? (yPos + 12) : (yPos - 18)) + "px;" +
-      "background:" + (type === "call" ? "#00c853" : "#ff5252") + ";" +
-      "border:2px solid #ffffff;" +
-      "box-shadow:0 0 8px " + (type === "call" ? "#00c853" : "#ff5252") + ";" +
-      "z-index:30;pointer-events:none;";
+    mark.style.position = "absolute";
+    mark.style.width = "12px";
+    mark.style.height = "12px";
+    mark.style.borderRadius = "50%";
+    mark.style.left = (xPos - 6) + "px";
+    mark.style.top = type === "call" ? (yPos + 12) + "px" : (yPos - 18) + "px";
+    mark.style.background = type === "call" ? "#00c853" : "#ff5252";
+    mark.style.border = "2px solid #ffffff";
+    mark.style.boxShadow = "0 0 8px " + (type === "call" ? "#00c853" : "#ff5252");
+    mark.style.zIndex = "30";
+    mark.style.pointerEvents = "none";
+    mark.style.animation = "tickPop 0.4s ease-out";
     container.appendChild(mark);
 
-    // ===== Trail dots (4 small dots) =====
-    for (var i = 0; i < 4; i++) {
+    // ===== 2 small trail dots =====
+    for (var i = 0; i < 2; i++) {
       var dot = document.createElement("div");
-      dot.className = "qx-tick-trail-dot";
-      var size = 3 + i * 1.5;
-      dot.style.cssText =
-        "position:absolute;" +
-        "width:" + size + "px;height:" + size + "px;border-radius:50%;" +
-        "background:" + (type === "call" ? "#00c853" : "#ff5252") + ";" +
-        "opacity:" + (0.4 + i * 0.2) + ";" +
-        "z-index:29;pointer-events:none;";
-
+      dot.className = "qx-dot";
+      dot.style.position = "absolute";
+      dot.style.width = (4 + i * 2) + "px";
+      dot.style.height = (4 + i * 2) + "px";
+      dot.style.borderRadius = "50%";
+      dot.style.background = type === "call" ? "#00c853" : "#ff5252";
+      dot.style.opacity = 0.5 + i * 0.4;
       if (type === "call") {
-        dot.style.left = (xPos - 12 - i * 8) + "px";
-        dot.style.top = (yPos + 16 + size / 2) + "px";
+        dot.style.left = (xPos - 18 - i * 8) + "px";
+        dot.style.top = (yPos + 16) + "px";
       } else {
         dot.style.left = (xPos + 12 + i * 8) + "px";
-        dot.style.top = (yPos - 16 + size / 2) + "px";
+        dot.style.top = (yPos - 16) + "px";
       }
+      dot.style.zIndex = "29";
+      dot.style.pointerEvents = "none";
       container.appendChild(dot);
     }
 
-    console.log("[TickMark] Rendered at x=" + xPos + " y=" + yPos);
+    console.log("[TickMark] Rendered x=" + xPos + " y=" + yPos);
   } catch(e) {
     console.error("[TickMark] error:", String(e), e.message);
   }
@@ -1556,12 +1548,7 @@ async function placeTrade(type) {
 
     // ===== Render all markers =====
     renderEntryLine(type, entryPrice, expiresAt);
-    // Delay until chart renders
-    setTimeout(function() {
-      if (typeof renderVerticalLines === "function") {
-        renderVerticalLines(entryTime, expiresAt);
-      }
-    }, 500);
+    renderVerticalLines(entryTime, expiresAt);
     renderTickMark(type, entryPrice, entryTime);
 
     setTimeout(function() {
