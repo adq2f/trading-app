@@ -3553,3 +3553,255 @@ window.generateUserCandle = generateUserCandle;
 window.startUserMasterCheck = startUserMasterCheck;
 
 console.log('===== USER FALLBACK MASTER LOADED =====');
+
+// ============================================================
+// PHASE 12: TRADE ALIGNMENT — Block A
+// Trade expire at candle boundary (Quotex style)
+// ============================================================
+
+// ============================================================
+// PA1. TIMEFRAME TO MS
+// ============================================================
+
+function tfToMs(tf) {
+  var map = {
+    '5s': 5000, '10s': 10000, '15s': 15000, '30s': 30000,
+    '1m': 60000, '2m': 120000, '3m': 180000, '5m': 300000,
+    '10m': 600000, '15m': 900000, '30m': 1800000,
+    '1h': 3600000, '4h': 14400000, '1d': 86400000
+  };
+  return map[tf] || 60000;
+}
+
+// ============================================================
+// PA2. CALCULATE ALIGNED EXPIRE TIME
+// ============================================================
+
+function calcAlignedExpire(nowMs, durationSec, timeframe) {
+  var tfMs = tfToMs(timeframe);
+  var durationMs = durationSec * 1000;
+
+  // Raw expire time
+  var rawExpire = nowMs + durationMs;
+
+  // Align to next candle boundary
+  var alignedExpire = Math.ceil(rawExpire / tfMs) * tfMs;
+
+  // Current candle end time
+  var candleEndTime = Math.ceil(nowMs / tfMs) * tfMs;
+
+  // Wait time until candle ends
+  var waitTime = candleEndTime - nowMs;
+
+  // Total wait (including candle duration)
+  var totalWait = alignedExpire - nowMs;
+
+  return {
+    alignedExpire: alignedExpire,
+    candleEndTime: candleEndTime,
+    waitTime: waitTime,
+    totalWait: totalWait,
+    tfMs: tfMs
+  };
+}
+
+// ============================================================
+// PA3. ENHANCED PLACE TRADE (override existing)
+// ============================================================
+
+var originalPlaceTrade = window.placeTrade;
+
+window.placeTrade = async function(type) {
+  if (!currentUser) return;
+
+  var now = Date.now();
+  if (now - lastTradeTime < 500) return;
+  lastTradeTime = now;
+
+  var amountInput = document.getElementById('trade-amount');
+  var amount = amountInput ? parseFloat(amountInput.value) : 1;
+
+  function showMsg(text, color) {
+    try {
+      var msgEl = document.getElementById('trade-message');
+      if (msgEl) {
+        msgEl.style.color = color || '#ff5252';
+        msgEl.textContent = text;
+      }
+    } catch(e) {}
+  }
+
+  if (!amount || amount < 1) { showMsg('Minimum $1 required'); return; }
+  if (amount > userBalance) { showMsg('Insufficient balance'); return; }
+
+  playSound('click');
+
+  var entryPrice = currentPrice;
+  var entryTime = new Date().toISOString();
+
+  // PHASE 12: Calculate aligned expire
+  var timeframe = window.selectedTimeframe || '1m';
+  var duration = window.selectedTime || 60;
+
+  var alignment = calcAlignedExpire(now, duration, timeframe);
+
+  // Save trade with aligned expire
+  try {
+    var newBalance = userBalance - amount;
+    var balanceField = accountType === 'demo' ? 'demoBalance' : 'realBalance';
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      [balanceField]: newBalance,
+      balance: newBalance
+    });
+    userBalance = newBalance;
+    window.userBalance = newBalance;
+    safeSetTextById('balance', userBalance.toFixed(2));
+
+    animateBalanceChange(-amount);
+
+    // Save trade with alignment
+    var tradeRef = await addDoc(collection(db, 'trades'), {
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      type: type,
+      amount: amount,
+      entryPrice: entryPrice,
+      entryTime: entryTime,
+      expiresAt: alignment.alignedExpire,
+      candleEndTime: alignment.candleEndTime,
+      waitTime: alignment.waitTime,
+      totalWait: alignment.totalWait,
+      timeframe: timeframe,
+      duration: duration,
+      asset: selectedAsset,
+      accountType: accountType,
+      status: 'pending',
+      result: null,
+      profit: 0,
+      phase: 'waiting',
+      createdAt: entryTime
+    });
+
+    showMsg(type.toUpperCase() + ' $' + amount + ' placed (' +
+      Math.round(alignment.totalWait / 1000) + 's)',
+      type === 'call' ? '#00c853' : '#ff5252');
+
+    // Render markers
+    if (typeof renderEntryLine === 'function') {
+      renderEntryLine(type, entryPrice, alignment.alignedExpire);
+    }
+    if (typeof renderVerticalLines === 'function') {
+      renderVerticalLines(entryTime, alignment.alignedExpire);
+    }
+    if (typeof renderTickMark === 'function') {
+      renderTickMark(type, entryPrice, entryTime);
+    }
+
+    setTimeout(function() {
+      var tm = document.getElementById('trade-message');
+      if (tm) tm.textContent = '';
+    }, 2000);
+
+    console.log('[PA-Phase12] Trade placed:', {
+      type: type,
+      amount: amount,
+      entryPrice: entryPrice,
+      alignedExpire: new Date(alignment.alignedExpire).toLocaleTimeString(),
+      candleEnd: new Date(alignment.candleEndTime).toLocaleTimeString(),
+      waitTime: alignment.waitTime + 'ms',
+      totalWait: alignment.totalWait + 'ms'
+    });
+
+  } catch (error) {
+    showMsg(error.message);
+    console.error('[PA-Phase12] Trade error:', error);
+  }
+};
+
+// ============================================================
+// PA4. GET TRADE PHASE
+// ============================================================
+
+function getTradePhase(trade) {
+  var now = Date.now();
+
+  if (trade.status === 'completed') {
+    return 'completed';
+  }
+
+  if (!trade.candleEndTime) {
+    return 'active';  // Legacy trades
+  }
+
+  if (now < trade.candleEndTime) {
+    return 'waiting';  // Waiting for candle to start
+  }
+
+  if (now < trade.expiresAt) {
+    return 'active';   // Candle running
+  }
+
+  return 'expiring';   // Should expire now
+}
+
+// ============================================================
+// PA5. UPDATE TRADE PHASE IN FIRESTORE
+// ============================================================
+
+async function updateTradePhase(trade) {
+  var newPhase = getTradePhase(trade);
+
+  if (trade.phase !== newPhase) {
+    try {
+      await updateDoc(doc(db, 'trades', trade.id), {
+        phase: newPhase,
+        phaseUpdatedAt: new Date().toISOString()
+      });
+      trade.phase = newPhase;
+      console.log('[PA-Phase12] Trade ' + trade.id.slice(0, 8) +
+        ' phase: ' + trade.phase + ' → ' + newPhase);
+    } catch (err) {
+      console.error('[PA-Phase12] Phase update error:', err.message);
+    }
+  }
+
+  return newPhase;
+}
+
+// ============================================================
+// PA6. UPDATE ALL TRADES PHASES (loop)
+// ============================================================
+
+async function updateAllTradePhases() {
+  if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+
+  for (var i = 0; i < window.activeTradesLocal.length; i++) {
+    var trade = window.activeTradesLocal[i];
+    if (trade.status === 'pending') {
+      await updateTradePhase(trade);
+    }
+  }
+}
+
+// ============================================================
+// PA7. PHASE LOOP (every 1s)
+// ============================================================
+
+setInterval(function() {
+  if (currentUser) {
+    updateAllTradePhases();
+  }
+}, 1000);
+
+// ============================================================
+// PA8. EXPOSE
+// ============================================================
+
+window.placeTrade = window.placeTrade;
+window.calcAlignedExpire = calcAlignedExpire;
+window.getTradePhase = getTradePhase;
+window.updateTradePhase = updateTradePhase;
+window.tfToMs = tfToMs;
+
+console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
