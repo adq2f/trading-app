@@ -3805,3 +3805,35 @@ window.updateTradePhase = updateTradePhase;
 window.tfToMs = tfToMs;
 
 console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
+
+// ============================================================
+// PHASE 12 FIX: Expose selectedTimeframe + selectedTime
+// ============================================================
+
+// Sync variables with window scope (every 1s)
+setInterval(function() {
+  try {
+    window.selectedTimeframe = (typeof selectedTimeframe !== 'undefined') ? selectedTimeframe : '1m';
+    window.selectedTime = (typeof selectedTime !== 'undefined') ? selectedTime : 60;
+    window.selectedAsset = (typeof selectedAsset !== 'undefined') ? selectedAsset : 'BTCUSDT';
+    window.accountType = (typeof accountType !== 'undefined') ? accountType : 'demo';
+    window.lastTradeTime = (typeof lastTradeTime !== 'undefined') ? lastTradeTime : 0;
+  } catch(e) {}
+}, 1000);
+
+// Initial expose
+setTimeout(function() {
+  try {
+    window.selectedTimeframe = selectedTimeframe;
+    window.selectedTime = selectedTime;
+    window.selectedAsset = selectedAsset;
+    window.accountType = accountType;
+    console.log('[Phase12-Fix] Variables exposed:', {
+      timeframe: window.selectedTimeframe,
+      time: window.selectedTime,
+      asset: window.selectedAsset
+    });
+  } catch(e) {}
+}, 2000);
+
+console.log('===== PHASE 12 VARIABLES EXPOSED =====');
