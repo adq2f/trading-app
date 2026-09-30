@@ -1362,6 +1362,25 @@ function renderTickMark(type, entryPrice, entryTime) {
     if (!entryTime || !entryPrice) return;
 
     var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+
+    // ===== FIX: Round entrySec to nearest candle time =====
+    var data = window.candleSeries.data();
+    if (!data || data.length === 0) return;
+
+    // Find the CLOSEST candle time
+    var closestCandleTime = null;
+    var minDiff = Infinity;
+    for (var i = 0; i < data.length; i++) {
+      var diff = Math.abs(data[i].time - entrySec);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestCandleTime = data[i].time;
+      }
+    }
+
+    if (closestCandleTime === null) return;
+    entrySec = closestCandleTime;  // ← Now using actual candle time
+
     var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
 
@@ -2470,209 +2489,3 @@ setInterval(function() {
 }, 500);
 
 console.log("===== AUTO ENTRY MARKER LOADED =====");
-// ============================================
-// DEBUG PANEL — Show marker status on screen
-// ============================================
-(function debugPanel() {
-  // Create floating debug button
-  var btn = document.createElement("div");
-  btn.id = "debug-btn";
-  btn.style.cssText =
-    "position:fixed;" +
-    "bottom:120px;" +
-    "right:10px;" +
-    "width:40px;" +
-    "height:40px;" +
-    "background:#ff5252;" +
-    "border-radius:50%;" +
-    "display:flex;" +
-    "align-items:center;" +
-    "justify-content:center;" +
-    "color:#fff;" +
-    "font-size:20px;" +
-    "font-weight:900;" +
-    "z-index:9999;" +
-    "cursor:pointer;" +
-    "box-shadow:0 4px 12px rgba(0,0,0,0.4);";
-  btn.textContent = "!";
-  document.body.appendChild(btn);
-
-  // Create debug output panel
-  var panel = document.createElement("div");
-  panel.id = "debug-panel";
-  panel.style.cssText =
-    "position:fixed;" +
-    "top:50px;" +
-    "left:10px;" +
-    "right:10px;" +
-    "max-height:60vh;" +
-    "background:rgba(0,0,0,0.95);" +
-    "color:#0f0;" +
-    "font-family:monospace;" +
-    "font-size:11px;" +
-    "padding:10px;" +
-    "border-radius:8px;" +
-    "z-index:9998;" +
-    "display:none;" +
-    "overflow-y:auto;" +
-    "white-space:pre-wrap;" +
-    "border:1px solid #0f0;";
-  document.body.appendChild(panel);
-
-  // Toggle panel on button click
-  btn.addEventListener("click", function() {
-    if (panel.style.display === "none") {
-      panel.style.display = "block";
-      runDebug();
-    } else {
-      panel.style.display = "none";
-    }
-  });
-
-  // Debug function
-  function runDebug() {
-    var out = [];
-    function L(k, v) { out.push(k + ": " + v); }
-
-    out.push("=== DEBUG REPORT ===");
-    out.push("Time: " + new Date().toLocaleTimeString());
-    out.push("");
-
-    out.push("--- 1. GLOBAL STATE ---");
-    L("chartRef", typeof window.chartRef);
-    L("candleSeries", typeof window.candleSeries);
-    L("renderTickMark", typeof window.renderTickMark);
-    L("clearTickMark", typeof window.clearTickMark);
-    L("currentUser", window.currentUser ? "YES" : "NO");
-    L("activeTradesLocal", window.activeTradesLocal ? window.activeTradesLocal.length : "undef");
-    out.push("");
-
-    out.push("--- 2. CHART OBJECT ---");
-    if (window.chartRef) {
-      try {
-        L("timeScale()", typeof window.chartRef.timeScale);
-        L("chartElement()", typeof window.chartRef.chartElement);
-      } catch(e) { L("chartRef methods", "ERROR: " + e.message); }
-    }
-    if (window.candleSeries) {
-      try {
-        L("setMarkers", typeof window.candleSeries.setMarkers);
-        L("priceToCoordinate", typeof window.candleSeries.priceToCoordinate);
-        L("data()", typeof window.candleSeries.data);
-        var d = window.candleSeries.data();
-        L("candle count", d ? d.length : 0);
-      } catch(e) { L("series methods", "ERROR: " + e.message); }
-    }
-    out.push("");
-
-    out.push("--- 3. TICK CONTAINER ---");
-    var tc = document.getElementById("qx-tick-container");
-    if (tc) {
-      L("EXISTS", "YES");
-      L("offsetWidth", tc.offsetWidth);
-      L("offsetHeight", tc.offsetHeight);
-      L("children", tc.children.length);
-      var cs = getComputedStyle(tc);
-      L("position", cs.position);
-      L("z-index", cs.zIndex);
-      L("display", cs.display);
-      L("visibility", cs.visibility);
-      L("opacity", cs.opacity);
-      L("pointer-events", cs.pointerEvents);
-      // Check entry markers inside
-      L(".qx-entry-mark", tc.querySelectorAll(".qx-entry-mark").length);
-      L(".qx-entry-tick", tc.querySelectorAll(".qx-entry-tick").length);
-    } else {
-      L("EXISTS", "NO!!! CRITICAL");
-    }
-    out.push("");
-
-    out.push("--- 4. TRADE ---");
-    if (window.activeTradesLocal && window.activeTradesLocal.length > 0) {
-      var t = window.activeTradesLocal[0];
-      L("type", t.type);
-      L("entryPrice", t.entryPrice);
-      L("entryTime", t.entryTime);
-      L("status", t.status);
-      out.push("");
-
-      out.push("--- 5. COORDINATES ---");
-      if (window.chartRef && window.candleSeries) {
-        try {
-          var entrySec = Math.floor(new Date(t.entryTime).getTime() / 1000);
-          L("entrySec", entrySec);
-          var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
-          L("xPos (timeToCoordinate)", xPos);
-          var yPos = window.candleSeries.priceToCoordinate(t.entryPrice);
-          L("yPos (priceToCoordinate)", yPos);
-
-          if (xPos === null) {
-            out.push("");
-            out.push("⚠️ X is NULL — candle may be off visible range!");
-            out.push("Candle times (last 3):");
-            var data = window.candleSeries.data();
-            for (var i = Math.max(0, data.length - 3); i < data.length; i++) {
-              out.push("  " + data[i].time + " = " + new Date(data[i].time * 1000).toLocaleTimeString());
-            }
-            out.push("Your entry time: " + new Date(entrySec * 1000).toLocaleTimeString());
-          }
-          if (yPos === null) {
-            out.push("⚠️ Y is NULL — price may be off visible range!");
-          }
-        } catch(e) {
-          L("coordinate ERROR", e.message);
-        }
-      }
-    } else {
-      L("no active trades", "place a trade first");
-    }
-    out.push("");
-
-    out.push("--- 6. LAST CONSOLE ERRORS ---");
-    if (window.__jsErrors && window.__jsErrors.length > 0) {
-      window.__jsErrors.slice(-10).forEach(function(err, i) {
-        out.push("[" + i + "] " + err);
-      });
-    } else {
-      L("no captured errors", "good");
-    }
-    out.push("");
-
-    out.push("--- 7. BROWSER ---");
-    L("userAgent", navigator.userAgent.substring(0, 60));
-    L("screen", window.innerWidth + "x" + window.innerHeight);
-
-    panel.textContent = out.join("\n");
-  }
-
-  // Auto-update every 3s if panel open
-  setInterval(function() {
-    if (panel.style.display === "block") {
-      runDebug();
-    }
-  }, 3000);
-
-  console.log("[DEBUG-PANEL] Ready. Click red '!' button.");
-})();
-
-// ============================================
-// GLOBAL ERROR CAPTURE
-// ============================================
-(function errorCapture() {
-  if (window.__jsErrors) return;
-  window.__jsErrors = [];
-
-  window.addEventListener("error", function(e) {
-    var msg = "JS ERROR: " + e.message + " at " + e.filename + ":" + e.lineno;
-    window.__jsErrors.push(msg);
-    console.error(msg);
-  });
-
-  window.addEventListener("unhandledrejection", function(e) {
-    var msg = "PROMISE REJECT: " + (e.reason ? e.reason.message || e.reason : "unknown");
-    window.__jsErrors.push(msg);
-    console.error(msg);
-  });
-
-  console.log("[ERROR-CAPTURE] Active");
-})();
