@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=25">
+  <link rel="stylesheet" href="style.css?v=26">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 
   <!-- ============================================
@@ -282,8 +282,15 @@
             <option value="BTCUSDT">BTC/USDT</option>
             <option value="ETHUSDT">ETH/USDT</option>
             <option value="BNBUSDT">BNB/USDT</option>
+            <option value="SOLUSDT">SOL/USDT</option>
+            <option value="XRPUSDT">XRP/USDT</option>
+            <option value="EURUSD">EUR/USD</option>
+            <option value="GBPUSD">GBP/USD</option>
+            <option value="XAUUSD">XAU/USD</option>
+            <option value="XAGUSD">XAG/USD</option>
+            <option value="USOIL">USOIL</option>
           </select>
-          <span class="qx-payout-badge" id="payout-badge">68%</span>
+          <span class="qx-payout-badge" id="payout-badge">85%</span>
         </div>
 
         <div class="qx-pending-toggle">
@@ -313,7 +320,7 @@
       <div class="qx-payout-row">
         <span class="qx-payout-label">Payout</span>
         <div class="qx-payout-value">
-          <span id="payout-display">1.68 $</span>
+          <span id="payout-display">1.85 $</span>
           <button class="qx-switch-btn" id="payout-switch-btn">SWITCH</button>
         </div>
       </div>
@@ -584,12 +591,12 @@
     window.addEventListener('load', function() {
       setTimeout(function() {
         if (typeof window.placeTrade !== "function") {
-          console.error("⚠️ app.js FAILED TO LOAD — check syntax errors");
+          console.error("App.js FAILED TO LOAD - check syntax errors");
           if (typeof eruda !== "undefined") {
-            console.warn("Eruda Console available — check Errors tab");
+            console.warn("Eruda Console available - check Errors tab");
           }
         } else {
-          console.log("✅ app.js loaded successfully");
+          console.log("app.js loaded successfully");
         }
       }, 3000);
     });
@@ -597,7 +604,7 @@
   </script>
 
   <!-- ===== APP SCRIPT ===== -->
-  <script type="module" src="app.js?v=25"></script>
+  <script type="module" src="app.js?v=26"></script>
 
 </body>
 </html>
