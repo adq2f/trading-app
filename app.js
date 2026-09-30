@@ -1477,11 +1477,6 @@ function clearTickMark() {
     console.error("[Marker] clear error:", String(e));
   }
 }
-function clearTickMark() {
-  var container = document.getElementById("qx-tick-container");
-  if (container) container.innerHTML = "";
-}
-
 // ============================================
 // PLACE TRADE
 // ============================================
