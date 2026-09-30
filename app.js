@@ -3208,3 +3208,493 @@ console.log('===== PRICE AUTO-SYNC ACTIVE =====');
 })();
 
 console.log('===== PERMANENT CLICK FIX LOADED =====');
+
+// ============================================================
+// MASTER FIX — Complete Auto-Recovery System v2
+// Handles: clicks, timers, Firestore, trades, price, master
+// ============================================================
+
+(function MASTER_FIX() {
+  console.log('%c============================================================',
+    'color:#00c853;font-weight:bold;font-size:15px;');
+  console.log('%c MASTER FIX v2 — Auto-Recovery System ',
+    'color:#00c853;font-weight:bold;font-size:15px;background:#0b1220;padding:6px 10px;');
+  console.log('%c============================================================',
+    'color:#00c853;font-weight:bold;font-size:15px;');
+
+  // ============================================================
+  // 1. CLICK AUTO-BIND
+  // ============================================================
+  function bindAllClicks() {
+    function bind(sel, fn) {
+      var el = document.querySelector(sel);
+      if (!el) return;
+      if (el.dataset.masterBound === '1') return;
+      el.dataset.masterBound = '1';
+      el.onclick = null;
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try { fn(e); } catch(err) { console.error('[MasterClick]', sel, err); }
+      }, true);
+    }
+
+    // Trade
+    bind('#call-btn', function() { if (window.placeTrade) window.placeTrade('call'); });
+    bind('#put-btn', function() { if (window.placeTrade) window.placeTrade('put'); });
+
+    // Top bar
+    bind('#balance-chip', function() {
+      var p = document.querySelector('#balance-popup');
+      var o = document.querySelector('#balance-popup-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+      if (window.refreshBalanceDisplays) window.refreshBalanceDisplays();
+    });
+
+    bind('#deposit-btn', function() {
+      var p = document.querySelector('#deposit-popup');
+      var o = document.querySelector('#deposit-popup-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+    });
+
+    bind('#notif-btn', function() {
+      var b = document.querySelector('#notif-badge');
+      if (b) { b.textContent = '0'; b.style.display = 'none'; }
+    });
+
+    // Chart
+    bind('#drawer-toggle', function() {
+      var d = document.querySelector('#qx-drawer');
+      var o = document.querySelector('#drawer-overlay');
+      if (d) d.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+      if (window.updateCandleCountdown) window.updateCandleCountdown();
+    });
+
+    bind('#drawing-toggle', function() {
+      var p = document.querySelector('#drawing-panel');
+      var o = document.querySelector('#drawing-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+    });
+
+    bind('#tf-badge', function() {
+      var m = document.querySelector('#tf-modal');
+      if (m) m.classList.remove('hidden');
+    });
+
+    // Nav
+    document.querySelectorAll('.qx-nav-btn').forEach(function(btn) {
+      if (btn.dataset.masterBound === '1') return;
+      btn.dataset.masterBound = '1';
+      var nav = btn.dataset.nav;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (nav === 'help') {
+          var cp = document.querySelector('#chat-popup');
+          var co = document.querySelector('#chat-popup-overlay');
+          if (cp) cp.classList.remove('hidden');
+          if (co) co.classList.remove('hidden');
+          if (window.startUserChatListener) window.startUserChatListener();
+        } else if (nav === 'more') {
+          var mm = document.querySelector('#more-menu');
+          if (mm) mm.classList.remove('hidden');
+        } else if (nav === 'profile') {
+          var ap = document.querySelector('#account-popup');
+          if (ap) ap.classList.remove('hidden');
+        } else if (nav === 'tournament') {
+          var tp = document.querySelector('#tournament-popup');
+          if (tp) tp.classList.remove('hidden');
+        } else if (nav === 'chart') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, true);
+    });
+
+    // Investment
+    document.querySelectorAll('.qx-inc-btn').forEach(function(btn) {
+      if (btn.dataset.masterBound === '1') return;
+      btn.dataset.masterBound = '1';
+      var action = btn.dataset.action;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var input = document.querySelector('#trade-amount');
+        if (!input) return;
+        var v = parseFloat(input.value) || 0;
+        if (action === 'plus') v += 1;
+        else v = Math.max(1, v - 1);
+        input.value = v;
+      }, true);
+    });
+
+    // Tabs
+    document.querySelectorAll('.qx-trades-tab').forEach(function(tab) {
+      if (tab.dataset.masterBound === '1') return;
+      tab.dataset.masterBound = '1';
+      var which = tab.dataset.tradesTab;
+      tab.onclick = null;
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.qx-trades-tab').forEach(function(t) {
+          t.classList.remove('active');
+        });
+        tab.classList.add('active');
+        var ap = document.querySelector('#qx-trades-active-pane');
+        var hp = document.querySelector('#qx-trades-history-pane');
+        if (ap) ap.classList.toggle('active', which === 'active');
+        if (hp) hp.classList.toggle('active', which === 'history');
+      }, true);
+    });
+
+    // Close buttons
+    document.querySelectorAll('.popup-close, .qx-drawer-close, .qx-drawing-close, .qx-tf-close, .qx-more-close').forEach(function(btn) {
+      if (btn.dataset.masterBound === '1') return;
+      btn.dataset.masterBound = '1';
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var parent = btn.closest('.popup, .qx-drawer, .qx-drawing-panel, .qx-tf-modal, .qx-more-menu');
+        if (parent) parent.classList.add('hidden');
+      }, true);
+    });
+
+    // More menu
+    document.querySelectorAll('.qx-more-item').forEach(function(item) {
+      if (item.dataset.masterBound === '1') return;
+      item.dataset.masterBound = '1';
+      var action = item.dataset.menu;
+      item.onclick = null;
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var mm = document.querySelector('#more-menu');
+        if (mm) mm.classList.add('hidden');
+
+        if (action === 'deposit') {
+          var p = document.querySelector('#deposit-popup');
+          var o = document.querySelector('#deposit-popup-overlay');
+          if (p) p.classList.remove('hidden');
+          if (o) o.classList.remove('hidden');
+        } else if (action === 'withdraw') {
+          var wp = document.querySelector('#withdraw-popup');
+          var wo = document.querySelector('#withdraw-popup-overlay');
+          if (wp) wp.classList.remove('hidden');
+          if (wo) wo.classList.remove('hidden');
+        } else if (action === 'chat') {
+          var cp = document.querySelector('#chat-popup');
+          var co = document.querySelector('#chat-popup-overlay');
+          if (cp) cp.classList.remove('hidden');
+          if (co) co.classList.remove('hidden');
+        } else if (action === 'trades') {
+          var ts = document.querySelector('.qx-trades-section');
+          if (ts) ts.scrollIntoView({ behavior: 'smooth' });
+        } else if (action === 'logout') {
+          if (window.auth) window.auth.signOut();
+        }
+      }, true);
+    });
+
+    // TF items
+    document.querySelectorAll('.qx-tf-item').forEach(function(btn) {
+      if (btn.dataset.masterBound === '1') return;
+      btn.dataset.masterBound = '1';
+      var tf = btn.dataset.tf;
+      btn.onclick = null;
+      btn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.qx-tf-item').forEach(function(b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        window.selectedTimeframe = tf;
+        var label = document.querySelector('#qx-tf-active');
+        if (label) label.textContent = tf;
+        var modal = document.querySelector('#tf-modal');
+        if (modal) modal.classList.add('hidden');
+        if (window.switchToAdminMarket) {
+          await window.switchToAdminMarket(window.selectedAsset || 'BTCUSDT');
+        }
+      }, true);
+    });
+
+    // Asset select
+    var sel = document.querySelector('#asset-select');
+    if (sel && sel.dataset.masterBound !== '1') {
+      sel.dataset.masterBound = '1';
+      sel.onchange = null;
+      sel.addEventListener('change', function() {
+        window.selectedAsset = sel.value;
+        if (window.switchToAdminMarket) window.switchToAdminMarket(sel.value);
+      });
+    }
+
+    // Account options
+    document.querySelectorAll('.qx-acc-option').forEach(function(opt) {
+      if (opt.dataset.masterBound === '1') return;
+      opt.dataset.masterBound = '1';
+      var accType = opt.dataset.accType;
+      opt.onclick = null;
+      opt.addEventListener('click', function(e) {
+        if (e.target.closest('.qx-acc-edit')) return;
+        e.preventDefault();
+        if (window.switchAccount) window.switchAccount(accType);
+      }, true);
+    });
+
+    // Acc btn popup
+    document.querySelectorAll('.acc-btn-popup').forEach(function(btn) {
+      if (btn.dataset.masterBound === '1') return;
+      btn.dataset.masterBound = '1';
+      var acc = btn.dataset.acc;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.switchAccount) window.switchAccount(acc);
+      }, true);
+    });
+  }
+
+  // ============================================================
+  // 2. FIREBASE RECONNECT
+  // ============================================================
+  async function checkAndReconnect() {
+    if (!window.currentUser) return;
+
+    var state = window.fsCandleState;
+
+    // Listener dead?
+    if (state && (!state.listening || !state.unsubLive)) {
+      if (state.marketId && typeof window.connectAdminLiveCandles === 'function') {
+        try {
+          window.connectAdminLiveCandles(state.marketId);
+          console.log('[MasterFS] Reconnected market:', state.marketId);
+        } catch(e) {}
+      } else if (typeof window.switchToAdminMarket === 'function') {
+        window.switchToAdminMarket(window.selectedAsset || 'BTCUSDT');
+        console.log('[MasterFS] Reconnecting via market');
+      }
+    }
+
+    // Trade listener dead?
+    if (window.currentUser && !window.activeTradesUnsub) {
+      if (typeof window.loadActiveTrades === 'function') {
+        window.loadActiveTrades();
+        console.log('[MasterFS] Trade listener restart');
+      }
+    }
+
+    // History listener dead?
+    if (window.currentUser && !window.historyUnsub) {
+      if (typeof window.loadHistory === 'function') {
+        window.loadHistory();
+        console.log('[MasterFS] History listener restart');
+      }
+    }
+  }
+
+  // ============================================================
+  // 3. TRADE EXPIRY WATCHDOG
+  // ============================================================
+  async function expireStuckTrades() {
+    if (!window.currentUser) return;
+    if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+
+    var now = Date.now();
+    var expired = [];
+
+    for (var i = 0; i < window.activeTradesLocal.length; i++) {
+      var t = window.activeTradesLocal[i];
+      if (t.status === 'pending' && t.expiresAt <= now) {
+        expired.push(t);
+      }
+    }
+
+    if (expired.length === 0) return;
+    console.log('[MasterExpire] Found', expired.length, 'expired');
+
+    for (var j = 0; j < expired.length; j++) {
+      var trade = expired[j];
+      try {
+        var result = 'loss';
+        var exitPrice = window.currentPrice;
+        if (trade.type === 'call' && exitPrice > trade.entryPrice) result = 'win';
+        else if (trade.type === 'put' && exitPrice < trade.entryPrice) result = 'win';
+
+        var profit = result === 'win' ? trade.amount * 1.85 : 0;
+
+        await window.updateDoc(
+          window.doc(window.db, 'trades', trade.id),
+          {
+            status: 'completed',
+            result: result,
+            exitPrice: exitPrice,
+            profit: profit,
+            completedAt: new Date().toISOString(),
+            phase: 'completed'
+          }
+        );
+
+        if (result === 'win') {
+          var userRef = window.doc(window.db, 'users', window.currentUser.uid);
+          var uDoc = await window.getDoc(userRef);
+          if (uDoc.exists()) {
+            var uData = uDoc.data();
+            var field = trade.accountType === 'real' ? 'realBalance' : 'demoBalance';
+            var curBal = uData[field] || 0;
+            var newBal = curBal + profit;
+            await window.updateDoc(userRef, {
+              [field]: newBal,
+              balance: newBal
+            });
+            window.userBalance = newBal;
+            var balEl = document.querySelector('#balance');
+            if (balEl) balEl.textContent = newBal.toFixed(2);
+          }
+        }
+
+        console.log('[MasterExpire]', trade.id.slice(0,8), '→', result);
+      } catch(e) {
+        console.error('[MasterExpire] Error:', e.message);
+      }
+    }
+  }
+
+  // ============================================================
+  // 4. TIMER STUCK FIX
+  // ============================================================
+  function fixStuckTimer() {
+    var timers = [
+      document.querySelector('#trade-timer-display'),
+      document.querySelector('#countdown-time')
+    ];
+
+    var anyStuck = false;
+
+    timers.forEach(function(el) {
+      if (el && el.textContent === '00:00') anyStuck = true;
+    });
+
+    if (anyStuck) {
+      // If timer is 00:00 but no active trades → reset
+      if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) {
+        var dur = window.selectedTime || 60;
+        var mm = Math.floor(dur / 60);
+        var ss = dur % 60;
+        var str = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+
+        timers.forEach(function(el) {
+          if (el) el.textContent = str;
+        });
+
+        var bigTimer = document.querySelector('#big-timer');
+        if (bigTimer) bigTimer.classList.add('hidden');
+
+        var topWrap = document.querySelector('#top-countdown-timer');
+        if (topWrap) topWrap.classList.add('hidden');
+
+        console.log('[MasterTimer] Reset to', str);
+      }
+    }
+  }
+
+  // ============================================================
+  // 5. PRICE SYNC
+  // ============================================================
+  async function syncPrice() {
+    if (!window.currentUser) return;
+    if (!window.fsCandleState?.marketId) return;
+
+    try {
+      var mDoc = await window.getDoc(
+        window.doc(window.db, 'markets', window.fsCandleState.marketId)
+      );
+      if (mDoc.exists()) {
+        var m = mDoc.data();
+        var price = m.currentPrice || m.basePrice;
+        if (price && Math.abs(window.currentPrice - price) > 1) {
+          window.currentPrice = price;
+          var el = document.querySelector('#current-price');
+          if (el) el.textContent = price.toFixed(2);
+        }
+      }
+    } catch(e) {}
+  }
+
+  // ============================================================
+  // 6. MASTER CONFLICT CHECK
+  // ============================================================
+  async function checkMasterConflict() {
+    if (!window.userMasterState?.isMaster) return;
+
+    try {
+      var doc = await window.getDoc(
+        window.doc(window.db, 'settings', 'candleMaster')
+      );
+      if (doc.exists()) {
+        var d = doc.data();
+        var age = Date.now() - (d.heartbeat || 0);
+        if (d.masterType === 'admin' && age < 30000) {
+          console.log('[MasterConflict] Admin active — stepping down');
+          if (typeof window.stepDownUserMaster === 'function') {
+            window.stepDownUserMaster();
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // ============================================================
+  // START ALL LOOPS
+  // ============================================================
+
+  // Click bind — every 3s
+  bindAllClicks();
+  setTimeout(bindAllClicks, 500);
+  setTimeout(bindAllClicks, 2000);
+  setTimeout(bindAllClicks, 5000);
+  setInterval(bindAllClicks, 3000);
+
+  // Firestore reconnect — every 15s
+  setInterval(checkAndReconnect, 15000);
+
+  // Trade expiry — every 5s
+  setInterval(expireStuckTrades, 5000);
+
+  // Timer fix — every 2s
+  setInterval(fixStuckTimer, 2000);
+
+  // Price sync — every 5s
+  setInterval(syncPrice, 5000);
+
+  // Master conflict — every 10s
+  setInterval(checkMasterConflict, 10000);
+
+  // Network online
+  window.addEventListener('online', function() {
+    console.log('[MasterFS] Network online');
+    setTimeout(checkAndReconnect, 2000);
+  });
+
+  console.log('');
+  console.log('%c ✅ ALL SYSTEMS ACTIVE:','color:#00c853;font-weight:bold;font-size:14px;');
+  console.log('   • Click bind — every 3s');
+  console.log('   • Firestore reconnect — every 15s');
+  console.log('   • Trade expiry — every 5s');
+  console.log('   • Timer fix — every 2s');
+  console.log('   • Price sync — every 5s');
+  console.log('   • Master conflict — every 10s');
+  console.log('');
+  console.log('%c============================================================',
+    'color:#00c853;font-weight:bold;font-size:15px;');
+})();
+
+console.log('===== MASTER FIX v2 LOADED =====');
