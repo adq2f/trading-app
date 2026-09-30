@@ -4102,3 +4102,279 @@ console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
 })();
 
 console.log('===== ALL PERMANENT FIXES LOADED =====');
+
+// ============================================================
+// PHASE 15 — RESULT MARKER
+// Win/Loss text on chart at trade close
+// ============================================================
+
+console.log('[Phase15] Loading Result Marker...');
+
+// ============================================================
+// RM1. STATE
+// ============================================================
+
+window.resultMarkers = [];
+window.resultMarkerTimeout = null;
+
+// ============================================================
+// RM2. SHOW RESULT MARKER
+// ============================================================
+
+window.showResultMarker = function(trade, result, profit) {
+  try {
+    console.log('[Phase15] showResultMarker:', trade.id?.slice(0,8), result, profit);
+
+    if (!window.chartRef || !window.candleSeries) {
+      console.warn('[Phase15] Chart not ready');
+      return;
+    }
+
+    if (!trade.entryTime || !trade.entryPrice) {
+      console.warn('[Phase15] Trade missing entry data');
+      return;
+    }
+
+    // Get candle data
+    var candleData = window.candleSeries.data();
+    if (!candleData || candleData.length === 0) return;
+
+    // Find entry candle
+    var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
+    var closestCandle = null;
+    var minDiff = Infinity;
+
+    for (var i = 0; i < candleData.length; i++) {
+      var diff = Math.abs(candleData[i].time - entrySec);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestCandle = candleData[i];
+      }
+    }
+
+    if (!closestCandle) return;
+
+    // Get coordinates
+    var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandle.time);
+    if (xPos === null || xPos === undefined) {
+      console.warn('[Phase15] Cannot get X coordinate');
+      return;
+    }
+
+    // Determine Y position based on trade type
+    var yPos;
+    if (trade.type === 'call') {
+      // Above candle
+      yPos = window.candleSeries.priceToCoordinate(closestCandle.high);
+      if (yPos !== null) yPos -= 20;
+    } else {
+      // Below candle
+      yPos = window.candleSeries.priceToCoordinate(closestCandle.low);
+      if (yPos !== null) yPos += 20;
+    }
+
+    if (yPos === null || yPos === undefined) return;
+
+    // Create marker element
+    var isWin = (result === 'win');
+    var color = isWin ? '#00c853' : '#ff5252';
+    var text = isWin 
+      ? '+$' + Number(profit || 0).toFixed(2)
+      : '-$' + Number(trade.amount || 0).toFixed(2);
+
+    var container = document.getElementById('qx-tick-container');
+    if (!container) {
+      // Create if missing
+      var wrapper = document.getElementById('chart-wrapper');
+      if (wrapper) {
+        container = document.createElement('div');
+        container.id = 'qx-tick-container';
+        container.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:100;';
+        wrapper.appendChild(container);
+      }
+    }
+    if (!container) return;
+
+    var marker = document.createElement('div');
+    marker.className = 'qx-result-marker ' + result;
+    marker.style.cssText =
+      'position:absolute;' +
+      'left:' + xPos + 'px;' +
+      'top:' + yPos + 'px;' +
+      'transform:translateX(-50%);' +
+      'background:' + color + ';' +
+      'color:#ffffff;' +
+      'font-size:11px;' +
+      'font-weight:800;' +
+      'padding:3px 8px;' +
+      'border-radius:5px;' +
+      'box-shadow:0 0 8px ' + color + ';' +
+      'font-family:Inter, sans-serif;' +
+      'white-space:nowrap;' +
+      'z-index:50;' +
+      'pointer-events:none;' +
+      'opacity:0;' +
+      'transition:opacity 0.3s ease-in;';
+    marker.textContent = text;
+
+    container.appendChild(marker);
+
+    // Fade in
+    setTimeout(function() {
+      marker.style.opacity = '1';
+    }, 50);
+
+    // Track marker
+    window.resultMarkers.push({
+      element: marker,
+      timestamp: Date.now()
+    });
+
+    // Auto-remove after 4s with fade out
+    setTimeout(function() {
+      marker.style.transition = 'opacity 1s ease-out';
+      marker.style.opacity = '0';
+
+      setTimeout(function() {
+        try { marker.remove(); } catch(e) {}
+        window.resultMarkers = window.resultMarkers.filter(function(m) {
+          return m.element !== marker;
+        });
+      }, 1000);
+    }, 4000);
+
+    console.log('[Phase15] ✅ Marker added:', text, 'at (' + xPos + ',' + yPos + ')');
+
+  } catch(e) {
+    console.error('[Phase15] Error:', e.message);
+  }
+};
+
+// ============================================================
+// RM3. CLEAR ALL RESULT MARKERS
+// ============================================================
+
+window.clearResultMarkers = function() {
+  try {
+    window.resultMarkers.forEach(function(m) {
+      try { m.element.remove(); } catch(e) {}
+    });
+    window.resultMarkers = [];
+    console.log('[Phase15] All markers cleared');
+  } catch(e) {}
+};
+
+// ============================================================
+// RM4. HOOK INTO TRADE EXPIRY
+// ============================================================
+
+// Wrap checkExpiredTrades to show marker after expire
+(function hookExpiryForMarkers() {
+  if (typeof window.checkExpiredTrades !== 'function') {
+    console.warn('[Phase15] checkExpiredTrades not found — will retry');
+    setTimeout(hookExpiryForMarkers, 2000);
+    return;
+  }
+
+  if (window.__resultMarkerHooked) return;
+  window.__resultMarkerHooked = true;
+
+  var originalCheck = window.checkExpiredTrades;
+
+  window.checkExpiredTrades = async function() {
+    // Snapshot current trades BEFORE expire
+    var beforeTrades = (window.activeTradesLocal || []).slice();
+
+    // Call original
+    await originalCheck.call(this);
+
+    // Check which trades were expired
+    setTimeout(async function() {
+      try {
+        // Get recent completed trades
+        var now = Date.now();
+        var fiveSecAgo = now - 5000;
+
+        var snap = await window.getDocs(
+          window.query(
+            window.collection(window.db, 'trades'),
+            window.where('userId', '==', window.currentUser?.uid),
+            window.where('status', '==', 'completed')
+          )
+        );
+
+        snap.forEach(function(d) {
+          var t = d.data();
+          var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
+
+          // Recently completed (in last 5s)
+          if (completedAt > fiveSecAgo && completedAt <= now) {
+            // Check if marker already shown
+            if (!window.__shownMarkers) window.__shownMarkers = {};
+            if (window.__shownMarkers[d.id]) return;
+
+            window.__shownMarkers[d.id] = true;
+
+            // Show marker
+            window.showResultMarker(t, t.result, t.profit);
+          }
+        });
+      } catch(e) {
+        console.error('[Phase15] Hook error:', e.message);
+      }
+    }, 500);
+  };
+
+  console.log('[Phase15] checkExpiredTrades hooked');
+})();
+
+// ============================================================
+// RM5. HOOK INTO PERMANENT EXPIRY WATCHDOG
+// ============================================================
+
+(function hookWatchdogForMarkers() {
+  if (window.__watchdogMarkerHooked) return;
+  window.__watchdogMarkerHooked = true;
+
+  // Monitor for trades that complete (from watchdog)
+  setInterval(async function() {
+    if (!window.currentUser) return;
+
+    try {
+      var now = Date.now();
+      var fiveSecAgo = now - 5000;
+
+      var snap = await window.getDocs(
+        window.query(
+          window.collection(window.db, 'trades'),
+          window.where('userId', '==', window.currentUser.uid),
+          window.where('status', '==', 'completed')
+        )
+      );
+
+      snap.forEach(function(d) {
+        var t = d.data();
+        var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
+
+        if (completedAt > fiveSecAgo && completedAt <= now) {
+          if (!window.__shownMarkers) window.__shownMarkers = {};
+          if (window.__shownMarkers[d.id]) return;
+
+          window.__shownMarkers[d.id] = true;
+          window.showResultMarker(t, t.result, t.profit);
+        }
+      });
+    } catch(e) {}
+  }, 2000);
+
+  console.log('[Phase15] Watchdog hook active');
+})();
+
+// ============================================================
+// RM6. EXPOSE
+// ============================================================
+
+window.showResultMarker = window.showResultMarker;
+window.clearResultMarkers = window.clearResultMarkers;
+
+console.log('===== PHASE 15 — RESULT MARKER LOADED =====');
