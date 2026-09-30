@@ -2737,3 +2737,325 @@ window.updateUserChart = updateUserChart;
 window.updateUserPriceDisplay = updateUserPriceDisplay;
 
 console.log('===== STEP 2A: FIRESTORE CONSUMER LOADED =====');
+
+// ============================================================
+// STEP 2B: FIRESTORE CHART INTEGRATION
+// Full pipeline: Admin → Firestore → User Chart
+// ============================================================
+
+// ============================================================
+// FS-B1. MARKET RESOLVER (Symbol → Market ID)
+// ============================================================
+
+window.marketCache = window.marketCache || {};
+
+window.resolveMarketId = async function(symbol) {
+  if (!symbol) return null;
+
+  // Cache hit
+  if (window.marketCache[symbol]) {
+    return window.marketCache[symbol];
+  }
+
+  try {
+    var snap = await window.getDocs(window.collection(window.db, 'markets'));
+    var foundId = null;
+    snap.forEach(function(d) {
+      var data = d.data();
+      if (data.symbol === symbol && data.enabled !== false) {
+        foundId = d.id;
+      }
+    });
+
+    if (foundId) {
+      window.marketCache[symbol] = foundId;
+      console.log('[FS-B] Resolved:', symbol, '->', foundId);
+    } else {
+      console.warn('[FS-B] No market found for symbol:', symbol);
+    }
+
+    return foundId;
+  } catch (err) {
+    console.error('[FS-B] Resolve error:', err.message);
+    return null;
+  }
+};
+
+// ============================================================
+// FS-B2. LOAD HISTORICAL CANDLES (past admin candles)
+// ============================================================
+
+window.loadAdminHistoricalCandles = async function(marketId) {
+  if (!marketId) return [];
+
+  try {
+    var snap = await window.getDocs(
+      window.collection(window.db, 'markets', marketId, 'liveCandles')
+    );
+
+    if (snap.empty) {
+      console.log('[FS-B] No historical candles yet');
+      return [];
+    }
+
+    var candles = [];
+    snap.forEach(function(d) {
+      var c = d.data();
+      candles.push({
+        time: Math.floor((c.startTime || 0) / 1000),
+        open: Number(c.open || 0),
+        high: Number(c.high || 0),
+        low: Number(c.low || 0),
+        close: Number(c.close || 0)
+      });
+    });
+
+    candles.sort(function(a, b) { return a.time - b.time; });
+
+    console.log('[FS-B] Historical candles loaded:', candles.length);
+    return candles;
+  } catch (err) {
+    console.error('[FS-B] Historical load error:', err.message);
+    return [];
+  }
+};
+
+// ============================================================
+// FS-B3. CONNECT LIVE CANDLE LISTENER
+// ============================================================
+
+window.connectAdminLiveCandles = function(marketId) {
+  if (!marketId) return;
+
+  var state = window.fsCandleState;
+
+  // Cleanup previous
+  if (state.unsubLive) { try { state.unsubLive(); } catch(e) {} }
+
+  state.marketId = marketId;
+  state.listening = true;
+
+  console.log('[FS-B] Connecting live candles:', marketId);
+
+  try {
+    var liveRef = window.collection(window.db, 'markets', marketId, 'liveCandles');
+
+    state.unsubLive = window.onSnapshot(liveRef, function(snap) {
+      if (snap.empty) return;
+
+      // Collect all candles
+      var all = [];
+      snap.forEach(function(d) {
+        var c = d.data();
+        if (c.startTime && c.open > 0 && c.close > 0) {
+          all.push(c);
+        }
+      });
+
+      if (all.length === 0) return;
+
+      // Sort by startTime
+      all.sort(function(a, b) { return (a.startTime || 0) - (b.startTime || 0); });
+
+      // Take last 200
+      var recent = all.slice(-200);
+
+      // Update chart
+      applyCandlesToChart(recent);
+
+    }, function(err) {
+      console.error('[FS-B] Live listen error:', err.message);
+    });
+
+  } catch (err) {
+    console.error('[FS-B] Connect error:', err.message);
+  }
+};
+
+// ============================================================
+// FS-B4. APPLY CANDLES TO CHART
+// ============================================================
+
+function applyCandlesToChart(candles) {
+  if (!window.candleSeries) {
+    console.warn('[FS-B] candleSeries not ready');
+    return;
+  }
+
+  if (!candles || candles.length === 0) return;
+
+  // Convert to chart format
+  var chartData = candles.map(function(c) {
+    return {
+      time: Math.floor((c.startTime || 0) / 1000),
+      open: Number(c.open || 0),
+      high: Number(c.high || 0),
+      low: Number(c.low || 0),
+      close: Number(c.close || 0)
+    };
+  }).filter(function(c) {
+    return c.time > 0 && !isNaN(c.open) && !isNaN(c.close);
+  });
+
+  // Deduplicate by time (keep latest)
+  var seen = {};
+  var unique = [];
+  chartData.forEach(function(c) {
+    if (!seen[c.time]) {
+      seen[c.time] = c;
+      unique.push(c);
+    } else {
+      // Update existing
+      seen[c.time] = c;
+    }
+  });
+  unique.sort(function(a, b) { return a.time - b.time; });
+
+  if (unique.length === 0) return;
+
+  try {
+    // Set full data
+    window.candleSeries.setData(unique);
+
+    // Update current price from last candle
+    var last = unique[unique.length - 1];
+    window.currentPrice = last.close;
+    window.fsCandleState.lastPrice = last.close;
+
+    var priceEl = document.getElementById('current-price');
+    if (priceEl) {
+      priceEl.textContent = last.close.toFixed(2);
+
+      // Color based on last candle direction
+      if (last.close >= last.open) {
+        priceEl.style.color = '#00c853';
+      } else {
+        priceEl.style.color = '#ff5252';
+      }
+    }
+
+    // Update chart price dot
+    try {
+      var priceDot = document.getElementById('qx-price-dot');
+      if (priceDot && window.candleSeries) {
+        var yPos = window.candleSeries.priceToCoordinate(last.close);
+        if (yPos !== null && yPos !== undefined) {
+          priceDot.style.top = yPos + 'px';
+          priceDot.style.display = 'block';
+          priceDot.className = 'qx-price-dot ' + (last.close >= last.open ? 'up' : 'down');
+        }
+      }
+    } catch(e) {}
+
+    console.log('[FS-B] Chart updated:', unique.length, 'candles');
+  } catch (err) {
+    console.error('[FS-B] Chart apply error:', err.message);
+  }
+}
+
+// ============================================================
+// FS-B5. AUTO-CONNECT ON MARKET SELECT
+// ============================================================
+
+window.switchToAdminMarket = async function(symbol) {
+  if (!symbol) return;
+
+  console.log('[FS-B] Switching to:', symbol);
+
+  // 1. Resolve market ID
+  var marketId = await window.resolveMarketId(symbol);
+  if (!marketId) {
+    console.warn('[FS-B] Market not found:', symbol);
+    return;
+  }
+
+  // 2. Stop old listeners
+  if (window.fsCandleState.unsubLive) {
+    try { window.fsCandleState.unsubLive(); } catch(e) {}
+    window.fsCandleState.unsubLive = null;
+  }
+
+  // 3. Load historical candles
+  var historical = await window.loadAdminHistoricalCandles(marketId);
+  if (historical.length > 0) {
+    applyCandlesToChart(historical);
+  }
+
+  // 4. Connect live listener
+  window.connectAdminLiveCandles(marketId);
+
+  console.log('[FS-B] Connected:', symbol, '(' + marketId + ')');
+};
+
+// ============================================================
+// FS-B6. HOOK INTO ASSET SELECT
+// ============================================================
+
+(function hookAssetSelect() {
+  var sel = document.getElementById('asset-select');
+  if (!sel) {
+    console.warn('[FS-B] asset-select not found');
+    return;
+  }
+
+  if (sel.dataset.fsHook === '1') return;
+  sel.dataset.fsHook = '1';
+
+  sel.addEventListener('change', function() {
+    var symbol = sel.value;
+    console.log('[FS-B] User selected:', symbol);
+    window.switchToAdminMarket(symbol);
+  });
+
+  console.log('[FS-B] Asset select hooked');
+})();
+
+// ============================================================
+// FS-B7. INITIAL LOAD (on login)
+// ============================================================
+
+window.initAdminCandleConsumer = async function() {
+  console.log('[FS-B] Initial load...');
+
+  var sel = document.getElementById('asset-select');
+  var symbol = sel ? sel.value : 'BTCUSDT';
+
+  await window.switchToAdminMarket(symbol);
+};
+
+// ============================================================
+// FS-B8. HOOK INTO AUTH STATE (when user logs in)
+// ============================================================
+
+(function hookAuthForFS() {
+  // Wait for chart to be ready, then init
+  var tries = 0;
+  var maxTries = 30;
+
+  var checkInterval = setInterval(function() {
+    tries++;
+
+    if (window.candleSeries && window.currentUser) {
+      clearInterval(checkInterval);
+      console.log('[FS-B] Chart + user ready, initializing...');
+      window.initAdminCandleConsumer();
+    } else if (tries >= maxTries) {
+      clearInterval(checkInterval);
+      console.warn('[FS-B] Timeout waiting for chart/user');
+    }
+  }, 1000);
+
+  console.log('[FS-B] Waiting for chart + user...');
+})();
+
+// ============================================================
+// FS-B9. EXPOSE
+// ============================================================
+
+window.resolveMarketId = window.resolveMarketId;
+window.loadAdminHistoricalCandles = window.loadAdminHistoricalCandles;
+window.connectAdminLiveCandles = window.connectAdminLiveCandles;
+window.switchToAdminMarket = window.switchToAdminMarket;
+window.initAdminCandleConsumer = window.initAdminCandleConsumer;
+
+console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
