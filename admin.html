@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Admin Panel - Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css?v=18">
+  <link rel="stylesheet" href="admin.css?v=33">
 
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>
@@ -40,6 +40,7 @@
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="markets" type="button">Markets</button>
       <button class="admin-tab" data-tab="candles" type="button">Candle Scheduler</button>
+      <button class="admin-tab" data-tab="smart" type="button">SMART System</button>
       <button class="admin-tab" data-tab="tournaments" type="button">Tournaments</button>
       <button class="admin-tab" data-tab="users" type="button">Users</button>
       <button class="admin-tab" data-tab="trades" type="button">Trades</button>
@@ -49,7 +50,9 @@
       <button class="admin-tab" data-tab="settings" type="button">Settings</button>
     </nav>
 
-    <!-- TAB: MARKETS -->
+    <!-- ============================================================
+         TAB: MARKETS
+         ============================================================ -->
     <section id="tab-markets" class="admin-tab-content active">
       <h2 class="section-title">Markets</h2>
       <div class="market-form">
@@ -63,7 +66,9 @@
       <div id="market-list" class="market-list"></div>
     </section>
 
-    <!-- TAB: CANDLE SCHEDULER (আগের মতো) -->
+    <!-- ============================================================
+         TAB: CANDLE SCHEDULER
+         ============================================================ -->
     <section id="tab-candles" class="admin-tab-content">
 
       <div class="candle-mode-section">
@@ -183,12 +188,148 @@
     </section>
 
     <!-- ============================================================
-         TAB: TOURNAMENTS (MSG 18 - NEW!)
+         TAB: SMART SYSTEM (Phase 1 - NEW)
+         ============================================================ -->
+    <section id="tab-smart" class="admin-tab-content">
+
+      <h2 class="section-title">SMART Win/Loss System</h2>
+
+      <!-- Live Trade Counter -->
+      <div class="smart-live-counter">
+        <h3 class="subsection-title">Live Trade Counter</h3>
+        <p class="smart-note">Real-time user positions in current candle</p>
+
+        <div class="smart-counter-grid">
+          <div class="smart-counter-card call-card">
+            <div class="smart-counter-label">CALL (UP)</div>
+            <div class="smart-counter-value" id="live-call-count">0</div>
+            <div class="smart-counter-amount" id="live-call-amount">$0.00</div>
+          </div>
+
+          <div class="smart-counter-card put-card">
+            <div class="smart-counter-label">PUT (DOWN)</div>
+            <div class="smart-counter-value" id="live-put-count">0</div>
+            <div class="smart-counter-amount" id="live-put-amount">$0.00</div>
+          </div>
+
+          <div class="smart-counter-card total-card">
+            <div class="smart-counter-label">TOTAL</div>
+            <div class="smart-counter-value" id="live-total-count">0</div>
+            <div class="smart-counter-amount" id="live-total-amount">$0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decision Display -->
+      <div class="smart-decision-box">
+        <h3 class="subsection-title">Auto Decision</h3>
+
+        <div class="smart-decision-row">
+          <span class="smart-decision-label">Target Winners:</span>
+          <span class="smart-decision-value" id="live-target-winners">0</span>
+        </div>
+
+        <div class="smart-decision-row">
+          <span class="smart-decision-label">Actual Win %:</span>
+          <span class="smart-decision-value" id="live-actual-percent">0%</span>
+        </div>
+
+        <div class="smart-decision-row highlight">
+          <span class="smart-decision-label">Winning Side:</span>
+          <span class="smart-decision-value" id="live-winning-side">-</span>
+        </div>
+
+        <div class="smart-decision-row reason">
+          <span class="smart-decision-label">Reason:</span>
+          <span class="smart-decision-value" id="live-reason">-</span>
+        </div>
+      </div>
+
+      <!-- Override Buttons -->
+      <div class="smart-override-box">
+        <h3 class="subsection-title">Manual Override</h3>
+        <p class="smart-note">Force next candle result (overrides auto decision)</p>
+
+        <div class="smart-override-buttons">
+          <button id="override-force-call" class="admin-btn primary" type="button">Force CALL Win</button>
+          <button id="override-force-put" class="admin-btn danger" type="button">Force PUT Win</button>
+          <button id="override-auto" class="admin-btn" type="button">Clear Override (Auto)</button>
+        </div>
+      </div>
+
+      <!-- SMART Settings -->
+      <div class="smart-settings-box">
+        <h3 class="subsection-title">SMART Settings</h3>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">
+            <input type="checkbox" id="smart-enabled-toggle">
+            <span>Enable SMART System</span>
+          </label>
+          <p class="smart-hint">When ON, system auto-decides based on live user positions</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">Profit % (Users who win)</label>
+          <div class="smart-input-row">
+            <input id="smart-profit-percent" class="admin-input" type="number" min="10" max="90" value="40" placeholder="40">
+            <button id="save-smart-profit" class="admin-btn primary" type="button">Save</button>
+          </div>
+          <p class="smart-hint">Range: 10-90. Default 40 (40% users win)</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">Loss % (Users who lose)</label>
+          <div class="smart-input-row">
+            <input id="smart-loss-percent" class="admin-input" type="number" min="10" max="90" value="60" placeholder="60">
+            <button id="save-smart-loss" class="admin-btn primary" type="button">Save</button>
+          </div>
+          <p class="smart-hint">Auto = 100 - Profit %. Default 60</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">Max Winners Per Candle</label>
+          <div class="smart-input-row">
+            <input id="smart-max-winners" class="admin-input" type="number" min="1" max="1000" value="5" placeholder="5">
+            <button id="save-smart-max-winners" class="admin-btn primary" type="button">Save</button>
+          </div>
+          <p class="smart-hint">Hard cap on winners (safety limit)</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">Min Winners Per Candle</label>
+          <div class="smart-input-row">
+            <input id="smart-min-winners" class="admin-input" type="number" min="0" max="100" value="1" placeholder="1">
+            <button id="save-smart-min-winners" class="admin-btn primary" type="button">Save</button>
+          </div>
+          <p class="smart-hint">Ensure at least N winners (looks fair to users)</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">
+            <input type="checkbox" id="smart-auto-adjust" checked>
+            <span>Auto Adjust</span>
+          </label>
+          <p class="smart-hint">If exact % impossible, pick closest match</p>
+        </div>
+
+        <div class="smart-setting-item">
+          <label class="smart-label">
+            <input type="checkbox" id="smart-favor-house" checked>
+            <span>Favor House</span>
+          </label>
+          <p class="smart-hint">Prefer admin profit over exact win % target</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB: TOURNAMENTS
          ============================================================ -->
     <section id="tab-tournaments" class="admin-tab-content">
-      <h2 class="section-title">🏆 Tournaments</h2>
+      <h2 class="section-title">Tournaments</h2>
 
-      <!-- CREATE FORM -->
       <div class="settings-group" style="margin-bottom: 16px;">
         <label class="settings-label">Tournament Name</label>
         <input id="tour-name" class="admin-input" type="text" placeholder="e.g. Daily Contest">
@@ -214,41 +355,50 @@
           <option value="live">Live</option>
         </select>
 
-        <button id="tour-create-btn" class="admin-btn primary" type="button">＋ Create Tournament</button>
+        <button id="tour-create-btn" class="admin-btn primary" type="button">+ Create Tournament</button>
       </div>
 
-      <!-- TOURNAMENT LIST -->
       <h3 class="subsection-title" style="margin-top: 20px;">All Tournaments</h3>
       <div id="admin-tour-list" class="tour-admin-list">
         <p class="loading-text">Loading...</p>
       </div>
     </section>
 
-    <!-- TAB: USERS -->
+    <!-- ============================================================
+         TAB: USERS
+         ============================================================ -->
     <section id="tab-users" class="admin-tab-content">
       <h2 class="section-title">Users</h2>
       <div id="users-list" class="users-list"></div>
     </section>
 
-    <!-- TAB: TRADES -->
+    <!-- ============================================================
+         TAB: TRADES
+         ============================================================ -->
     <section id="tab-trades" class="admin-tab-content">
       <h2 class="section-title">Trades</h2>
       <div id="trades-list" class="trades-list"></div>
     </section>
 
-    <!-- TAB: DEPOSITS -->
+    <!-- ============================================================
+         TAB: DEPOSITS
+         ============================================================ -->
     <section id="tab-deposits" class="admin-tab-content">
       <h2 class="section-title">Deposits</h2>
       <div id="deposits-list" class="deposits-list"></div>
     </section>
 
-    <!-- TAB: WITHDRAWALS -->
+    <!-- ============================================================
+         TAB: WITHDRAWALS
+         ============================================================ -->
     <section id="tab-withdrawals" class="admin-tab-content">
       <h2 class="section-title">Withdrawals</h2>
       <div id="withdrawals-list" class="withdrawals-list"></div>
     </section>
 
-    <!-- TAB: CHAT -->
+    <!-- ============================================================
+         TAB: CHAT
+         ============================================================ -->
     <section id="tab-chat" class="admin-tab-content">
       <h2 class="section-title">Chat with Users</h2>
 
@@ -272,7 +422,9 @@
       </div>
     </section>
 
-    <!-- TAB: SETTINGS -->
+    <!-- ============================================================
+         TAB: SETTINGS
+         ============================================================ -->
     <section id="tab-settings" class="admin-tab-content">
       <h2 class="section-title">Settings</h2>
 
@@ -390,7 +542,7 @@
 
   </div>
 
-  <script type="module" src="admin.js?v=18"></script>
+  <script type="module" src="admin.js?v=33"></script>
 
 </body>
 </html>
