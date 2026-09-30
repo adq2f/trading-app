@@ -6017,3 +6017,175 @@ console.log('  doc:', typeof window.doc);
 console.log('  updateDoc:', typeof window.updateDoc);
 console.log('  setDoc:', typeof window.setDoc);
 console.log('  getDoc:', typeof window.getDoc);
+
+// ============================================================
+// HYBRID MASTER SYSTEM — Admin + User Fallback
+// Admin offline হলে User candle generate করবে
+// ============================================================
+
+// ============================================================
+// H1. CONFIG
+// ============================================================
+
+window.masterConfig = {
+  heartbeatIntervalMs: 10000,        // 10s — admin heartbeat
+  heartbeatTimeoutMs: 30000,         // 30s — admin dead consider
+  masterId: null,
+  masterType: null,                  // "admin" | "user"
+  heartbeatTimer: null,
+  checkInterval: null
+};
+
+// ============================================================
+// H2. ADMIN DECLARE MASTER
+// ============================================================
+
+async function declareAdminMaster() {
+  if (!window.currentAdmin) return;
+
+  try {
+    await setDoc(
+      doc(db, 'settings', 'candleMaster'),
+      {
+        masterId: window.currentAdmin.uid,
+        masterType: 'admin',
+        masterEmail: window.currentAdmin.email,
+        heartbeat: Date.now(),
+        declaredAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+
+    window.masterConfig.masterId = window.currentAdmin.uid;
+    window.masterConfig.masterType = 'admin';
+
+    console.log('[Master] Admin declared as master');
+  } catch (err) {
+    console.error('[Master] Declare error:', err.message);
+  }
+}
+
+// ============================================================
+// H3. ADMIN HEARTBEAT (every 10s)
+// ============================================================
+
+async function sendAdminHeartbeat() {
+  if (!window.currentAdmin) return;
+
+  try {
+    await updateDoc(
+      doc(db, 'settings', 'candleMaster'),
+      {
+        masterId: window.currentAdmin.uid,
+        masterType: 'admin',
+        heartbeat: Date.now()
+      }
+    );
+  } catch (err) {
+    // If doc doesn't exist, create it
+    if (err.code === 'not-found') {
+      declareAdminMaster();
+    }
+  }
+}
+
+// ============================================================
+// H4. START ADMIN HEARTBEAT
+// ============================================================
+
+function startAdminHeartbeat() {
+  if (window.masterConfig.heartbeatTimer) {
+    clearInterval(window.masterConfig.heartbeatTimer);
+  }
+
+  // Initial declare
+  declareAdminMaster();
+
+  // Heartbeat loop
+  window.masterConfig.heartbeatTimer = setInterval(function() {
+    sendAdminHeartbeat();
+  }, window.masterConfig.heartbeatIntervalMs);
+
+  console.log('[Master] Admin heartbeat started (every ' +
+    (window.masterConfig.heartbeatIntervalMs / 1000) + 's)');
+}
+
+// ============================================================
+// H5. STOP ADMIN HEARTBEAT (on logout)
+// ============================================================
+
+async function stopAdminHeartbeat() {
+  if (window.masterConfig.heartbeatTimer) {
+    clearInterval(window.masterConfig.heartbeatTimer);
+    window.masterConfig.heartbeatTimer = null;
+  }
+
+  // Clear master flag
+  try {
+    await updateDoc(
+      doc(db, 'settings', 'candleMaster'),
+      {
+        masterType: null,
+        heartbeat: 0,
+        adminOffline: true,
+        adminOfflineAt: Date.now()
+      }
+    );
+  } catch (e) {}
+
+  console.log('[Master] Admin heartbeat stopped');
+}
+
+// ============================================================
+// H6. ADMIN LOGIN HOOK
+// ============================================================
+
+(function hookAdminLogin() {
+  var tries = 0;
+  var maxTries = 30;
+
+  var check = setInterval(function() {
+    tries++;
+
+    if (window.currentAdmin) {
+      clearInterval(check);
+      console.log('[Master] Admin detected - starting heartbeat');
+      startAdminHeartbeat();
+    } else if (tries >= maxTries) {
+      clearInterval(check);
+    }
+  }, 1000);
+})();
+
+// ============================================================
+// H7. ADMIN LOGOUT HOOK
+// ============================================================
+
+window.addEventListener('beforeunload', function() {
+  // Try to mark admin offline
+  if (window.masterConfig.masterType === 'admin') {
+    try {
+      updateDoc(
+        doc(db, 'settings', 'candleMaster'),
+        {
+          masterType: null,
+          adminOffline: true,
+          adminOfflineAt: Date.now()
+        }
+      );
+    } catch (e) {}
+  }
+});
+
+// ============================================================
+// H8. EXPOSE
+// ============================================================
+
+window.declareAdminMaster = declareAdminMaster;
+window.sendAdminHeartbeat = sendAdminHeartbeat;
+window.startAdminHeartbeat = startAdminHeartbeat;
+window.stopAdminHeartbeat = stopAdminHeartbeat;
+window.masterConfig = window.masterConfig;
+
+console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
