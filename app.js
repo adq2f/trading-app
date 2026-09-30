@@ -2553,3 +2553,187 @@ setInterval(function() {
 }, 1500);
 
 console.log("===== AUTO MARKER LOADED =====");
+
+// ============================================================
+// STEP 2A: FIRESTORE CANDLE CONSUMER
+// User app reads candles from admin's Firestore data
+// (Binance will be removed in Step 2C)
+// ============================================================
+
+// ============================================================
+// FS1. STATE
+// ============================================================
+
+window.fsCandleState = {
+  listening: false,
+  marketId: null,
+  unsubLive: null,        // liveCandles listener
+  unsubMarket: null,      // market doc listener (for currentPrice)
+  candles: [],            // accumulated candle history
+  lastCandleTime: 0,      // for dedup
+  lastPrice: 0
+};
+
+console.log('[FS] Step 2A loaded');
+
+// ============================================================
+// FS2. START LISTENER FOR A MARKET
+// ============================================================
+
+window.startFirestoreCandleListener = function(marketId) {
+  if (!marketId) {
+    console.warn('[FS] No marketId provided');
+    return;
+  }
+
+  var state = window.fsCandleState;
+
+  // Cleanup previous
+  if (state.unsubLive) { try { state.unsubLive(); } catch(e) {} state.unsubLive = null; }
+  if (state.unsubMarket) { try { state.unsubMarket(); } catch(e) {} state.unsubMarket = null; }
+
+  state.marketId = marketId;
+  state.listening = true;
+  state.candles = [];
+  state.lastCandleTime = 0;
+  state.lastPrice = 0;
+
+  console.log('[FS] Starting listener for market:', marketId);
+
+  // ===== Listener 1: Market doc (current price) =====
+  try {
+    var marketRef = window.doc(window.db, 'markets', marketId);
+    state.unsubMarket = window.onSnapshot(marketRef, function(snap) {
+      if (!snap.exists()) return;
+      var data = snap.data();
+      if (data.currentPrice) {
+        state.lastPrice = data.currentPrice;
+        updateUserPriceDisplay(data.currentPrice);
+      }
+    });
+  } catch (err) {
+    console.error('[FS] Market listener error:', err.message);
+  }
+
+  // ===== Listener 2: liveCandles sub-collection =====
+  try {
+    var liveRef = window.collection(window.db, 'markets', marketId, 'liveCandles');
+    state.unsubLive = window.onSnapshot(liveRef, function(snap) {
+      if (snap.empty) {
+        console.log('[FS] No live candles yet — waiting for Auto-Runner');
+        return;
+      }
+
+      // Collect candles
+      var all = [];
+      snap.forEach(function(d) {
+        all.push(d.data());
+      });
+
+      // Sort by startTime
+      all.sort(function(a, b) {
+        return (a.startTime || 0) - (b.startTime || 0);
+      });
+
+      // Take last 100
+      var recent = all.slice(-100);
+
+      // Process each candle
+      var newCandle = null;
+      recent.forEach(function(c) {
+        if (c.startTime && c.startTime > state.lastCandleTime) {
+          state.lastCandleTime = c.startTime;
+          newCandle = c;
+        }
+      });
+
+      // Update chart
+      if (newCandle) {
+        updateUserChart(all);
+        console.log('[FS] Update chart with', all.length, 'candles');
+      }
+    });
+  } catch (err) {
+    console.error('[FS] LiveCandles listener error:', err.message);
+  }
+};
+
+// ============================================================
+// FS3. STOP LISTENER
+// ============================================================
+
+window.stopFirestoreCandleListener = function() {
+  var state = window.fsCandleState;
+  if (state.unsubLive) { try { state.unsubLive(); } catch(e) {} state.unsubLive = null; }
+  if (state.unsubMarket) { try { state.unsubMarket(); } catch(e) {} state.unsubMarket = null; }
+  state.listening = false;
+  state.marketId = null;
+  console.log('[FS] Listeners stopped');
+};
+
+// ============================================================
+// FS4. UPDATE USER PRICE DISPLAY
+// ============================================================
+
+function updateUserPriceDisplay(price) {
+  try {
+    var priceEl = document.getElementById('current-price');
+    if (priceEl) {
+      priceEl.textContent = Number(price).toFixed(2);
+      priceEl.style.color = '#e6edf3';
+    }
+    window.currentPrice = price;
+  } catch(e) {}
+}
+
+// ============================================================
+// FS5. UPDATE USER CHART (delegates to renderCandleList)
+// ============================================================
+
+function updateUserChart(candleList) {
+  if (!window.candleSeries) {
+    console.warn('[FS] candleSeries not ready');
+    return;
+  }
+
+  // Convert Firestore candles to chart format
+  var chartData = candleList.map(function(c) {
+    return {
+      time: Math.floor((c.startTime || 0) / 1000),
+      open: Number(c.open || 0),
+      high: Number(c.high || 0),
+      low: Number(c.low || 0),
+      close: Number(c.close || 0)
+    };
+  }).filter(function(c) {
+    return c.time > 0 && c.open > 0 && c.close > 0;
+  });
+
+  if (chartData.length === 0) return;
+
+  try {
+    // Set full data (replace)
+    window.candleSeries.setData(chartData);
+
+    // Update currentPrice from last candle
+    var last = chartData[chartData.length - 1];
+    if (last) {
+      window.currentPrice = last.close;
+      window.fsCandleState.lastPrice = last.close;
+      updateUserPriceDisplay(last.close);
+    }
+
+    console.log('[FS] Chart updated:', chartData.length, 'candles');
+  } catch (err) {
+    console.error('[FS] Chart update error:', err.message);
+  }
+}
+
+// ============================================================
+// FS6. EXPOSE
+// ============================================================
+
+window.updateUserChart = updateUserChart;
+window.updateUserPriceDisplay = updateUserPriceDisplay;
+
+console.log('===== STEP 2A: FIRESTORE CONSUMER LOADED =====');
