@@ -1260,14 +1260,12 @@ window.__activeEntryData = null;
 window.__activePriceLine = null;
 
 function updateEntryLine() {
-  // Quotex design: no full-width line, no timer on line
-  // This function is kept for compatibility but does nothing
+  // No action — entry line is static via createPriceLine
   return;
 }
 
 function renderEntryLine(type, entryPrice, expiresAt) {
-  // Quotex design: no full-width line, only candle mark
-  // This function is kept for compatibility but does nothing
+  // Entry line handled by renderTickMark via createPriceLine
   return;
 }
 
@@ -1350,66 +1348,84 @@ window.refreshVerticalLines = refreshVerticalLines;
 // ============================================
 // FIX 1: TICK MARK (Quotex-style — candle er nice/upore)
 // ============================================
+// ============================================
+// ENTRY MARKER — Using native chart markers
+// ============================================
 function renderTickMark(type, entryPrice, entryTime) {
   try {
-    var container = document.getElementById("qx-tick-container");
-    if (!container) return;
-
-    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot, .qx-entry-mark, .qx-entry-tick");
-    old.forEach(function(m) { m.remove(); });
-
-    if (!window.chartRef || !window.candleSeries) return;
-    if (!entryTime || !entryPrice) return;
+    if (!window.candleSeries) {
+      console.warn("[Marker] candleSeries not ready");
+      return;
+    }
+    if (!entryTime) return;
 
     var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
-    var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
-
     var color = type === "call" ? "#00c853" : "#ff5252";
 
-    // ===== Short horizontal line (60px, centered on candle) =====
-    var lineWidth = 60;
-    var lineLeft = xPos - 30;
+    // ===== Build marker array =====
+    var markers = [];
 
-    var line = document.createElement("div");
-    line.className = "qx-entry-mark " + type;
-    line.style.left = lineLeft + "px";
-    line.style.top = (yPos - 1.5) + "px";
-    line.style.width = lineWidth + "px";
-    line.style.height = "3px";
-    line.style.background = color;
-    line.style.borderRadius = "2px";
-    line.style.boxShadow = "0 0 8px " + color;
-    container.appendChild(line);
+    // ===== 1. Arrow marker at entry candle =====
+    markers.push({
+      time: entrySec,
+      position: type === "call" ? "belowBar" : "aboveBar",
+      color: color,
+      shape: type === "call" ? "arrowUp" : "arrowDown",
+      text: type === "call" ? "CALL" : "PUT",
+      size: 1
+    });
 
-    // ===== Tick mark at right end =====
-    var tick = document.createElement("div");
-    tick.className = "qx-entry-tick " + type;
-    tick.style.left = (xPos + 30 - 8) + "px";
-    tick.style.top = (yPos - 8) + "px";
-    tick.style.width = "16px";
-    tick.style.height = "16px";
-    tick.style.borderRadius = "50%";
-    tick.style.background = color;
-    tick.style.border = "2px solid #ffffff";
-    tick.style.boxShadow = "0 0 10px " + color;
-    tick.style.color = "#ffffff";
-    tick.style.fontSize = "10px";
-    tick.style.fontWeight = "800";
-    tick.textContent = "\u2713";
-    tick.style.animation = "tickPop 0.4s ease-out";
-    container.appendChild(tick);
+    // ===== 2. Dot marker just before entry candle =====
+    var dotOffset = 30; // seconds before (for 1m chart)
+    markers.push({
+      time: entrySec - dotOffset,
+      position: type === "call" ? "belowBar" : "aboveBar",
+      color: color,
+      shape: "circle",
+      text: "",
+      size: 1
+    });
 
-    console.log("[EntryMarker] x=" + xPos + " y=" + yPos);
+    // ===== 3. Entry price line (horizontal) =====
+    try {
+      if (window.__entryPriceLine) {
+        window.candleSeries.removePriceLine(window.__entryPriceLine);
+      }
+      window.__entryPriceLine = window.candleSeries.createPriceLine({
+        price: entryPrice,
+        color: "#ffffff",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: ""
+      });
+    } catch(e) {
+      console.warn("[Marker] priceLine fail:", e.message);
+    }
+
+    // ===== Apply markers =====
+    window.candleSeries.setMarkers(markers);
+
+    console.log("[Marker] Rendered:", type, "at", entrySec);
   } catch(e) {
-    console.error("[EntryMarker] error:", String(e), e.message);
+    console.error("[Marker] error:", String(e), e.message);
   }
 }
+
 function clearTickMark() {
-  var container = document.getElementById("qx-tick-container");
-  if (container) container.innerHTML = "";
+  try {
+    if (window.candleSeries) {
+      window.candleSeries.setMarkers([]);
+    }
+    if (window.__entryPriceLine && window.candleSeries) {
+      try {
+        window.candleSeries.removePriceLine(window.__entryPriceLine);
+        window.__entryPriceLine = null;
+      } catch(e) {}
+    }
+  } catch(e) {
+    console.error("[Marker] clear error:", String(e));
+  }
 }
 
 // ============================================
@@ -2520,5 +2536,3 @@ setInterval(function() {
     console.error("[AutoMarker] error:", String(e));
   }
 }, 1000);
-
-console.log("===== AUTO ENTRY MARKER LOADED =====");
