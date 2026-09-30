@@ -2436,3 +2436,49 @@ input, select {
 .qx-entry-tick.put {
   background: #ff5252;
 }
+/* ============================================
+   ENTRY MARKER — HTML Overlay
+   ============================================ */
+.qx-tick-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  pointer-events: none !important;
+  z-index: 100 !important;
+  overflow: visible !important;
+}
+
+.qx-entry-mark {
+  position: absolute;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.qx-entry-mark.call {
+  background: #00c853;
+  box-shadow: 0 0 6px #00c853;
+}
+
+.qx-entry-mark.put {
+  background: #ff5252;
+  box-shadow: 0 0 6px #ff5252;
+}
+
+.qx-entry-tick {
+  position: absolute;
+  pointer-events: none;
+  z-index: 41;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qx-entry-tick.call {
+  background: #00c853;
+}
+
+.qx-entry-tick.put {
+  background: #ff5252;
+}
