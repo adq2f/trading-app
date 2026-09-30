@@ -1361,13 +1361,17 @@ function renderTickMark(type, entryPrice, entryTime) {
     if (!window.chartRef || !window.candleSeries) return;
     if (!entryTime || !entryPrice) return;
 
+    // ===== STEP 1: Parse entry time =====
     var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
+    console.log("[Marker] Entry time:", entryTime, "→ sec:", entrySec);
 
-    // ===== FIX: Round entrySec to nearest candle time =====
+    // ===== STEP 2: Find CLOSEST candle time =====
     var data = window.candleSeries.data();
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+      console.warn("[Marker] No candle data");
+      return;
+    }
 
-    // Find the CLOSEST candle time
     var closestCandleTime = null;
     var minDiff = Infinity;
     for (var i = 0; i < data.length; i++) {
@@ -1378,18 +1382,33 @@ function renderTickMark(type, entryPrice, entryTime) {
       }
     }
 
-    if (closestCandleTime === null) return;
-    entrySec = closestCandleTime;  // ← Now using actual candle time
+    if (closestCandleTime === null) {
+      console.warn("[Marker] No closest candle found");
+      return;
+    }
 
-    var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
+    console.log("[Marker] Closest candle:", closestCandleTime, "(diff:", minDiff + "s)");
+
+    // ===== STEP 3: Use closest candle time for X =====
+    var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandleTime);
     var yPos = window.candleSeries.priceToCoordinate(entryPrice);
 
-    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
+    console.log("[Marker] xPos:", xPos, "yPos:", yPos);
+
+    if (xPos === null || xPos === undefined || yPos === null || yPos === undefined) {
+      console.warn("[Marker] Coords still null. Trying fallback with original entrySec...");
+      // Fallback: try original entry time
+      xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
+      console.log("[Marker] Fallback xPos:", xPos);
+      if (xPos === null || xPos === undefined) {
+        console.error("[Marker] Cannot get X coordinate at all");
+        return;
+      }
+    }
 
     var color = type === "call" ? "#00c853" : "#ff5252";
 
-    // ===== Line: 44px wide, from candle center - 22 to +22 =====
-    // This is narrower, so it sits ON the candle body
+    // ===== LINE: 44px wide centered on candle =====
     var lineWidth = 44;
     var lineLeft = xPos - 22;
 
@@ -1407,7 +1426,7 @@ function renderTickMark(type, entryPrice, entryTime) {
       "pointer-events:none;";
     container.appendChild(line);
 
-    // ===== Tick: at right end of line =====
+    // ===== TICK: at right end =====
     var tickSize = 14;
     var tick = document.createElement("div");
     tick.className = "qx-entry-tick " + type;
@@ -1431,9 +1450,9 @@ function renderTickMark(type, entryPrice, entryTime) {
     tick.textContent = "\u2713";
     container.appendChild(tick);
 
-    console.log("[EntryMarker] Rendered at x=" + xPos + ", y=" + yPos);
+    console.log("[Marker] ✅ Rendered at x=" + xPos + ", y=" + yPos);
   } catch(e) {
-    console.error("[EntryMarker] error:", String(e), e.message);
+    console.error("[Marker] ❌ error:", String(e), e.message);
   }
 }
 function clearTickMark() {
