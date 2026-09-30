@@ -1351,25 +1351,28 @@ window.refreshVerticalLines = refreshVerticalLines;
 // FIX 1: TICK MARK (Quotex-style — candle er nice/upore)
 // ============================================
 function renderTickMark(type, entryPrice, entryTime) {
-  // Redirect to renderAllMarkers
+  // Trigger full re-render of all markers
   renderAllMarkers();
 }
-
 // ============================================
-// RENDER ALL MARKERS (Multiple trades support)
+// RENDER ALL MARKERS — HTML Overlay (Quotex style)
 // ============================================
 window.__entryPriceLines = [];
 
 function renderAllMarkers() {
   try {
-    if (!window.candleSeries) return;
+    var container = document.getElementById("qx-tick-container");
+    if (!container) return;
 
-    // Clear old markers
-    if (window.candleSeries.setMarkers) {
+    // Clear old HTML markers
+    container.innerHTML = "";
+
+    // Clear old native markers
+    if (window.candleSeries && window.candleSeries.setMarkers) {
       window.candleSeries.setMarkers([]);
     }
 
-    // Clear old price lines
+    // Clear old native price lines
     if (window.__entryPriceLines && window.__entryPriceLines.length > 0) {
       window.__entryPriceLines.forEach(function(pl) {
         try {
@@ -1387,18 +1390,18 @@ function renderAllMarkers() {
     }
 
     // Get candle data
+    if (!window.chartRef || !window.candleSeries) return;
     var candleData = window.candleSeries.data();
     if (!candleData || candleData.length === 0) return;
 
-    // Build markers array
-    var markers = [];
-
+    // ===== For each pending trade =====
     trades.forEach(function(trade) {
       if (trade.status !== "pending") return;
       if (!trade.entryTime || !trade.entryPrice) return;
 
       var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
 
+      // Find closest candle
       var closestCandleTime = null;
       var minDiff = Infinity;
       for (var i = 0; i < candleData.length; i++) {
@@ -1410,46 +1413,65 @@ function renderAllMarkers() {
       }
       if (closestCandleTime === null) return;
 
+      // Get coordinates
+      var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandleTime);
+      var yPos = window.candleSeries.priceToCoordinate(trade.entryPrice);
+
+      if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) {
+        console.warn("[Marker] coords null for trade", trade.id);
+        return;
+      }
+
       var isCall = trade.type === "call";
       var color = isCall ? "#00c853" : "#ff5252";
 
-      markers.push({
-        time: closestCandleTime,
-        position: isCall ? "belowBar" : "aboveBar",
-        color: color,
-        shape: isCall ? "arrowUp" : "arrowDown",
-        text: isCall ? "CALL" : "PUT",
-        size: 1
-      });
+      // ===== 1. Short horizontal line (30px, candle width) =====
+      var lineWidth = 30;
+      var lineLeft = xPos - 15;
 
-      try {
-        var pl = window.candleSeries.createPriceLine({
-          price: trade.entryPrice,
-          color: color,
-          lineWidth: 3,
-          lineStyle: 0,
-          axisLabelVisible: true,
-          title: "",
-          axisLabelColor: color,
-          axisLabelTextColor: "#ffffff"
-        });
-        window.__entryPriceLines.push(pl);
-      } catch(e) {
-        console.warn("[Marker] Price line error:", e.message);
-      }
+      var line = document.createElement("div");
+      line.className = "qx-entry-mark " + trade.type;
+      line.style.cssText =
+        "position:absolute;" +
+        "left:" + lineLeft + "px;" +
+        "top:" + (yPos - 1.5) + "px;" +
+        "width:" + lineWidth + "px;" +
+        "height:3px;" +
+        "background:" + color + ";" +
+        "border-radius:2px;" +
+        "box-shadow:0 0 6px " + color + ";" +
+        "z-index:40;" +
+        "pointer-events:none;";
+      container.appendChild(line);
+
+      // ===== 2. Tick mark at right end =====
+      var tickSize = 12;
+      var tick = document.createElement("div");
+      tick.className = "qx-entry-tick " + trade.type;
+      tick.style.cssText =
+        "position:absolute;" +
+        "left:" + (xPos + 15 - tickSize/2) + "px;" +
+        "top:" + (yPos - tickSize/2) + "px;" +
+        "width:" + tickSize + "px;" +
+        "height:" + tickSize + "px;" +
+        "border-radius:50%;" +
+        "background:" + color + ";" +
+        "border:2px solid #ffffff;" +
+        "box-shadow:0 0 8px " + color + ";" +
+        "color:#ffffff;" +
+        "font-size:8px;" +
+        "font-weight:900;" +
+        "text-align:center;" +
+        "line-height:" + (tickSize-4) + "px;" +
+        "font-family:Inter, sans-serif;" +
+        "z-index:41;" +
+        "pointer-events:none;";
+      tick.textContent = "\u2713";
+      container.appendChild(tick);
+
     });
 
-    markers.sort(function(a, b) {
-      return a.time - b.time;
-    });
-
-    try {
-      window.candleSeries.setMarkers(markers);
-      console.log("[Marker] ✅ Rendered " + markers.length + " markers");
-    } catch(e) {
-      console.error("[Marker] setMarkers error:", e.message);
-    }
-
+    console.log("[Marker] ✅ Rendered " + trades.length + " HTML markers");
   } catch(e) {
     console.error("[Marker] renderAllMarkers error:", String(e));
   }
