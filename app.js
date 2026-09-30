@@ -1260,82 +1260,15 @@ window.__activeEntryData = null;
 window.__activePriceLine = null;
 
 function updateEntryLine() {
-  try {
-    var data = window.__activeEntryData;
-    if (!data) return;
-    if (!window.chartRef || !window.candleSeries) return;
-
-    var container = document.getElementById("qx-entry-line-container");
-    if (!container) return;
-
-    // Remove only timer + label (native line is separate)
-    var old = container.querySelectorAll(".qx-entry-line-timer, .qx-entry-price-label, .qx-entry-line");
-    old.forEach(function(m) { m.remove(); });
-
-    var yPos = window.candleSeries.priceToCoordinate(data.entryPrice);
-    if (yPos === null || yPos === undefined) return;
-
-    // Timer (center)
-    var remaining = Math.max(0, Math.ceil((data.expiresAt - Date.now()) / 1000));
-    var mm = Math.floor(remaining / 60);
-    var ss = remaining % 60;
-    var timeStr = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
-
-    var timerEl = document.createElement("div");
-    timerEl.className = "qx-entry-line-timer";
-    timerEl.textContent = timeStr;
-    timerEl.style.top = (yPos - 13) + "px";
-    container.appendChild(timerEl);
-
-    // Price label (right side)
-    var labelEl = document.createElement("div");
-    labelEl.className = "qx-entry-price-label " + data.type;
-    labelEl.textContent = Number(data.entryPrice).toFixed(2);
-    labelEl.style.top = (yPos - 9) + "px";
-    container.appendChild(labelEl);
-
-  } catch(e) {
-    console.error("[EntryLine] error:", String(e), e.message);
-  }
+  // Quotex design: no full-width line, no timer on line
+  // This function is kept for compatibility but does nothing
+  return;
 }
 
 function renderEntryLine(type, entryPrice, expiresAt) {
-  try {
-    if (!window.chartRef || !window.candleSeries) return;
-
-    window.__activeEntryData = {
-      type: type,
-      entryPrice: entryPrice,
-      expiresAt: expiresAt
-    };
-
-    // Remove old native price line
-    if (window.__activePriceLine) {
-      try { window.candleSeries.removePriceLine(window.__activePriceLine); } catch(e) {}
-      window.__activePriceLine = null;
-    }
-
-    // Create WHITE native price line
-    try {
-      window.__activePriceLine = window.candleSeries.createPriceLine({
-        price: entryPrice,
-        color: "#ffffff",
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: "",
-        axisLabelColor: type === "call" ? "#00c853" : "#ff5252",
-        axisLabelTextColor: "#ffffff"
-      });
-      console.log("[EntryLine] White native price line created");
-    } catch(e) {
-      console.error("[EntryLine] createPriceLine fail:", e.message);
-    }
-
-    updateEntryLine();
-  } catch(e) {
-    console.error("[EntryLine] error:", String(e), e.message);
-  }
+  // Quotex design: no full-width line, only candle mark
+  // This function is kept for compatibility but does nothing
+  return;
 }
 
 function clearEntryLine() {
@@ -1422,7 +1355,7 @@ function renderTickMark(type, entryPrice, entryTime) {
     var container = document.getElementById("qx-tick-container");
     if (!container) return;
 
-    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot");
+    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot, .qx-entry-mark, .qx-entry-tick");
     old.forEach(function(m) { m.remove(); });
 
     if (!window.chartRef || !window.candleSeries) return;
@@ -1434,48 +1367,44 @@ function renderTickMark(type, entryPrice, entryTime) {
 
     if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
 
-    // ===== Small colored dot (12px, no big circle) =====
-    var mark = document.createElement("div");
-    mark.className = "qx-tick-mark " + type;
-    mark.style.position = "absolute";
-    mark.style.width = "12px";
-    mark.style.height = "12px";
-    mark.style.borderRadius = "50%";
-    mark.style.left = (xPos - 6) + "px";
-    mark.style.top = type === "call" ? (yPos + 12) + "px" : (yPos - 18) + "px";
-    mark.style.background = type === "call" ? "#00c853" : "#ff5252";
-    mark.style.border = "2px solid #ffffff";
-    mark.style.boxShadow = "0 0 8px " + (type === "call" ? "#00c853" : "#ff5252");
-    mark.style.zIndex = "30";
-    mark.style.pointerEvents = "none";
-    mark.style.animation = "tickPop 0.4s ease-out";
-    container.appendChild(mark);
+    var color = type === "call" ? "#00c853" : "#ff5252";
 
-    // ===== 2 small trail dots =====
-    for (var i = 0; i < 2; i++) {
-      var dot = document.createElement("div");
-      dot.className = "qx-dot";
-      dot.style.position = "absolute";
-      dot.style.width = (4 + i * 2) + "px";
-      dot.style.height = (4 + i * 2) + "px";
-      dot.style.borderRadius = "50%";
-      dot.style.background = type === "call" ? "#00c853" : "#ff5252";
-      dot.style.opacity = 0.5 + i * 0.4;
-      if (type === "call") {
-        dot.style.left = (xPos - 18 - i * 8) + "px";
-        dot.style.top = (yPos + 16) + "px";
-      } else {
-        dot.style.left = (xPos + 12 + i * 8) + "px";
-        dot.style.top = (yPos - 16) + "px";
-      }
-      dot.style.zIndex = "29";
-      dot.style.pointerEvents = "none";
-      container.appendChild(dot);
-    }
+    // ===== Short horizontal line (60px, centered on candle) =====
+    var lineWidth = 60;
+    var lineLeft = xPos - 30;
 
-    console.log("[TickMark] Rendered x=" + xPos + " y=" + yPos);
+    var line = document.createElement("div");
+    line.className = "qx-entry-mark " + type;
+    line.style.left = lineLeft + "px";
+    line.style.top = (yPos - 1.5) + "px";
+    line.style.width = lineWidth + "px";
+    line.style.height = "3px";
+    line.style.background = color;
+    line.style.borderRadius = "2px";
+    line.style.boxShadow = "0 0 8px " + color;
+    container.appendChild(line);
+
+    // ===== Tick mark at right end =====
+    var tick = document.createElement("div");
+    tick.className = "qx-entry-tick " + type;
+    tick.style.left = (xPos + 30 - 8) + "px";
+    tick.style.top = (yPos - 8) + "px";
+    tick.style.width = "16px";
+    tick.style.height = "16px";
+    tick.style.borderRadius = "50%";
+    tick.style.background = color;
+    tick.style.border = "2px solid #ffffff";
+    tick.style.boxShadow = "0 0 10px " + color;
+    tick.style.color = "#ffffff";
+    tick.style.fontSize = "10px";
+    tick.style.fontWeight = "800";
+    tick.textContent = "\u2713";
+    tick.style.animation = "tickPop 0.4s ease-out";
+    container.appendChild(tick);
+
+    console.log("[EntryMarker] x=" + xPos + " y=" + yPos);
   } catch(e) {
-    console.error("[TickMark] error:", String(e), e.message);
+    console.error("[EntryMarker] error:", String(e), e.message);
   }
 }
 function clearTickMark() {
