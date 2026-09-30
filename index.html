@@ -10,12 +10,23 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v=26">
+  <!-- Auto cache-buster for CSS -->
+  <script>
+    (function() {
+      var v = Date.now();
+      window.__APP_VERSION = v;
+      console.log('[Cache] Auto version:', v);
+
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'style.css?v=' + v;
+      document.head.appendChild(css);
+    })();
+  </script>
+
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 
-  <!-- ============================================
-       ERUDA CONSOLE — Mobile Developer Tools
-       ============================================ -->
+  <!-- Eruda Console -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>
     (function initEruda() {
@@ -24,17 +35,13 @@
           eruda.init();
           console.log("[ERUDA] Console initialized");
         }
-      } catch(e) {
-        // Silent fail — Eruda unavailable
-      }
+      } catch(e) {}
     })();
   </script>
 </head>
 <body>
 
-  <!-- ============================================
-       LOGIN PAGE
-       ============================================ -->
+  <!-- LOGIN PAGE -->
   <div id="login-page" class="page">
     <div class="login-box">
       <div class="login-logo">
@@ -63,12 +70,10 @@
     </div>
   </div>
 
-  <!-- ============================================
-       DASHBOARD PAGE
-       ============================================ -->
+  <!-- DASHBOARD PAGE -->
   <div id="dashboard-page" class="page hidden">
 
-    <!-- ===== TOP BAR ===== -->
+    <!-- TOP BAR -->
     <header class="qx-topbar">
       <button class="qx-account-chip" id="balance-chip">
         <span class="qx-flag">&#127470;&#127475;</span>
@@ -88,7 +93,7 @@
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
 
-    <!-- ===== BONUS BANNER ===== -->
+    <!-- BONUS BANNER -->
     <div class="qx-bonus-banner" id="bonus-banner">
       <span class="qx-bonus-rocket">&#128640;</span>
       <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
@@ -96,10 +101,9 @@
       <button class="qx-bonus-close" id="bonus-close" aria-label="Close">&#10005;</button>
     </div>
 
-    <!-- ===== CHART AREA ===== -->
+    <!-- CHART AREA -->
     <section class="qx-chart-area">
 
-      <!-- Chart Tools -->
       <div class="qx-chart-tools">
         <button class="qx-icon-btn" id="drawer-toggle" aria-label="Menu">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round">
@@ -142,7 +146,7 @@
 
     </section>
 
-    <!-- ===== LEFT DRAWER ===== -->
+    <!-- LEFT DRAWER -->
     <div class="qx-drawer hidden" id="qx-drawer">
       <div class="qx-drawer-header">
         <h3>Info</h3>
@@ -186,7 +190,7 @@
     </div>
     <div class="qx-drawer-overlay hidden" id="drawer-overlay"></div>
 
-    <!-- ===== DRAWING TOOLS PANEL ===== -->
+    <!-- DRAWING TOOLS PANEL -->
     <div class="qx-drawing-panel hidden" id="drawing-panel">
       <div class="qx-drawing-header">
         <h3>Drawing Tools</h3>
@@ -245,7 +249,7 @@
     </div>
     <div class="qx-drawing-overlay hidden" id="drawing-overlay"></div>
 
-    <!-- ===== TIMEFRAME GRID MODAL ===== -->
+    <!-- TIMEFRAME GRID MODAL -->
     <div class="qx-tf-modal hidden" id="tf-modal">
       <div class="qx-tf-overlay" id="tf-overlay"></div>
       <div class="qx-tf-panel">
@@ -272,7 +276,7 @@
       </div>
     </div>
 
-    <!-- ===== TRADE PANEL ===== -->
+    <!-- TRADE PANEL -->
     <section class="qx-trade-panel">
 
       <div class="qx-trade-header">
@@ -340,7 +344,7 @@
 
     </section>
 
-    <!-- ===== TRADES SECTION ===== -->
+    <!-- TRADES SECTION -->
     <section class="qx-trades-section">
       <div class="qx-trades-header">
         <button class="qx-trades-tab active" data-trades-tab="active">
@@ -373,7 +377,7 @@
       </div>
     </section>
 
-    <!-- ===== BOTTOM NAV ===== -->
+    <!-- BOTTOM NAV -->
     <nav class="qx-bottom-nav">
       <button class="qx-nav-btn" data-nav="chart" aria-label="Chart">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -414,9 +418,7 @@
 
   </div>
 
-  <!-- ============================================
-       POPUPS
-       ============================================ -->
+  <!-- POPUPS -->
 
   <div class="popup hidden" id="balance-popup">
     <div class="popup-overlay" id="balance-popup-overlay"></div>
@@ -570,7 +572,7 @@
     </div>
   </div>
 
-  <!-- ===== GLOBAL ERROR CATCHER ===== -->
+  <!-- GLOBAL ERROR CATCHER -->
   <script>
   (function() {
     window.__jsErrors = window.__jsErrors || [];
@@ -587,14 +589,10 @@
       console.error(msg);
     });
 
-    // App.js load check
     window.addEventListener('load', function() {
       setTimeout(function() {
         if (typeof window.placeTrade !== "function") {
           console.error("App.js FAILED TO LOAD - check syntax errors");
-          if (typeof eruda !== "undefined") {
-            console.warn("Eruda Console available - check Errors tab");
-          }
         } else {
           console.log("app.js loaded successfully");
         }
@@ -603,8 +601,16 @@
   })();
   </script>
 
-  <!-- ===== APP SCRIPT ===== -->
-  <script type="module" src="app.js?v=26"></script>
+  <!-- Auto-versioned APP SCRIPT -->
+  <script type="module">
+    (function() {
+      var v = window.__APP_VERSION || Date.now();
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.src = 'app.js?v=' + v;
+      document.body.appendChild(s);
+    })();
+  </script>
 
 </body>
 </html>
