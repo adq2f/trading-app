@@ -2338,6 +2338,55 @@ input, select {
    ============================================ */
 @supports (padding: env(safe-area-inset-bottom)) {
   .qx-bottom-nav {
+/* ============================================
+   QUOTEX ENTRY MARKER — Short line + tick on candle
+   ============================================ */
+
+.qx-entry-mark {
+  position: absolute;
+  pointer-events: none;
+  z-index: 28;
+}
+
+.qx-entry-mark.call {
+  background: #00c853;
+  box-shadow: 0 0 10px #00c853;
+}
+
+.qx-entry-mark.put {
+  background: #ff5252;
+  box-shadow: 0 0 10px #ff5252;
+}
+
+.qx-entry-tick {
+  position: absolute;
+  pointer-events: none;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qx-entry-tick.call {
+  background: #00c853;
+}
+
+.qx-entry-tick.put {
+  background: #ff5252;
+}
+
+@keyframes tickPop {
+  0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+  70% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Disable old entry line styles (Quotex doesn't use full-width line) */
+.qx-entry-line,
+.qx-entry-line-timer,
+.qx-entry-price-label {
+  display: none !important;
+}
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
