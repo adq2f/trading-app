@@ -1351,108 +1351,130 @@ window.refreshVerticalLines = refreshVerticalLines;
 // FIX 1: TICK MARK (Quotex-style — candle er nice/upore)
 // ============================================
 function renderTickMark(type, entryPrice, entryTime) {
+  // Redirect to renderAllMarkers
+  renderAllMarkers();
+}
+
+// ============================================
+// RENDER ALL MARKERS (Multiple trades support)
+// ============================================
+window.__entryPriceLines = [];
+
+function renderAllMarkers() {
   try {
-    var container = document.getElementById("qx-tick-container");
-    if (!container) return;
+    if (!window.candleSeries) return;
 
-    var old = container.querySelectorAll(".qx-entry-mark, .qx-entry-tick");
-    old.forEach(function(m) { m.remove(); });
+    // Clear old markers
+    if (window.candleSeries.setMarkers) {
+      window.candleSeries.setMarkers([]);
+    }
 
-    if (!window.chartRef || !window.candleSeries) return;
-    if (!entryTime || !entryPrice) return;
+    // Clear old price lines
+    if (window.__entryPriceLines && window.__entryPriceLines.length > 0) {
+      window.__entryPriceLines.forEach(function(pl) {
+        try {
+          window.candleSeries.removePriceLine(pl);
+        } catch(e) {}
+      });
+    }
+    window.__entryPriceLines = [];
 
-    // ===== STEP 1: Parse entry time =====
-    var entrySec = Math.floor(new Date(entryTime).getTime() / 1000);
-    console.log("[Marker] Entry time:", entryTime, "→ sec:", entrySec);
-
-    // ===== STEP 2: Find CLOSEST candle time =====
-    var data = window.candleSeries.data();
-    if (!data || data.length === 0) {
-      console.warn("[Marker] No candle data");
+    // Get active trades
+    var trades = window.activeTradesLocal || [];
+    if (trades.length === 0) {
+      console.log("[Marker] No active trades");
       return;
     }
 
-    var closestCandleTime = null;
-    var minDiff = Infinity;
-    for (var i = 0; i < data.length; i++) {
-      var diff = Math.abs(data[i].time - entrySec);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestCandleTime = data[i].time;
+    // Get candle data
+    var candleData = window.candleSeries.data();
+    if (!candleData || candleData.length === 0) return;
+
+    // Build markers array
+    var markers = [];
+
+    trades.forEach(function(trade) {
+      if (trade.status !== "pending") return;
+      if (!trade.entryTime || !trade.entryPrice) return;
+
+      var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
+
+      var closestCandleTime = null;
+      var minDiff = Infinity;
+      for (var i = 0; i < candleData.length; i++) {
+        var diff = Math.abs(candleData[i].time - entrySec);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestCandleTime = candleData[i].time;
+        }
       }
-    }
+      if (closestCandleTime === null) return;
 
-    if (closestCandleTime === null) {
-      console.warn("[Marker] No closest candle found");
-      return;
-    }
+      var isCall = trade.type === "call";
+      var color = isCall ? "#00c853" : "#ff5252";
 
-    console.log("[Marker] Closest candle:", closestCandleTime, "(diff:", minDiff + "s)");
+      markers.push({
+        time: closestCandleTime,
+        position: isCall ? "belowBar" : "aboveBar",
+        color: color,
+        shape: isCall ? "arrowUp" : "arrowDown",
+        text: isCall ? "CALL" : "PUT",
+        size: 1
+      });
 
-    // ===== STEP 3: Use closest candle time for X =====
-    var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandleTime);
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
-
-    console.log("[Marker] xPos:", xPos, "yPos:", yPos);
-
-    if (xPos === null || xPos === undefined || yPos === null || yPos === undefined) {
-      console.warn("[Marker] Coords still null. Trying fallback with original entrySec...");
-      // Fallback: try original entry time
-      xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
-      console.log("[Marker] Fallback xPos:", xPos);
-      if (xPos === null || xPos === undefined) {
-        console.error("[Marker] Cannot get X coordinate at all");
-        return;
+      try {
+        var pl = window.candleSeries.createPriceLine({
+          price: trade.entryPrice,
+          color: color,
+          lineWidth: 3,
+          lineStyle: 0,
+          axisLabelVisible: true,
+          title: "",
+          axisLabelColor: color,
+          axisLabelTextColor: "#ffffff"
+        });
+        window.__entryPriceLines.push(pl);
+      } catch(e) {
+        console.warn("[Marker] Price line error:", e.message);
       }
+    });
+
+    markers.sort(function(a, b) {
+      return a.time - b.time;
+    });
+
+    try {
+      window.candleSeries.setMarkers(markers);
+      console.log("[Marker] ✅ Rendered " + markers.length + " markers");
+    } catch(e) {
+      console.error("[Marker] setMarkers error:", e.message);
     }
 
-    var color = type === "call" ? "#00c853" : "#ff5252";
-
-    // ===== LINE: 44px wide centered on candle =====
-    var lineWidth = 44;
-    var lineLeft = xPos - 22;
-
-    var line = document.createElement("div");
-    line.className = "qx-entry-mark " + type;
-    line.style.cssText =
-      "position:absolute;" +
-      "left:" + lineLeft + "px;" +
-      "top:" + (yPos - 1.5) + "px;" +
-      "width:" + lineWidth + "px;" +
-      "height:3px;" +
-      "background:" + color + ";" +
-      "border-radius:2px;" +
-      "box-shadow:0 0 6px " + color + ";" +
-      "pointer-events:none;";
-    container.appendChild(line);
-
-    // ===== TICK: at right end =====
-    var tickSize = 14;
-    var tick = document.createElement("div");
-    tick.className = "qx-entry-tick " + type;
-    tick.style.cssText =
-      "position:absolute;" +
-      "left:" + (xPos + 22 - tickSize/2) + "px;" +
-      "top:" + (yPos - tickSize/2) + "px;" +
-      "width:" + tickSize + "px;" +
-      "height:" + tickSize + "px;" +
-      "border-radius:50%;" +
-      "background:" + color + ";" +
-      "border:2px solid #ffffff;" +
-      "box-shadow:0 0 8px " + color + ";" +
-      "color:#ffffff;" +
-      "font-size:9px;" +
-      "font-weight:900;" +
-      "text-align:center;" +
-      "line-height:" + (tickSize-4) + "px;" +
-      "font-family:Inter, sans-serif;" +
-      "pointer-events:none;";
-    tick.textContent = "\u2713";
-    container.appendChild(tick);
-
-    console.log("[Marker] ✅ Rendered at x=" + xPos + ", y=" + yPos);
   } catch(e) {
-    console.error("[Marker] ❌ error:", String(e), e.message);
+    console.error("[Marker] renderAllMarkers error:", String(e));
+  }
+}
+
+// ============================================
+// CLEAR ALL MARKERS
+// ============================================
+function clearTickMark() {
+  try {
+    if (window.candleSeries && window.candleSeries.setMarkers) {
+      window.candleSeries.setMarkers([]);
+    }
+    if (window.__entryPriceLines && window.__entryPriceLines.length > 0) {
+      window.__entryPriceLines.forEach(function(pl) {
+        try {
+          window.candleSeries.removePriceLine(pl);
+        } catch(e) {}
+      });
+    }
+    window.__entryPriceLines = [];
+    var container = document.getElementById("qx-tick-container");
+    if (container) container.innerHTML = "";
+  } catch(e) {
+    console.error("[Marker] clear error:", String(e));
   }
 }
 function clearTickMark() {
@@ -1596,10 +1618,11 @@ async function checkExpiredTrades() {
           completedAt: new Date().toISOString()
         });
 
-        // Clear markers
+        // Clear entry line + vertical lines
         clearEntryLine();
         clearVerticalLines();
-        clearTickMark();
+        // Force re-render markers (other trades may still be pending)
+        window.__lastPendingCount = -1;
 
         if (result === "win") {
           var userDoc = await getDoc(doc(db, "users", currentUser.uid));
@@ -2484,27 +2507,32 @@ console.log("===== PART 5 LOADED =====");
 console.log("===== ALL 5 PARTS LOADED =====");
 console.log("Try: window.chartRef, window.candleSeries");
 // ============================================
-// AUTO ENTRY MARKER — Render every second
+// AUTO REFRESH ALL MARKERS — Every 1.5s
 // ============================================
 setInterval(function() {
   try {
-    if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
-    if (!window.chartRef || !window.candleSeries) return;
+    if (!window.candleSeries) return;
 
-    var trade = null;
-    for (var i = 0; i < window.activeTradesLocal.length; i++) {
-      if (window.activeTradesLocal[i].status === "pending") {
-        trade = window.activeTradesLocal[i];
-        break;
-      }
+    var trades = window.activeTradesLocal || [];
+    var pendingCount = 0;
+    var lastCount = window.__lastPendingCount || 0;
+
+    for (var i = 0; i < trades.length; i++) {
+      if (trades[i].status === "pending") pendingCount++;
     }
-    if (!trade) return;
 
-    // Re-render (function handles its own cleanup)
-    renderTickMark(trade.type, trade.entryPrice, trade.entryTime);
+    if (pendingCount !== lastCount || pendingCount > 0) {
+      window.__lastPendingCount = pendingCount;
+      renderAllMarkers();
+    }
+
+    if (pendingCount === 0 && lastCount > 0) {
+      window.__lastPendingCount = 0;
+      clearTickMark();
+    }
   } catch(e) {
     console.error("[AutoMarker] error:", String(e));
   }
-}, 500);
+}, 1500);
 
-console.log("===== AUTO ENTRY MARKER LOADED =====");
+console.log("===== AUTO MARKER LOADED =====");
