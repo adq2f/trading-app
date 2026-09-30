@@ -5685,3 +5685,27 @@ window.getBehaviorParams = getBehaviorParams;
 window.createNewCandle = createNewCandle;
 
 console.log('===== admin.js v33-clean — AUTO RUNNER LOADED =====');
+// ============================================================
+// FIX: Expose all Firebase functions to window
+// ============================================================
+
+window.getDocs = getDocs;
+window.collection = collection;
+window.doc = doc;
+window.setDoc = setDoc;
+window.getDoc = getDoc;
+window.updateDoc = updateDoc;
+window.deleteDoc = deleteDoc;
+window.addDoc = addDoc;
+window.query = query;
+window.where = where;
+window.onSnapshot = onSnapshot;
+window.orderBy = orderBy;
+
+console.log('===== [FIX] Firebase functions exposed to window =====');
+console.log('  getDocs:', typeof window.getDocs);
+console.log('  collection:', typeof window.collection);
+console.log('  doc:', typeof window.doc);
+console.log('  updateDoc:', typeof window.updateDoc);
+console.log('  setDoc:', typeof window.setDoc);
+console.log('  getDoc:', typeof window.getDoc);
