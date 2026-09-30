@@ -12,6 +12,23 @@
 
   <link rel="stylesheet" href="style.css?v=25">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- ============================================
+       ERUDA CONSOLE — Mobile Developer Tools
+       ============================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    (function initEruda() {
+      try {
+        if (typeof eruda !== "undefined") {
+          eruda.init();
+          console.log("[ERUDA] Console initialized");
+        }
+      } catch(e) {
+        // Silent fail — Eruda unavailable
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -79,13 +96,11 @@
       <button class="qx-bonus-close" id="bonus-close" aria-label="Close">&#10005;</button>
     </div>
 
-    <!-- ===== MAIN AREA (Part 2 continues here) ===== -->
     <!-- ===== CHART AREA ===== -->
     <section class="qx-chart-area">
 
-      <!-- Chart Tools (top-left overlay) -->
+      <!-- Chart Tools -->
       <div class="qx-chart-tools">
-        <!-- Left Drawer Toggle -->
         <button class="qx-icon-btn" id="drawer-toggle" aria-label="Menu">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round">
             <circle cx="5" cy="12" r="1.5" fill="#e6edf3"/>
@@ -94,7 +109,6 @@
           </svg>
         </button>
 
-        <!-- Drawing Tools Toggle -->
         <button class="qx-icon-btn" id="drawing-toggle" aria-label="Drawing tools">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 19l7-7 3 3-7 7-3-3z"/>
@@ -104,48 +118,31 @@
           </svg>
         </button>
 
-        <!-- Timeframe Button (bottom-left, but displayed here for structure) -->
         <div class="qx-tf-badge" id="tf-badge">
           <span id="qx-tf-active">1m</span>
         </div>
       </div>
 
-      <!-- Top Countdown Timer (chart overlay) -->
       <div class="qx-chart-timer hidden" id="top-countdown-timer">
         <span class="qx-timer-dot"></span>
         <span id="countdown-time">00:45</span>
       </div>
 
-      <!-- Chart Wrapper -->
       <div class="qx-chart-wrapper" id="chart-wrapper">
-        <!-- IMPORTANT: id renamed to tv-chart (browser conflict fix) -->
         <div id="tv-chart" class="qx-chart-container"></div>
-
-        <!-- Drawing Canvas -->
         <canvas id="drawing-canvas" class="qx-drawing-canvas"></canvas>
-
-        <!-- Price Dot (right side) -->
         <div id="qx-price-dot" class="qx-price-dot"></div>
-
-        <!-- Time Labels (bottom of chart) -->
         <div class="qx-time-labels" id="qx-time-labels"></div>
-
-        <!-- Entry Line Container (markers rendered here by JS) -->
         <div class="qx-entry-line-container" id="qx-entry-line-container"></div>
-
-        <!-- Vertical Lines Container (trade start/end) -->
         <div class="qx-vline-container" id="qx-vline-container"></div>
-
-        <!-- Tick Mark Container -->
         <div class="qx-tick-container" id="qx-tick-container"></div>
       </div>
 
-      <!-- Big Timer (center overlay) -->
       <div class="qx-big-timer hidden" id="big-timer">00:00</div>
 
     </section>
 
-    <!-- ===== LEFT DRAWER (Collapsed → Tap → Open) ===== -->
+    <!-- ===== LEFT DRAWER ===== -->
     <div class="qx-drawer hidden" id="qx-drawer">
       <div class="qx-drawer-header">
         <h3>Info</h3>
@@ -153,14 +150,12 @@
       </div>
 
       <div class="qx-drawer-body">
-        <!-- Running Candle Countdown -->
         <div class="qx-drawer-section">
           <div class="qx-drawer-label">Next Candle</div>
           <div class="qx-drawer-value" id="candle-countdown">00:32</div>
           <div class="qx-drawer-sub" id="candle-time-range">16:34 - 16:35</div>
         </div>
 
-        <!-- Current Candle Info -->
         <div class="qx-drawer-section">
           <div class="qx-drawer-label">Current Candle</div>
           <div class="qx-drawer-row">
@@ -181,7 +176,6 @@
           </div>
         </div>
 
-        <!-- P/L History -->
         <div class="qx-drawer-section">
           <div class="qx-drawer-label">Recent Trades</div>
           <div class="qx-drawer-history" id="drawer-history">
@@ -192,7 +186,7 @@
     </div>
     <div class="qx-drawer-overlay hidden" id="drawer-overlay"></div>
 
-    <!-- ===== DRAWING TOOLS PANEL (Separate) ===== -->
+    <!-- ===== DRAWING TOOLS PANEL ===== -->
     <div class="qx-drawing-panel hidden" id="drawing-panel">
       <div class="qx-drawing-header">
         <h3>Drawing Tools</h3>
@@ -281,7 +275,6 @@
     <!-- ===== TRADE PANEL ===== -->
     <section class="qx-trade-panel">
 
-      <!-- Header -->
       <div class="qx-trade-header">
         <div class="qx-trade-symbol">
           <span class="qx-trade-flag">&#127470;&#127475;</span>
@@ -299,7 +292,6 @@
         </div>
       </div>
 
-      <!-- Timer + Investment Row -->
       <div class="qx-trade-row">
         <div class="qx-field">
           <label class="qx-field-label">Timer</label>
@@ -318,7 +310,6 @@
         </div>
       </div>
 
-      <!-- Payout Row -->
       <div class="qx-payout-row">
         <span class="qx-payout-label">Payout</span>
         <div class="qx-payout-value">
@@ -327,7 +318,6 @@
         </div>
       </div>
 
-      <!-- Buy / Sell Buttons -->
       <div class="qx-trade-actions">
         <button id="call-btn" class="qx-buy-btn">
           <span>Buy</span>
@@ -421,7 +411,6 @@
        POPUPS
        ============================================ -->
 
-  <!-- Balance Popup -->
   <div class="popup hidden" id="balance-popup">
     <div class="popup-overlay" id="balance-popup-overlay"></div>
     <div class="popup-content">
@@ -460,7 +449,6 @@
     </div>
   </div>
 
-  <!-- Account Popup -->
   <div class="popup hidden" id="account-popup">
     <div class="popup-overlay" id="account-popup-overlay"></div>
     <div class="popup-content">
@@ -473,7 +461,6 @@
     </div>
   </div>
 
-  <!-- Deposit Popup -->
   <div class="popup hidden" id="deposit-popup">
     <div class="popup-overlay" id="deposit-popup-overlay"></div>
     <div class="popup-content">
@@ -499,7 +486,6 @@
     </div>
   </div>
 
-  <!-- Withdraw Popup -->
   <div class="popup hidden" id="withdraw-popup">
     <div class="popup-overlay" id="withdraw-popup-overlay"></div>
     <div class="popup-content">
@@ -519,7 +505,6 @@
     </div>
   </div>
 
-  <!-- Chat Popup -->
   <div class="popup hidden" id="chat-popup">
     <div class="popup-overlay" id="chat-popup-overlay"></div>
     <div class="popup-content chat-popup-content">
@@ -537,7 +522,6 @@
     </div>
   </div>
 
-  <!-- More Menu -->
   <div class="qx-more-menu hidden" id="more-menu">
     <div class="qx-more-overlay" id="more-menu-overlay"></div>
     <div class="qx-more-panel">
@@ -557,7 +541,6 @@
     </div>
   </div>
 
-  <!-- Tournament Popup (placeholder) -->
   <div class="popup hidden" id="tournament-popup">
     <div class="popup-overlay" id="tournament-popup-overlay"></div>
     <div class="popup-content">
@@ -569,7 +552,6 @@
     </div>
   </div>
 
-  <!-- Referral Popup (placeholder) -->
   <div class="popup hidden" id="referral-popup">
     <div class="popup-overlay" id="referral-popup-overlay"></div>
     <div class="popup-content">
@@ -581,8 +563,41 @@
     </div>
   </div>
 
-  <!-- ===== SCRIPT ===== -->
+  <!-- ===== GLOBAL ERROR CATCHER ===== -->
+  <script>
+  (function() {
+    window.__jsErrors = window.__jsErrors || [];
+
+    window.addEventListener('error', function(e) {
+      var msg = "JS ERROR: " + e.message + " at " + e.filename + ":" + e.lineno;
+      window.__jsErrors.push(msg);
+      console.error(msg);
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      var msg = "PROMISE REJECT: " + (e.reason ? (e.reason.message || e.reason) : "unknown");
+      window.__jsErrors.push(msg);
+      console.error(msg);
+    });
+
+    // App.js load check
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof window.placeTrade !== "function") {
+          console.error("⚠️ app.js FAILED TO LOAD — check syntax errors");
+          if (typeof eruda !== "undefined") {
+            console.warn("Eruda Console available — check Errors tab");
+          }
+        } else {
+          console.log("✅ app.js loaded successfully");
+        }
+      }, 3000);
+    });
+  })();
+  </script>
+
+  <!-- ===== APP SCRIPT ===== -->
   <script type="module" src="app.js?v=25"></script>
 
 </body>
-</html>       
+</html>
