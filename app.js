@@ -3837,3 +3837,60 @@ setTimeout(function() {
 }, 2000);
 
 console.log('===== PHASE 12 VARIABLES EXPOSED =====');
+
+// ============================================================
+// PHASE 12 — AUTO-REBIND (Permanent)
+// Ensures trade buttons always use Phase 12 placeTrade
+// ============================================================
+
+(function phase12AutoRebind() {
+  console.log('[Phase12] Loading rebind system...');
+
+  function rebind() {
+    var callBtn = document.querySelector('#call-btn');
+    var putBtn = document.querySelector('#put-btn');
+
+    if (callBtn && callBtn.getAttribute('data-phase12-bound') !== '1') {
+      callBtn.setAttribute('data-phase12-bound', '1');
+      var nc = callBtn.cloneNode(true);
+      nc.setAttribute('data-phase12-bound', '1');
+      callBtn.parentNode.replaceChild(nc, callBtn);
+
+      nc.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') {
+          window.placeTrade('call');
+        }
+      }, true);
+      console.log('[Phase12] ✅ Buy button rebound');
+    }
+
+    if (putBtn && putBtn.getAttribute('data-phase12-bound') !== '1') {
+      putBtn.setAttribute('data-phase12-bound', '1');
+      var np = putBtn.cloneNode(true);
+      np.setAttribute('data-phase12-bound', '1');
+      putBtn.parentNode.replaceChild(np, putBtn);
+
+      np.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') {
+          window.placeTrade('put');
+        }
+      }, true);
+      console.log('[Phase12] ✅ Sell button rebound');
+    }
+  }
+
+  // Initial
+  setTimeout(rebind, 3000);
+  setTimeout(rebind, 6000);
+
+  // Auto-loop
+  setInterval(rebind, 5000);
+
+  console.log('[Phase12] ✅ Auto-rebind active');
+})();
+
+console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
