@@ -5204,3 +5204,484 @@ window.deleteScheduled = window.deleteScheduled;
 window.initDesigner = initDesigner;
 
 console.log('===== admin.js v33-clean — DESIGNER EXTRA LOADED =====');
+// ============================================================
+// admin.js v33-clean — AUTO RUNNER 24/7
+// Step 1 of Priority Plan
+// ============================================================
+
+// ============================================================
+// AR1. AUTO-RUNNER STATE
+// ============================================================
+
+window.autoRunnerState = {
+  active: false,
+  marketId: null,
+  timeframe: '1m',
+  interval: 60000,        // candle duration in ms
+  timer: null,            // setInterval handle
+  currentCandleStart: 0,  // timestamp of candle start
+  currentCandleOpen: 0,   // open price of current candle
+  currentCandleClose: 0,  // live close (updates)
+  nextCandlePreview: null,// preview of next candle
+  behavior: 'normal',
+  direction: 'auto',
+  size: 'normal',
+  priceMovementInterval: null,  // sub-tick updater
+  tickCount: 0
+};
+
+// ============================================================
+// AR2. TIMEFRAME TO MS
+// ============================================================
+
+function timeframeToMs(tf) {
+  var map = {
+    '5s': 5000, '10s': 10000, '15s': 15000, '30s': 30000,
+    '1m': 60000, '2m': 120000, '3m': 180000, '5m': 300000,
+    '10m': 600000, '15m': 900000, '30m': 1800000,
+    '1h': 3600000, '4h': 14400000, '1d': 86400000
+  };
+  return map[tf] || 60000;
+}
+
+// ============================================================
+// AR3. PRICE MOVEMENT PER BEHAVIOR
+// ============================================================
+
+function getBehaviorParams(behavior, size) {
+  // Size multiplier
+  var sizeMultiplier = {
+    'small': 0.3,
+    'normal': 1.0,
+    'medium': 2.0,
+    'big': 4.0,
+    'huge': 8.0
+  }[size] || 1.0;
+
+  // Base ranges per behavior (in pips relative to basePrice)
+  var behaviors = {
+    'normal':         { body: 30,  wick: 15,  target: 0.5 },
+    'hard':           { body: 50,  wick: 25,  target: 1.0 },
+    'extremely-hard': { body: 80,  wick: 40,  target: 1.5 },
+    'flat':           { body: 5,   wick: 3,   target: 0.05 },
+    'big':            { body: 150, wick: 30,  target: 2.0 },
+    'small':          { body: 10,  wick: 5,   target: 0.1 },
+    'doji':           { body: 2,   wick: 40,  target: 0.02 },
+    'hammer':         { body: 15,  wick: 60,  target: 0.3 },
+    'shooting-star':  { body: 15,  wick: 60,  target: -0.3 },
+    'trend-up':       { body: 40,  wick: 15,  target: 1.0 },
+    'trend-down':     { body: 40,  wick: 15,  target: -1.0 },
+    'spike':          { body: 250, wick: 40,  target: 3.0 },
+    'range':          { body: 25,  wick: 15,  target: 0.3 },
+    'falti':          { body: 60,  wick: 20,  target: 1.2 }
+  };
+
+  var b = behaviors[behavior] || behaviors['normal'];
+
+  return {
+    bodySize: b.body * sizeMultiplier,
+    wickSize: b.wick * sizeMultiplier,
+    targetMultiplier: b.target
+  };
+}
+
+// ============================================================
+// AR4. CREATE NEW CANDLE DATA
+// ============================================================
+
+function createNewCandle(prevClose, behavior, direction, size, basePrice, exactClose) {
+  var params = getBehaviorParams(behavior, size);
+  var open = prevClose || basePrice;
+
+  // If exactClose provided, use it
+  if (exactClose && !isNaN(exactClose)) {
+    var close = exactClose;
+    var high = Math.max(open, close) + params.wickSize;
+    var low = Math.min(open, close) - params.wickSize;
+    return {
+      open: Number(open.toFixed(2)),
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(close.toFixed(2)),
+      direction: close >= open ? 'up' : 'down',
+      behavior: behavior,
+      size: size
+    };
+  }
+
+  // Auto direction
+  if (direction === 'auto' || direction === 'smart') {
+    direction = Math.random() > 0.5 ? 'up' : 'down';
+  }
+
+  var sign = direction === 'up' ? 1 : -1;
+  var movement = params.bodySize * (0.5 + Math.random() * 0.5);
+
+  var close = open + (sign * movement);
+  var high = Math.max(open, close) + (params.wickSize * Math.random());
+  var low = Math.min(open, close) - (params.wickSize * Math.random());
+
+  return {
+    open: Number(open.toFixed(2)),
+    high: Number(high.toFixed(2)),
+    low: Number(low.toFixed(2)),
+    close: Number(close.toFixed(2)),
+    direction: direction,
+    behavior: behavior,
+    size: size
+  };
+}
+
+// ============================================================
+// AR5. WRITE LIVE CANDLE TO FIRESTORE
+// ============================================================
+
+async function writeLiveCandle(candleData, candleStartMs) {
+  var state = window.autoRunnerState;
+  if (!state.marketId) return;
+
+  try {
+    var liveCandleId = 'live_' + candleStartMs;
+
+    await setDoc(
+      doc(db, 'markets', state.marketId, 'liveCandles', liveCandleId),
+      {
+        id: liveCandleId,
+        marketId: state.marketId,
+        startTime: candleStartMs,
+        endTime: candleStartMs + state.interval,
+        open: candleData.open,
+        high: candleData.high,
+        low: candleData.low,
+        close: candleData.close,
+        direction: candleData.direction,
+        behavior: candleData.behavior,
+        size: candleData.size,
+        updatedAt: Date.now()
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.error('[AutoRunner] Firestore write error:', err.message);
+  }
+}
+
+// ============================================================
+// AR6. UPDATE CANDLE PRICE (live movement)
+// ============================================================
+
+async function updateCandlePrice() {
+  var state = window.autoRunnerState;
+  if (!state.active || !state.marketId) return;
+
+  state.tickCount++;
+
+  var params = getBehaviorParams(state.behavior, state.size);
+  var targetClose = state.currentCandleClose;
+  var progress = state.tickCount / 20; // 20 ticks per candle
+
+  // Smooth movement towards target
+  var open = state.currentCandleOpen;
+  var diff = targetClose - open;
+  var currentStep = open + (diff * Math.min(progress, 1.0));
+
+  // Add noise
+  var noise = (Math.random() - 0.5) * params.bodySize * 0.3;
+  var livePrice = currentStep + noise;
+
+  // Update high/low
+  var high = Math.max(state.currentCandleHigh || open, livePrice);
+  var low = Math.min(state.currentCandleLow || open, livePrice);
+
+  state.currentCandleHigh = high;
+  state.currentCandleLow = low;
+
+  // Update Firestore (throttled - every 3 ticks)
+  if (state.tickCount % 3 === 0) {
+    await writeLiveCandle({
+      open: state.currentCandleOpen,
+      high: Number(high.toFixed(2)),
+      low: Number(low.toFixed(2)),
+      close: Number(livePrice.toFixed(2)),
+      direction: livePrice >= open ? 'up' : 'down',
+      behavior: state.behavior,
+      size: state.size
+    }, state.currentCandleStart);
+  }
+}
+
+// ============================================================
+// AR7. START NEW CANDLE
+// ============================================================
+
+async function startNewCandle() {
+  var state = window.autoRunnerState;
+  if (!state.active || !state.marketId) return;
+
+  // Get market data
+  var marketSnap = await getDoc(doc(db, 'markets', state.marketId));
+  if (!marketSnap.exists()) {
+    console.error('[AutoRunner] Market not found:', state.marketId);
+    stopAutoRunner();
+    return;
+  }
+
+  var market = marketSnap.data();
+  var basePrice = market.basePrice || 50000;
+  var currentPrice = market.currentPrice || basePrice;
+
+  // Calculate candle time
+  var now = Date.now();
+  var alignedStart = Math.floor(now / state.interval) * state.interval;
+
+  state.currentCandleStart = alignedStart;
+  state.currentCandleOpen = currentPrice;
+  state.currentCandleHigh = currentPrice;
+  state.currentCandleLow = currentPrice;
+  state.tickCount = 0;
+
+  // Read scheduler settings (behavior/direction/size)
+  var behavior = 'normal';
+  var direction = 'auto';
+  var size = 'normal';
+  var exactClose = null;
+
+  try {
+    var schedSnap = await getDocs(collection(db, 'markets', state.marketId, 'scheduledCandles'));
+    schedSnap.forEach(function(d) {
+      var s = d.data();
+      if (s.applied) return;
+      if (Math.abs(s.datetimeMs - alignedStart) < 30000) {
+        behavior = s.behavior || 'normal';
+        direction = s.direction || 'auto';
+        size = s.size || 'normal';
+        exactClose = s.exactClose || null;
+        console.log('[AutoRunner] Using scheduled candle:', s.datetimeMs);
+      }
+    });
+  } catch(e) {}
+
+  state.behavior = behavior;
+  state.direction = direction;
+  state.size = size;
+
+  // Create candle
+  var candle = createNewCandle(currentPrice, behavior, direction, size, basePrice, exactClose);
+
+  state.currentCandleClose = candle.close;
+
+  // Write to Firestore
+  await writeLiveCandle(candle, alignedStart);
+
+  // Update market currentPrice
+  try {
+    await updateDoc(doc(db, 'markets', state.marketId), {
+      currentPrice: candle.close,
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e) {}
+
+  console.log('[AutoRunner] New candle:', {
+    start: alignedStart,
+    open: candle.open,
+    close: candle.close,
+    behavior: behavior,
+    direction: candle.direction
+  });
+}
+
+// ============================================================
+// AR8. START AUTO-RUNNER
+// ============================================================
+
+async function startAutoRunner(marketId, timeframe) {
+  var state = window.autoRunnerState;
+
+  if (state.active) {
+    console.log('[AutoRunner] Already running');
+    return;
+  }
+
+  if (!marketId) {
+    alert('Select a market first');
+    return;
+  }
+
+  state.marketId = marketId;
+  state.timeframe = timeframe || '1m';
+  state.interval = timeframeToMs(state.timeframe);
+  state.active = true;
+
+  console.log('[AutoRunner] Started:', marketId, '@', state.timeframe);
+
+  // Start first candle
+  await startNewCandle();
+
+  // Candle loop
+  state.timer = setInterval(async function() {
+    await startNewCandle();
+  }, state.interval);
+
+  // Price movement loop (every 200ms)
+  state.priceMovementInterval = setInterval(function() {
+    updateCandlePrice();
+  }, 200);
+
+  updateAutoRunnerUI();
+}
+
+// ============================================================
+// AR9. STOP AUTO-RUNNER
+// ============================================================
+
+function stopAutoRunner() {
+  var state = window.autoRunnerState;
+
+  if (!state.active) return;
+
+  if (state.timer) {
+    clearInterval(state.timer);
+    state.timer = null;
+  }
+  if (state.priceMovementInterval) {
+    clearInterval(state.priceMovementInterval);
+    state.priceMovementInterval = null;
+  }
+
+  state.active = false;
+  console.log('[AutoRunner] Stopped');
+
+  updateAutoRunnerUI();
+}
+
+// ============================================================
+// AR10. TOGGLE AUTO-RUNNER
+// ============================================================
+
+function toggleAutoRunner() {
+  var state = window.autoRunnerState;
+
+  if (state.active) {
+    stopAutoRunner();
+  } else {
+    var marketId = document.getElementById('auto-runner-market')?.value;
+    var timeframe = document.getElementById('auto-runner-timeframe')?.value || '1m';
+
+    if (!marketId) {
+      alert('Select a market for auto-runner');
+      return;
+    }
+
+    startAutoRunner(marketId, timeframe);
+  }
+}
+
+// ============================================================
+// AR11. UPDATE UI
+// ============================================================
+
+function updateAutoRunnerUI() {
+  var state = window.autoRunnerState;
+  var btn = document.getElementById('auto-runner-toggle');
+  var status = document.getElementById('auto-runner-status');
+
+  if (btn) {
+    if (state.active) {
+      btn.textContent = 'STOP Auto-Runner';
+      btn.style.background = 'linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)';
+    } else {
+      btn.textContent = 'START Auto-Runner';
+      btn.style.background = 'linear-gradient(135deg, #00c853 0%, #00a844 100%)';
+    }
+  }
+
+  if (status) {
+    if (state.active) {
+      status.textContent = 'RUNNING: ' + (state.marketId || '') + ' @ ' + state.timeframe;
+      status.style.color = '#00c853';
+    } else {
+      status.textContent = 'IDLE';
+      status.style.color = '#6b7a90';
+    }
+  }
+}
+
+// ============================================================
+// AR12. POPULATE MARKET DROPDOWN
+// ============================================================
+
+function populateAutoRunnerMarkets() {
+  var sel = document.getElementById('auto-runner-market');
+  if (!sel) return;
+
+  onSnapshot(collection(db, 'markets'), function(snap) {
+    var current = sel.value;
+    sel.innerHTML = '<option value="">-- Select Market --</option>';
+
+    var markets = [];
+    snap.forEach(function(d) {
+      markets.push({ id: d.id, ...d.data() });
+    });
+    markets.sort(function(a, b) {
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    markets.forEach(function(m) {
+      if (!m.enabled) return;
+      var opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name + ' (' + m.symbol + ')';
+      sel.appendChild(opt);
+    });
+
+    if (current) sel.value = current;
+  });
+}
+
+// ============================================================
+// AR13. BIND AUTO-RUNNER BUTTONS
+// ============================================================
+
+function bindAutoRunner() {
+  var toggleBtn = document.getElementById('auto-runner-toggle');
+  if (toggleBtn && toggleBtn.dataset.bound !== '1') {
+    toggleBtn.dataset.bound = '1';
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      toggleAutoRunner();
+    });
+    console.log('[AutoRunner] Toggle bound');
+  }
+
+  populateAutoRunnerMarkets();
+}
+
+// ============================================================
+// AR14. INIT
+// ============================================================
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(bindAutoRunner, 2000);
+  });
+} else {
+  setTimeout(bindAutoRunner, 2000);
+}
+
+setTimeout(bindAutoRunner, 4000);
+
+// ============================================================
+// AR15. EXPOSE
+// ============================================================
+
+window.autoRunnerState = window.autoRunnerState;
+window.startAutoRunner = startAutoRunner;
+window.stopAutoRunner = stopAutoRunner;
+window.toggleAutoRunner = toggleAutoRunner;
+window.bindAutoRunner = bindAutoRunner;
+window.populateAutoRunnerMarkets = populateAutoRunnerMarkets;
+window.timeframeToMs = timeframeToMs;
+window.getBehaviorParams = getBehaviorParams;
+window.createNewCandle = createNewCandle;
+
+console.log('===== admin.js v33-clean — AUTO RUNNER LOADED =====');
