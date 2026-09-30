@@ -39,7 +39,7 @@
 
     <nav class="admin-tabs">
       <button class="admin-tab active" data-tab="markets" type="button">Markets</button>
-      <button class="admin-tab" data-tab="candles" type="button">Candle Scheduler</button>
+      <button class="admin-tab" data-tab="candles" type="button">Candle Designer</button>
       <button class="admin-tab" data-tab="smart" type="button">SMART System</button>
       <button class="admin-tab" data-tab="tournaments" type="button">Tournaments</button>
       <button class="admin-tab" data-tab="users" type="button">Users</button>
@@ -55,22 +55,37 @@
          ============================================================ -->
     <section id="tab-markets" class="admin-tab-content active">
       <h2 class="section-title">Markets</h2>
+
       <div class="market-form">
-        <input id="market-name" class="admin-input" type="text" placeholder="Market Name (e.g. EUR/USD)">
-        <input id="market-symbol" class="admin-input" type="text" placeholder="Symbol (e.g. EURUSD)">
+        <input id="market-name" class="admin-input" type="text" placeholder="Market Name (e.g. BTC/USD)">
+        <input id="market-symbol" class="admin-input" type="text" placeholder="Symbol (e.g. BTCUSDT)">
         <input id="market-base" class="admin-input" type="number" step="0.00001" placeholder="Base Price">
         <input id="market-payout" class="admin-input" type="number" placeholder="Payout % (e.g. 85)">
         <input id="market-winrate" class="admin-input" type="number" placeholder="Win Rate % (e.g. 60)">
         <button id="market-add-btn" class="admin-btn primary" type="button">Add Market</button>
       </div>
+
       <div id="market-list" class="market-list"></div>
+
+      <!-- QUICK SETUP -->
+      <div class="quick-setup-box" style="margin-top: 20px; padding: 14px; background: #141d2e; border: 1px solid #1f2a3d; border-radius: 10px;">
+        <h3 class="subsection-title" style="margin-bottom: 10px;">Quick Setup</h3>
+        <p style="font-size: 12px; color: #8b6b00; background: rgba(255, 179, 0, 0.1); padding: 8px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #ffb300;">
+          Create 10 realistic markets at once (BTC, ETH, EUR/USD, Gold, Silver, Oil, etc.)
+        </p>
+        <button id="quick-setup-btn" class="admin-btn primary" type="button" style="width: 100%; padding: 12px;">
+          Create 10 Markets
+        </button>
+        <p id="quick-setup-status" style="font-size: 11px; color: #6b7a90; margin-top: 8px; text-align: center;"></p>
+      </div>
     </section>
 
     <!-- ============================================================
-         TAB: CANDLE SCHEDULER
+         TAB: CANDLE DESIGNER
          ============================================================ -->
     <section id="tab-candles" class="admin-tab-content">
 
+      <!-- Candle Mode -->
       <div class="candle-mode-section">
         <div class="candle-mode-title">Candle Mode</div>
         <div class="candle-mode-buttons">
@@ -96,6 +111,99 @@
         </div>
       </div>
 
+      <!-- CANDLE DESIGNER FORM -->
+      <div class="designer-box" style="background: #141d2e; border: 1px solid #1f2a3d; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <h3 class="subsection-title" style="margin-bottom: 12px;">Candle Designer</h3>
+
+        <label class="settings-label">Market</label>
+        <select id="designer-market" class="admin-input">
+          <option value="">-- Select Market --</option>
+        </select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label class="settings-label">Date</label>
+            <input id="designer-date" class="admin-input" type="date">
+          </div>
+          <div>
+            <label class="settings-label">Time</label>
+            <input id="designer-time" class="admin-input" type="time">
+          </div>
+        </div>
+
+        <label class="settings-label">Timeframe</label>
+        <select id="designer-timeframe" class="admin-input">
+          <option value="5s">5 seconds</option>
+          <option value="10s">10 seconds</option>
+          <option value="15s">15 seconds</option>
+          <option value="30s">30 seconds</option>
+          <option value="1m" selected>1 minute</option>
+          <option value="2m">2 minutes</option>
+          <option value="3m">3 minutes</option>
+          <option value="5m">5 minutes</option>
+          <option value="10m">10 minutes</option>
+          <option value="15m">15 minutes</option>
+          <option value="30m">30 minutes</option>
+          <option value="1h">1 hour</option>
+          <option value="4h">4 hours</option>
+          <option value="1d">1 day</option>
+        </select>
+
+        <label class="settings-label">Direction</label>
+        <select id="designer-direction" class="admin-input">
+          <option value="up">UP (Green)</option>
+          <option value="down">DOWN (Red)</option>
+          <option value="auto">AUTO (random)</option>
+          <option value="smart">SMART (based on users)</option>
+        </select>
+
+        <label class="settings-label">Behavior (14 types)</label>
+        <select id="designer-behavior" class="admin-input">
+          <option value="normal">1. Normal — smooth up/down</option>
+          <option value="hard">2. Hard — trap with reversal</option>
+          <option value="extremely-hard">3. Extremely Hard — multi-trap</option>
+          <option value="flat">4. Flat — tiny body</option>
+          <option value="big">5. Big — large body</option>
+          <option value="small">6. Small — small body</option>
+          <option value="doji">7. Doji — open close</option>
+          <option value="hammer">8. Hammer — long lower wick</option>
+          <option value="shooting-star">9. Shooting Star — long upper wick</option>
+          <option value="trend-up">10. Trend Up — multiple green</option>
+          <option value="trend-down">11. Trend Down — multiple red</option>
+          <option value="spike">12. Spike — sudden big move</option>
+          <option value="range">13. Range — bouncing</option>
+          <option value="falti">14. Falti — end reversal</option>
+        </select>
+
+        <label class="settings-label">Size (5 ranges)</label>
+        <select id="designer-size" class="admin-input">
+          <option value="small">Small (3-8 pips)</option>
+          <option value="normal" selected>Normal (10-25 pips)</option>
+          <option value="medium">Medium (30-50 pips)</option>
+          <option value="big">Big (60-100 pips)</option>
+          <option value="huge">Huge (150-300 pips)</option>
+        </select>
+
+        <label class="settings-label">Exact Close (optional)</label>
+        <input id="designer-exact" class="admin-input" type="number" step="0.01" placeholder="Leave empty for auto">
+
+        <button id="designer-add-btn" class="admin-btn primary" type="button" style="width: 100%; padding: 12px; margin-top: 8px;">
+          Add to Schedule
+        </button>
+
+        <p id="designer-status" style="font-size: 11px; color: #6b7a90; margin-top: 8px; text-align: center;"></p>
+      </div>
+
+      <!-- SCHEDULED CANDLES LIST -->
+      <div class="scheduled-box" style="background: #141d2e; border: 1px solid #1f2a3d; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <h3 class="subsection-title" style="margin-bottom: 10px;">Scheduled Candles</h3>
+        <button id="load-scheduled-btn" class="admin-btn" type="button" style="width: 100%; margin-bottom: 10px;">Load Scheduled List</button>
+        <div id="scheduled-list" style="max-height: 300px; overflow-y: auto; font-size: 12px;">
+          <p style="color: #6b7a90; text-align: center; padding: 10px;">Click "Load Scheduled List" to view</p>
+        </div>
+      </div>
+
+      <!-- OLD CANDLE CONTROLS (bulk generate etc) -->
       <div class="candle-controls">
         <select id="candle-market-select" class="admin-input">
           <option value="">Select Market</option>
@@ -188,13 +296,11 @@
     </section>
 
     <!-- ============================================================
-         TAB: SMART SYSTEM (Phase 1 - NEW)
+         TAB: SMART SYSTEM
          ============================================================ -->
     <section id="tab-smart" class="admin-tab-content">
-
       <h2 class="section-title">SMART Win/Loss System</h2>
 
-      <!-- Live Trade Counter -->
       <div class="smart-live-counter">
         <h3 class="subsection-title">Live Trade Counter</h3>
         <p class="smart-note">Real-time user positions in current candle</p>
@@ -220,7 +326,6 @@
         </div>
       </div>
 
-      <!-- Decision Display -->
       <div class="smart-decision-box">
         <h3 class="subsection-title">Auto Decision</h3>
 
@@ -245,7 +350,6 @@
         </div>
       </div>
 
-      <!-- Override Buttons -->
       <div class="smart-override-box">
         <h3 class="subsection-title">Manual Override</h3>
         <p class="smart-note">Force next candle result (overrides auto decision)</p>
@@ -257,7 +361,6 @@
         </div>
       </div>
 
-      <!-- SMART Settings -->
       <div class="smart-settings-box">
         <h3 class="subsection-title">SMART Settings</h3>
 
@@ -321,7 +424,6 @@
           <p class="smart-hint">Prefer admin profit over exact win % target</p>
         </div>
       </div>
-
     </section>
 
     <!-- ============================================================
@@ -365,40 +467,28 @@
     </section>
 
     <!-- ============================================================
-         TAB: USERS
+         TAB: USERS / TRADES / DEPOSITS / WITHDRAWALS / CHAT
          ============================================================ -->
     <section id="tab-users" class="admin-tab-content">
       <h2 class="section-title">Users</h2>
       <div id="users-list" class="users-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: TRADES
-         ============================================================ -->
     <section id="tab-trades" class="admin-tab-content">
       <h2 class="section-title">Trades</h2>
       <div id="trades-list" class="trades-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: DEPOSITS
-         ============================================================ -->
     <section id="tab-deposits" class="admin-tab-content">
       <h2 class="section-title">Deposits</h2>
       <div id="deposits-list" class="deposits-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: WITHDRAWALS
-         ============================================================ -->
     <section id="tab-withdrawals" class="admin-tab-content">
       <h2 class="section-title">Withdrawals</h2>
       <div id="withdrawals-list" class="withdrawals-list"></div>
     </section>
 
-    <!-- ============================================================
-         TAB: CHAT
-         ============================================================ -->
     <section id="tab-chat" class="admin-tab-content">
       <h2 class="section-title">Chat with Users</h2>
 
@@ -447,12 +537,6 @@
       </div>
 
       <div class="settings-group">
-        <label class="settings-label">Win Rate Target (%)</label>
-        <input id="win-rate-target" class="admin-input" type="number" placeholder="60">
-        <button id="save-win-rate-target" class="admin-btn primary" type="button">Save</button>
-      </div>
-
-      <div class="settings-group">
         <label class="settings-label">Win Percent (%)</label>
         <input id="win-percent-input" class="admin-input" type="number" placeholder="80" min="0" max="100" value="80">
         <button id="save-win-percent" class="admin-btn primary" type="button">Save Win %</button>
@@ -491,52 +575,6 @@
       <div class="settings-group">
         <label class="settings-label">Auto 24/7 Generation</label>
         <button id="auto-24h-toggle" class="admin-btn primary" type="button">Auto 24/7: OFF</button>
-      </div>
-
-      <div class="settings-group" style="margin-top: 20px;">
-        <label class="settings-label" style="color: #ffb300; font-size: 14px;">Future Candle Designer</label>
-
-        <label class="settings-label">Market</label>
-        <select id="designer-market-select" class="admin-input">
-          <option value="">-- Select Market --</option>
-        </select>
-
-        <label class="settings-label">Direction</label>
-        <select id="designer-direction" class="admin-input">
-          <option value="up">UP (Green)</option>
-          <option value="down">DOWN (Red)</option>
-          <option value="neutral">NEUTRAL (Doji)</option>
-        </select>
-
-        <label class="settings-label">Candle Type</label>
-        <select id="designer-type" class="admin-input">
-          <option value="small">Small</option>
-          <option value="medium" selected>Medium</option>
-          <option value="large">Large</option>
-          <option value="doji">Doji</option>
-        </select>
-
-        <label class="settings-label">Body Size (px)</label>
-        <input id="designer-body" class="admin-input" type="number" value="60" min="5" max="200">
-
-        <label class="settings-label">Wick Length (px)</label>
-        <input id="designer-wick" class="admin-input" type="number" value="20" min="0" max="150">
-
-        <label class="settings-label">Open Price</label>
-        <input id="designer-open" class="admin-input" type="number" step="0.01" value="50000">
-
-        <label class="settings-label">Close Price</label>
-        <input id="designer-close" class="admin-input" type="number" step="0.01" value="50100">
-
-        <label class="settings-label">High Price</label>
-        <input id="designer-high" class="admin-input" type="number" step="0.01" value="50150">
-
-        <label class="settings-label">Low Price</label>
-        <input id="designer-low" class="admin-input" type="number" step="0.01" value="49950">
-
-        <button id="designer-save-btn" class="admin-btn primary" type="button">Save Candle Designer</button>
-        <button id="designer-apply-btn" class="admin-btn" type="button">Apply to Next Candle</button>
-        <button id="designer-reset-btn" class="admin-btn danger" type="button">Reset Designer</button>
       </div>
     </section>
 
