@@ -2403,3 +2403,36 @@ input, select {
 .qx-entry-tick {
   z-index: 41 !important;
 }
+/* ============================================
+   ENTRY MARKER — Short line + tick on candle
+   ============================================ */
+.qx-entry-mark {
+  position: absolute;
+  pointer-events: none;
+}
+
+.qx-entry-mark.call {
+  background: #00c853;
+  box-shadow: 0 0 6px #00c853;
+}
+
+.qx-entry-mark.put {
+  background: #ff5252;
+  box-shadow: 0 0 6px #ff5252;
+}
+
+.qx-entry-tick {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qx-entry-tick.call {
+  background: #00c853;
+}
+
+.qx-entry-tick.put {
+  background: #ff5252;
+}
