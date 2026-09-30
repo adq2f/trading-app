@@ -4,7 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Admin Panel - Quotex Clone</title>
-  <link rel="stylesheet" href="admin.css?v=34">
+    <!-- Auto version cache buster -->
+  <script>
+    (function() {
+      var d = new Date();
+      var v = d.getFullYear() +
+        String(d.getMonth() + 1).padStart(2, '0') +
+        String(d.getDate()).padStart(2, '0') + '_' +
+        String(d.getHours()).padStart(2, '0');
+      
+      document.write('<link rel="stylesheet" href="admin.css?v=' + v + '">');
+      
+      window.__cacheVersion = v;
+      console.log('[Cache] Version:', v);
+    })();
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>
