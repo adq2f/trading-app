@@ -3894,3 +3894,211 @@ console.log('===== PHASE 12 VARIABLES EXPOSED =====');
 })();
 
 console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
+
+// ============================================================
+// app.js v26 — PERMANENT FIXES (Final)
+// ============================================================
+
+// ============================================================
+// FIX 1 — Phase 12 Auto-Rebind
+// Ensures trade buttons always use Phase 12 placeTrade
+// ============================================================
+
+(function phase12PermanentRebind() {
+  console.log('[PermanentFix] Loading Phase 12 rebind...');
+
+  function rebind() {
+    var callBtn = document.querySelector('#call-btn');
+    var putBtn = document.querySelector('#put-btn');
+
+    if (callBtn && callBtn.getAttribute('data-phase12-bound') !== '1') {
+      callBtn.setAttribute('data-phase12-bound', '1');
+      var nc = callBtn.cloneNode(true);
+      nc.setAttribute('data-phase12-bound', '1');
+      callBtn.parentNode.replaceChild(nc, callBtn);
+
+      nc.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') {
+          window.placeTrade('call');
+        }
+      }, true);
+      console.log('[PermanentFix] ✅ Buy button');
+    }
+
+    if (putBtn && putBtn.getAttribute('data-phase12-bound') !== '1') {
+      putBtn.setAttribute('data-phase12-bound', '1');
+      var np = putBtn.cloneNode(true);
+      np.setAttribute('data-phase12-bound', '1');
+      putBtn.parentNode.replaceChild(np, putBtn);
+
+      np.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') {
+          window.placeTrade('put');
+        }
+      }, true);
+      console.log('[PermanentFix] ✅ Sell button');
+    }
+  }
+
+  rebind();
+  setTimeout(rebind, 2000);
+  setTimeout(rebind, 5000);
+  setInterval(rebind, 5000);
+})();
+
+// ============================================================
+// FIX 2 — Firestore Auto-Reconnect
+// ============================================================
+
+(function firestoreAutoReconnect() {
+  console.log('[PermanentFix] Loading Firestore reconnect...');
+
+  setInterval(async function() {
+    if (!window.currentUser) return;
+
+    // Check candle listener
+    if (window.fsCandleState && (!window.fsCandleState.listening || !window.fsCandleState.unsubLive)) {
+      if (window.fsCandleState.marketId && typeof window.connectAdminLiveCandles === 'function') {
+        try {
+          window.connectAdminLiveCandles(window.fsCandleState.marketId);
+          console.log('[PermanentFix] Firestore reconnected');
+        } catch(e) {}
+      }
+    }
+
+    // Check trade listener
+    if (window.currentUser && !window.activeTradesUnsub) {
+      if (typeof window.loadActiveTrades === 'function') {
+        window.loadActiveTrades();
+        console.log('[PermanentFix] Trade listener restarted');
+      }
+    }
+
+    // Check history listener
+    if (window.currentUser && !window.historyUnsub) {
+      if (typeof window.loadHistory === 'function') {
+        window.loadHistory();
+        console.log('[PermanentFix] History listener restarted');
+      }
+    }
+  }, 15000);
+})();
+
+// ============================================================
+// FIX 3 — Trade Expiry Watchdog
+// Auto-expire stuck trades every 5s
+// ============================================================
+
+(function tradeExpiryWatchdog() {
+  console.log('[PermanentFix] Loading expiry watchdog...');
+
+  setInterval(async function() {
+    if (!window.currentUser) return;
+    if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+
+    var now = Date.now();
+    var expired = [];
+
+    for (var i = 0; i < window.activeTradesLocal.length; i++) {
+      var t = window.activeTradesLocal[i];
+      if (t.status === 'pending' && t.expiresAt <= now) {
+        expired.push(t);
+      }
+    }
+
+    if (expired.length === 0) return;
+    console.log('[PermanentFix] Found', expired.length, 'expired trades');
+
+    for (var j = 0; j < expired.length; j++) {
+      var trade = expired[j];
+      try {
+        var result = 'loss';
+        var exitPrice = window.currentPrice;
+        if (trade.type === 'call' && exitPrice > trade.entryPrice) result = 'win';
+        else if (trade.type === 'put' && exitPrice < trade.entryPrice) result = 'win';
+
+        var profit = result === 'win' ? trade.amount * 1.85 : 0;
+
+        await window.updateDoc(
+          window.doc(window.db, 'trades', trade.id),
+          {
+            status: 'completed',
+            result: result,
+            exitPrice: exitPrice,
+            profit: profit,
+            completedAt: new Date().toISOString(),
+            phase: 'completed'
+          }
+        );
+
+        if (result === 'win') {
+          var userRef = window.doc(window.db, 'users', window.currentUser.uid);
+          var uDoc = await window.getDoc(userRef);
+          if (uDoc.exists()) {
+            var uData = uDoc.data();
+            var field = trade.accountType === 'real' ? 'realBalance' : 'demoBalance';
+            var curBal = uData[field] || 0;
+            var newBal = curBal + profit;
+            await window.updateDoc(userRef, {
+              [field]: newBal,
+              balance: newBal
+            });
+            window.userBalance = newBal;
+            var balEl = document.querySelector('#balance');
+            if (balEl) balEl.textContent = newBal.toFixed(2);
+          }
+        }
+
+        console.log('[PermanentFix] Expired:', trade.id.slice(0,8), '→', result);
+      } catch(e) {
+        console.error('[PermanentFix] Expire error:', e.message);
+      }
+    }
+  }, 5000);
+})();
+
+// ============================================================
+// FIX 4 — Timer Stuck Fix
+// Reset timer if 00:00 with no trades
+// ============================================================
+
+(function timerStuckFix() {
+  setInterval(function() {
+    if (!window.currentUser) return;
+
+    var timerEls = [
+      document.querySelector('#trade-timer-display'),
+      document.querySelector('#countdown-time')
+    ];
+
+    var anyStuck = false;
+    timerEls.forEach(function(el) {
+      if (el && el.textContent === '00:00') anyStuck = true;
+    });
+
+    if (anyStuck && (!window.activeTradesLocal || window.activeTradesLocal.length === 0)) {
+      var dur = window.selectedTime || 60;
+      var mm = Math.floor(dur / 60);
+      var ss = dur % 60;
+      var str = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+
+      timerEls.forEach(function(el) {
+        if (el) el.textContent = str;
+      });
+
+      var bigTimer = document.querySelector('#big-timer');
+      if (bigTimer) bigTimer.classList.add('hidden');
+
+      var topWrap = document.querySelector('#top-countdown-timer');
+      if (topWrap) topWrap.classList.add('hidden');
+
+      console.log('[PermanentFix] Timer reset to', str);
+    }
+  }, 2000);
+})();
+
+console.log('===== ALL PERMANENT FIXES LOADED =====');
