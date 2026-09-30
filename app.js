@@ -3213,3 +3213,343 @@ window.setBinanceMode = function(enabled) {
 console.log('===== STEP 2C: BINANCE DISABLE FLAG LOADED =====');
 console.log('  To enable Binance: window.setBinanceMode(true)');
 console.log('  To disable Binance: window.setBinanceMode(false)');
+
+// ============================================================
+// USER FALLBACK MASTER SYSTEM
+// User login করলে admin offline detect করে
+// Admin offline হলে user candle generate করবে (hidden)
+// ============================================================
+
+// ============================================================
+// UM1. USER MASTER STATE
+// ============================================================
+
+window.userMasterState = {
+  isMaster: false,
+  masterCheckInterval: null,
+  masterHeartbeatTimer: null,
+  candleTimer: null,
+  lastAdminHeartbeat: 0,
+  lastCheck: 0
+};
+
+// ============================================================
+// UM2. CHECK ADMIN STATUS
+// ============================================================
+
+async function checkAdminStatus() {
+  try {
+    var doc = await window.getDoc(
+      window.doc(window.db, 'settings', 'candleMaster')
+    );
+
+    if (!doc.exists()) {
+      return { online: false, masterId: null };
+    }
+
+    var data = doc.data();
+    var heartbeat = data.heartbeat || 0;
+    var age = Date.now() - heartbeat;
+
+    var isAdminOnline = (data.masterType === 'admin') &&
+                        (age < 30000);
+
+    window.userMasterState.lastAdminHeartbeat = heartbeat;
+
+    return {
+      online: isAdminOnline,
+      masterId: data.masterId,
+      masterType: data.masterType,
+      age: age
+    };
+  } catch (err) {
+    console.error('[UserMaster] Check error:', err.message);
+    return { online: false, masterId: null };
+  }
+}
+
+// ============================================================
+// UM3. USER BECOMES MASTER (Fallback)
+// ============================================================
+
+async function becomeUserMaster() {
+  if (window.userMasterState.isMaster) return;
+
+  try {
+    // Double-check admin still offline
+    var status = await checkAdminStatus();
+    if (status.online) {
+      console.log('[UserMaster] Admin is online, skipping');
+      return;
+    }
+
+    // Declare self as master
+    await window.setDoc(
+      window.doc(window.db, 'settings', 'candleMaster'),
+      {
+        masterId: window.currentUser.uid,
+        masterType: 'user',
+        masterEmail: window.currentUser.email,
+        heartbeat: Date.now(),
+        declaredAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+
+    window.userMasterState.isMaster = true;
+    console.log('[UserMaster] User became fallback master');
+
+    // Start heartbeat
+    startUserHeartbeat();
+
+    // Start candle generation
+    startUserCandleEngine();
+
+  } catch (err) {
+    console.error('[UserMaster] Become master error:', err.message);
+  }
+}
+
+// ============================================================
+// UM4. USER HEARTBEAT
+// ============================================================
+
+function startUserHeartbeat() {
+  if (window.userMasterState.masterHeartbeatTimer) {
+    clearInterval(window.userMasterState.masterHeartbeatTimer);
+  }
+
+  window.userMasterState.masterHeartbeatTimer = setInterval(async function() {
+    if (!window.userMasterState.isMaster) return;
+
+    try {
+      await window.updateDoc(
+        window.doc(window.db, 'settings', 'candleMaster'),
+        {
+          heartbeat: Date.now(),
+          masterType: 'user'
+        }
+      );
+    } catch (err) {
+      console.error('[UserMaster] Heartbeat error:', err.message);
+    }
+  }, 10000);
+
+  console.log('[UserMaster] User heartbeat started (every 10s)');
+}
+
+// ============================================================
+// UM5. USER CANDLE ENGINE (Hidden)
+// ============================================================
+
+function startUserCandleEngine() {
+  if (window.userMasterState.candleTimer) {
+    clearInterval(window.userMasterState.candleTimer);
+  }
+
+  // Get current market from user's selection
+  var marketId = window.fsCandleState?.marketId;
+  if (!marketId) {
+    console.warn('[UserMaster] No market selected for candle engine');
+    return;
+  }
+
+  console.log('[UserMaster] Starting candle engine for:', marketId);
+
+  // Candle generation loop
+  window.userMasterState.candleTimer = setInterval(async function() {
+    // Stop if no longer master
+    if (!window.userMasterState.isMaster) {
+      stopUserCandleEngine();
+      return;
+    }
+
+    // Check if admin came back online
+    var status = await checkAdminStatus();
+    if (status.online && status.masterType === 'admin') {
+      console.log('[UserMaster] Admin came back online — stepping down');
+      stepDownUserMaster();
+      return;
+    }
+
+    // Generate candle
+    await generateUserCandle();
+
+  }, 60000); // 1 minute per candle
+}
+
+// ============================================================
+// UM6. GENERATE USER CANDLE
+// ============================================================
+
+async function generateUserCandle() {
+  var marketId = window.fsCandleState?.marketId;
+  if (!marketId) return;
+
+  try {
+    // Get market data
+    var marketDoc = await window.getDoc(
+      window.doc(window.db, 'markets', marketId)
+    );
+    if (!marketDoc.exists()) return;
+
+    var market = marketDoc.data();
+    var currentPrice = market.currentPrice || market.basePrice || 50000;
+    var basePrice = market.basePrice || 50000;
+
+    // Calculate candle time (aligned to minute)
+    var now = Date.now();
+    var alignedStart = Math.floor(now / 60000) * 60000;
+
+    // Random movement
+    var movement = (Math.random() - 0.5) * 100; // ±50
+    var open = currentPrice;
+    var close = open + movement;
+    var high = Math.max(open, close) + Math.random() * 20;
+    var low = Math.min(open, close) - Math.random() * 20;
+
+    var liveCandleId = 'live_' + alignedStart;
+
+    // Write to Firestore (hidden path name, looks like cache)
+    await window.setDoc(
+      window.doc(window.db, 'markets', marketId, 'liveCandles', liveCandleId),
+      {
+        id: liveCandleId,
+        marketId: marketId,
+        startTime: alignedStart,
+        endTime: alignedStart + 60000,
+        open: Number(open.toFixed(2)),
+        high: Number(high.toFixed(2)),
+        low: Number(low.toFixed(2)),
+        close: Number(close.toFixed(2)),
+        direction: close >= open ? 'up' : 'down',
+        behavior: 'normal',
+        size: 'normal',
+        generatedBy: 'fallback',
+        updatedAt: Date.now()
+      },
+      { merge: true }
+    );
+
+    // Update market currentPrice
+    await window.updateDoc(
+      window.doc(window.db, 'markets', marketId),
+      {
+        currentPrice: Number(close.toFixed(2)),
+        updatedAt: new Date().toISOString()
+      }
+    );
+
+    console.log('[UserMaster] Candle generated:', {
+      start: alignedStart,
+      open: open.toFixed(2),
+      close: close.toFixed(2)
+    });
+
+  } catch (err) {
+    console.error('[UserMaster] Candle generation error:', err.message);
+  }
+}
+
+// ============================================================
+// UM7. STOP USER ENGINE
+// ============================================================
+
+function stopUserCandleEngine() {
+  if (window.userMasterState.candleTimer) {
+    clearInterval(window.userMasterState.candleTimer);
+    window.userMasterState.candleTimer = null;
+  }
+  console.log('[UserMaster] Candle engine stopped');
+}
+
+// ============================================================
+// UM8. STEP DOWN (Admin came back)
+// ============================================================
+
+async function stepDownUserMaster() {
+  stopUserCandleEngine();
+
+  if (window.userMasterState.masterHeartbeatTimer) {
+    clearInterval(window.userMasterState.masterHeartbeatTimer);
+    window.userMasterState.masterHeartbeatTimer = null;
+  }
+
+  window.userMasterState.isMaster = false;
+
+  // Clear master flag (don't overwrite admin's)
+  try {
+    var status = await checkAdminStatus();
+    if (status.masterType !== 'admin') {
+      await window.updateDoc(
+        window.doc(window.db, 'settings', 'candleMaster'),
+        {
+          masterType: null,
+          masterId: null
+        }
+      );
+    }
+  } catch (e) {}
+
+  console.log('[UserMaster] Stepped down - admin is master');
+}
+
+// ============================================================
+// UM9. MASTER COORDINATOR (main loop)
+// ============================================================
+
+function startUserMasterCheck() {
+  if (window.userMasterState.masterCheckInterval) {
+    clearInterval(window.userMasterState.masterCheckInterval);
+  }
+
+  window.userMasterState.masterCheckInterval = setInterval(async function() {
+    if (!window.currentUser) return;
+    if (window.userMasterState.isMaster) return; // already master
+
+    var status = await checkAdminStatus();
+
+    // If admin offline for 30s+, become master
+    if (!status.online && status.masterType !== 'user') {
+      console.log('[UserMaster] Admin offline - attempting to become master');
+      await becomeUserMaster();
+    }
+  }, 15000); // Check every 15s
+
+  console.log('[UserMaster] Master check started (every 15s)');
+}
+
+// ============================================================
+// UM10. HOOK ON USER LOGIN
+// ============================================================
+
+(function hookUserLogin() {
+  var tries = 0;
+  var maxTries = 30;
+
+  var check = setInterval(function() {
+    tries++;
+
+    if (window.currentUser && window.fsCandleState?.marketId) {
+      clearInterval(check);
+      console.log('[UserMaster] User ready - starting master check');
+      startUserMasterCheck();
+    } else if (tries >= maxTries) {
+      clearInterval(check);
+    }
+  }, 1000);
+})();
+
+// ============================================================
+// UM11. EXPOSE
+// ============================================================
+
+window.userMasterState = window.userMasterState;
+window.checkAdminStatus = checkAdminStatus;
+window.becomeUserMaster = becomeUserMaster;
+window.stepDownUserMaster = stepDownUserMaster;
+window.generateUserCandle = generateUserCandle;
+window.startUserMasterCheck = startUserMasterCheck;
+
+console.log('===== USER FALLBACK MASTER LOADED =====');
