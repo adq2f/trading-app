@@ -1355,7 +1355,7 @@ function renderTickMark(type, entryPrice, entryTime) {
     var container = document.getElementById("qx-tick-container");
     if (!container) return;
 
-    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot, .qx-entry-mark, .qx-entry-tick");
+    var old = container.querySelectorAll(".qx-entry-mark, .qx-entry-tick");
     old.forEach(function(m) { m.remove(); });
 
     if (!window.chartRef || !window.candleSeries) return;
@@ -1369,40 +1369,50 @@ function renderTickMark(type, entryPrice, entryTime) {
 
     var color = type === "call" ? "#00c853" : "#ff5252";
 
-    // ===== Short horizontal line (60px, centered on candle) =====
-    var lineWidth = 60;
-    var lineLeft = xPos - 30;
+    // ===== Line: 44px wide, from candle center - 22 to +22 =====
+    // This is narrower, so it sits ON the candle body
+    var lineWidth = 44;
+    var lineLeft = xPos - 22;
 
     var line = document.createElement("div");
     line.className = "qx-entry-mark " + type;
-    line.style.left = lineLeft + "px";
-    line.style.top = (yPos - 1.5) + "px";
-    line.style.width = lineWidth + "px";
-    line.style.height = "3px";
-    line.style.background = color;
-    line.style.borderRadius = "2px";
-    line.style.boxShadow = "0 0 8px " + color;
+    line.style.cssText =
+      "position:absolute;" +
+      "left:" + lineLeft + "px;" +
+      "top:" + (yPos - 1.5) + "px;" +
+      "width:" + lineWidth + "px;" +
+      "height:3px;" +
+      "background:" + color + ";" +
+      "border-radius:2px;" +
+      "box-shadow:0 0 6px " + color + ";" +
+      "pointer-events:none;";
     container.appendChild(line);
 
-    // ===== Tick mark at right end =====
+    // ===== Tick: at right end of line =====
+    var tickSize = 14;
     var tick = document.createElement("div");
     tick.className = "qx-entry-tick " + type;
-    tick.style.left = (xPos + 30 - 8) + "px";
-    tick.style.top = (yPos - 8) + "px";
-    tick.style.width = "16px";
-    tick.style.height = "16px";
-    tick.style.borderRadius = "50%";
-    tick.style.background = color;
-    tick.style.border = "2px solid #ffffff";
-    tick.style.boxShadow = "0 0 10px " + color;
-    tick.style.color = "#ffffff";
-    tick.style.fontSize = "10px";
-    tick.style.fontWeight = "800";
+    tick.style.cssText =
+      "position:absolute;" +
+      "left:" + (xPos + 22 - tickSize/2) + "px;" +
+      "top:" + (yPos - tickSize/2) + "px;" +
+      "width:" + tickSize + "px;" +
+      "height:" + tickSize + "px;" +
+      "border-radius:50%;" +
+      "background:" + color + ";" +
+      "border:2px solid #ffffff;" +
+      "box-shadow:0 0 8px " + color + ";" +
+      "color:#ffffff;" +
+      "font-size:9px;" +
+      "font-weight:900;" +
+      "text-align:center;" +
+      "line-height:" + (tickSize-4) + "px;" +
+      "font-family:Inter, sans-serif;" +
+      "pointer-events:none;";
     tick.textContent = "\u2713";
-    tick.style.animation = "tickPop 0.4s ease-out";
     container.appendChild(tick);
 
-    console.log("[EntryMarker] x=" + xPos + " y=" + yPos);
+    console.log("[EntryMarker] Rendered at x=" + xPos + ", y=" + yPos);
   } catch(e) {
     console.error("[EntryMarker] error:", String(e), e.message);
   }
