@@ -2435,3 +2435,90 @@ window.closePopup = closePopup;
 console.log("===== PART 5 LOADED =====");
 console.log("===== ALL 5 PARTS LOADED =====");
 console.log("Try: window.chartRef, window.candleSeries");
+// ============================================
+// AUTO ENTRY MARKER — Render every second
+// ============================================
+setInterval(function() {
+  try {
+    // Only if there's an active pending trade
+    if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+    if (!window.chartRef || !window.candleSeries) return;
+
+    var trade = null;
+    for (var i = 0; i < window.activeTradesLocal.length; i++) {
+      if (window.activeTradesLocal[i].status === "pending") {
+        trade = window.activeTradesLocal[i];
+        break;
+      }
+    }
+    if (!trade) return;
+
+    var container = document.getElementById("qx-tick-container");
+    if (!container) {
+      console.warn("[AutoMarker] Container missing");
+      return;
+    }
+
+    // Clear old
+    var old = container.querySelectorAll(".qx-entry-mark, .qx-entry-tick");
+    old.forEach(function(m) { m.remove(); });
+
+    // Get coordinates
+    var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
+    var xPos = window.chartRef.timeScale().timeToCoordinate(entrySec);
+    var yPos = window.candleSeries.priceToCoordinate(trade.entryPrice);
+
+    if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) {
+      return;
+    }
+
+    var color = trade.type === "call" ? "#00c853" : "#ff5252";
+
+    // ===== Short line =====
+    var lineWidth = 60;
+    var lineLeft = xPos - 30;
+
+    var line = document.createElement("div");
+    line.className = "qx-entry-mark " + trade.type;
+    line.style.cssText =
+      "position:absolute;" +
+      "left:" + lineLeft + "px;" +
+      "top:" + (yPos - 1.5) + "px;" +
+      "width:" + lineWidth + "px;" +
+      "height:3px;" +
+      "background:" + color + ";" +
+      "border-radius:2px;" +
+      "box-shadow:0 0 8px " + color + ";" +
+      "z-index:40;" +
+      "pointer-events:none;";
+    container.appendChild(line);
+
+    // ===== Tick at right =====
+    var tick = document.createElement("div");
+    tick.className = "qx-entry-tick " + trade.type;
+    tick.style.cssText =
+      "position:absolute;" +
+      "left:" + (xPos + 30 - 8) + "px;" +
+      "top:" + (yPos - 8) + "px;" +
+      "width:16px;" +
+      "height:16px;" +
+      "border-radius:50%;" +
+      "background:" + color + ";" +
+      "border:2px solid #ffffff;" +
+      "box-shadow:0 0 10px " + color + ";" +
+      "color:#ffffff;" +
+      "font-size:10px;" +
+      "font-weight:800;" +
+      "text-align:center;" +
+      "line-height:12px;" +
+      "z-index:41;" +
+      "pointer-events:none;";
+    tick.textContent = "\u2713";
+    container.appendChild(tick);
+
+  } catch(e) {
+    console.error("[AutoMarker] error:", String(e));
+  }
+}, 1000);
+
+console.log("===== AUTO ENTRY MARKER LOADED =====");
