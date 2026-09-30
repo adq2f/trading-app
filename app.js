@@ -528,6 +528,7 @@ function initChart() {
       if (typeof redrawDrawings === "function") redrawDrawings();
       if (typeof updateTimeLabels === "function") updateTimeLabels();
       if (typeof updateEntryLine === "function") updateEntryLine();
+      if (typeof refreshVerticalLines === "function") refreshVerticalLines();
     });
   } catch(e) {}
 
@@ -711,52 +712,48 @@ function updateTimeLabels() {
     var chartWrap = document.getElementById("chart-wrapper");
     if (!chartWrap) return;
 
-    var wrapperWidth = chartWrap.clientWidth;
-    var wrapperHeight = chartWrap.clientHeight;
-
-    // Calculate candle spacing
-    var barSpacing = 8;
-    try {
-      var ts = window.chartRef.timeScale();
-      if (ts.options && ts.options().barSpacing) {
-        barSpacing = ts.options().barSpacing;
-      }
-    } catch(e) {}
-
-    // How many candles can fit
-    var visibleCandles = Math.floor((wrapperWidth - 70) / barSpacing);
-    var labelCount = 5;
-    var step = Math.max(1, Math.floor(visibleCandles / labelCount));
-
-    // Get visible range
+    // ===== Visible time range (stable) =====
     var range = null;
     try {
-      range = window.chartRef.timeScale().getVisibleLogicalRange();
+      range = window.chartRef.timeScale().getVisibleRange();
     } catch(e) {}
 
-    if (!range) return;
+    if (!range || !range.from || !range.to) {
+      labelsEl.innerHTML = "";
+      return;
+    }
 
-    // Get candle data
+    // ===== Candle data =====
     var data = window.candleSeries.data();
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+      labelsEl.innerHTML = "";
+      return;
+    }
 
-    // Build labels from visible candles
+    // ===== Filter visible candles =====
+    var visible = [];
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].time >= range.from && data[i].time <= range.to) {
+        visible.push(data[i]);
+      }
+    }
+
+    if (visible.length < 2) {
+      labelsEl.innerHTML = "";
+      return;
+    }
+
+    // ===== Pick 5 evenly spaced =====
+    var labelCount = 5;
+    var step = Math.max(1, Math.floor(visible.length / labelCount));
     var labels = [];
-    var logicalStart = Math.floor(range.from);
-    var logicalEnd = Math.ceil(range.to);
-    var firstIdx = Math.max(0, logicalStart);
-    var lastIdx = Math.min(data.length - 1, logicalEnd);
+    var usedTimes = {};
 
-    if (lastIdx <= firstIdx) return;
-
-    var totalVisible = lastIdx - firstIdx;
-    var labelStep = Math.max(1, Math.floor(totalVisible / (labelCount - 1)));
-
-    for (var i = 0; i <= labelCount - 1; i++) {
-      var idx = firstIdx + i * labelStep;
-      if (idx > lastIdx) idx = lastIdx;
-      var candle = data[idx];
-      if (candle) {
+    for (var j = 0; j < labelCount; j++) {
+      var idx = Math.min(j * step, visible.length - 1);
+      var candle = visible[idx];
+      if (candle && !usedTimes[candle.time]) {
+        usedTimes[candle.time] = true;
         var d = new Date(candle.time * 1000);
         var hh = String(d.getHours()).padStart(2, "0");
         var mm = String(d.getMinutes()).padStart(2, "0");
@@ -764,7 +761,7 @@ function updateTimeLabels() {
       }
     }
 
-    // Render
+    // ===== Render =====
     labelsEl.innerHTML = labels.map(function(l, i) {
       var active = (i === Math.floor(labels.length / 2)) ? " active" : "";
       return '<span class="qx-time-label' + active + '">' + l + '</span>';
@@ -1260,35 +1257,25 @@ console.log("===== PART 3 LOADED =====");
 // ============================================
 window.__activeEntryData = null;
 
+window.__activePriceLine = null;
+
 function updateEntryLine() {
   try {
     var data = window.__activeEntryData;
     if (!data) return;
     if (!window.chartRef || !window.candleSeries) return;
 
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
-
     var container = document.getElementById("qx-entry-line-container");
     if (!container) return;
 
-    // Remove old
-    container.innerHTML = "";
+    // Remove only timer + label (native line is separate)
+    var old = container.querySelectorAll(".qx-entry-line-timer, .qx-entry-price-label, .qx-entry-line");
+    old.forEach(function(m) { m.remove(); });
 
-    var entryPrice = data.entryPrice;
-    var color = data.color;
-
-    // Y coordinate
-    var yPos = window.candleSeries.priceToCoordinate(entryPrice);
+    var yPos = window.candleSeries.priceToCoordinate(data.entryPrice);
     if (yPos === null || yPos === undefined) return;
 
-    // ===== Entry Line (dashed) =====
-    var line = document.createElement("div");
-    line.className = "qx-entry-line " + data.type;
-    line.style.top = yPos + "px";
-    container.appendChild(line);
-
-    // ===== Timer (center of line) =====
+    // Timer (center)
     var remaining = Math.max(0, Math.ceil((data.expiresAt - Date.now()) / 1000));
     var mm = Math.floor(remaining / 60);
     var ss = remaining % 60;
@@ -1300,10 +1287,10 @@ function updateEntryLine() {
     timerEl.style.top = (yPos - 13) + "px";
     container.appendChild(timerEl);
 
-    // ===== Price Label (right side) =====
+    // Price label (right side)
     var labelEl = document.createElement("div");
     labelEl.className = "qx-entry-price-label " + data.type;
-    labelEl.textContent = Number(entryPrice).toFixed(2);
+    labelEl.textContent = Number(data.entryPrice).toFixed(2);
     labelEl.style.top = (yPos - 9) + "px";
     container.appendChild(labelEl);
 
@@ -1313,17 +1300,50 @@ function updateEntryLine() {
 }
 
 function renderEntryLine(type, entryPrice, expiresAt) {
-  window.__activeEntryData = {
-    type: type,
-    entryPrice: entryPrice,
-    expiresAt: expiresAt,
-    color: type === "call" ? "#00c853" : "#ff5252"
-  };
-  updateEntryLine();
+  try {
+    if (!window.chartRef || !window.candleSeries) return;
+
+    window.__activeEntryData = {
+      type: type,
+      entryPrice: entryPrice,
+      expiresAt: expiresAt
+    };
+
+    // Remove old native price line
+    if (window.__activePriceLine) {
+      try { window.candleSeries.removePriceLine(window.__activePriceLine); } catch(e) {}
+      window.__activePriceLine = null;
+    }
+
+    // Create WHITE native price line
+    try {
+      window.__activePriceLine = window.candleSeries.createPriceLine({
+        price: entryPrice,
+        color: "#ffffff",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "",
+        axisLabelColor: type === "call" ? "#00c853" : "#ff5252",
+        axisLabelTextColor: "#ffffff"
+      });
+      console.log("[EntryLine] White native price line created");
+    } catch(e) {
+      console.error("[EntryLine] createPriceLine fail:", e.message);
+    }
+
+    updateEntryLine();
+  } catch(e) {
+    console.error("[EntryLine] error:", String(e), e.message);
+  }
 }
 
 function clearEntryLine() {
   window.__activeEntryData = null;
+  if (window.__activePriceLine) {
+    try { window.candleSeries.removePriceLine(window.__activePriceLine); } catch(e) {}
+    window.__activePriceLine = null;
+  }
   var container = document.getElementById("qx-entry-line-container");
   if (container) container.innerHTML = "";
 }
@@ -1331,18 +1351,27 @@ function clearEntryLine() {
 // ============================================
 // VERTICAL DOTTED LINES (trade start/end)
 // ============================================
+window.__activeVLines = null;
+
 function renderVerticalLines(startTime, endTime) {
+  window.__activeVLines = {
+    startTime: startTime,
+    endTime: endTime
+  };
+  refreshVerticalLines();
+}
+
+function refreshVerticalLines() {
   try {
+    if (!window.__activeVLines) return;
     if (!window.chartRef) return;
+
     var container = document.getElementById("qx-vline-container");
     if (!container) return;
     container.innerHTML = "";
 
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
-
-    var startSec = Math.floor(new Date(startTime).getTime() / 1000);
-    var endSec = Math.floor(endTime / 1000);
+    var startSec = Math.floor(new Date(window.__activeVLines.startTime).getTime() / 1000);
+    var endSec = Math.floor(window.__activeVLines.endTime / 1000);
 
     var startX = window.chartRef.timeScale().timeToCoordinate(startSec);
     var endX = window.chartRef.timeScale().timeToCoordinate(endSec);
@@ -1378,19 +1407,22 @@ function renderVerticalLines(startTime, endTime) {
 }
 
 function clearVerticalLines() {
+  window.__activeVLines = null;
   var container = document.getElementById("qx-vline-container");
   if (container) container.innerHTML = "";
 }
 
+window.refreshVerticalLines = refreshVerticalLines;
+
 // ============================================
-// TICK MARK + DOT TRAIL
+// FIX 1: TICK MARK (Quotex-style — candle er nice/upore)
 // ============================================
 function renderTickMark(type, entryPrice, entryTime) {
   try {
     var container = document.getElementById("qx-tick-container");
     if (!container) return;
 
-    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail");
+    var old = container.querySelectorAll(".qx-tick-mark, .qx-dot-trail, .qx-dot");
     old.forEach(function(m) { m.remove(); });
 
     if (!window.chartRef || !window.candleSeries) return;
@@ -1402,37 +1434,50 @@ function renderTickMark(type, entryPrice, entryTime) {
 
     if (xPos === null || yPos === null || xPos === undefined || yPos === undefined) return;
 
-    // Tick mark
-    var tick = document.createElement("div");
-    tick.className = "qx-tick-mark " + type;
-    tick.style.left = (xPos - 11) + "px";
-    tick.style.top = type === "call" ? (yPos + 18) + "px" : (yPos - 30) + "px";
-    tick.textContent = "\u2713";
-    container.appendChild(tick);
+    // ===== Small colored dot (12px, no big circle) =====
+    var mark = document.createElement("div");
+    mark.className = "qx-tick-mark " + type;
+    mark.style.position = "absolute";
+    mark.style.width = "12px";
+    mark.style.height = "12px";
+    mark.style.borderRadius = "50%";
+    mark.style.left = (xPos - 6) + "px";
+    mark.style.top = type === "call" ? (yPos + 12) + "px" : (yPos - 18) + "px";
+    mark.style.background = type === "call" ? "#00c853" : "#ff5252";
+    mark.style.border = "2px solid #ffffff";
+    mark.style.boxShadow = "0 0 8px " + (type === "call" ? "#00c853" : "#ff5252");
+    mark.style.zIndex = "30";
+    mark.style.pointerEvents = "none";
+    mark.style.animation = "tickPop 0.4s ease-out";
+    container.appendChild(mark);
 
-    // Dot trail
-    var trail = document.createElement("div");
-    trail.className = "qx-dot-trail " + type;
-    for (var i = 0; i < 4; i++) {
-      var d = document.createElement("div");
-      d.className = "qx-dot qx-dot-" + i;
-      trail.appendChild(d);
+    // ===== 2 small trail dots =====
+    for (var i = 0; i < 2; i++) {
+      var dot = document.createElement("div");
+      dot.className = "qx-dot";
+      dot.style.position = "absolute";
+      dot.style.width = (4 + i * 2) + "px";
+      dot.style.height = (4 + i * 2) + "px";
+      dot.style.borderRadius = "50%";
+      dot.style.background = type === "call" ? "#00c853" : "#ff5252";
+      dot.style.opacity = 0.5 + i * 0.4;
+      if (type === "call") {
+        dot.style.left = (xPos - 18 - i * 8) + "px";
+        dot.style.top = (yPos + 16) + "px";
+      } else {
+        dot.style.left = (xPos + 12 + i * 8) + "px";
+        dot.style.top = (yPos - 16) + "px";
+      }
+      dot.style.zIndex = "29";
+      dot.style.pointerEvents = "none";
+      container.appendChild(dot);
     }
-    if (type === "call") {
-      trail.style.left = (xPos - 62) + "px";
-      trail.style.top = (yPos + 18) + "px";
-    } else {
-      trail.style.left = (xPos + 12) + "px";
-      trail.style.top = (yPos - 28) + "px";
-    }
-    container.appendChild(trail);
 
-    console.log("[TickMark] Rendered at x=" + xPos + " y=" + yPos);
+    console.log("[TickMark] Rendered x=" + xPos + " y=" + yPos);
   } catch(e) {
     console.error("[TickMark] error:", String(e), e.message);
   }
 }
-
 function clearTickMark() {
   var container = document.getElementById("qx-tick-container");
   if (container) container.innerHTML = "";
