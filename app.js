@@ -3005,3 +3005,211 @@ window.switchToAdminMarket = window.switchToAdminMarket;
 window.initAdminCandleConsumer = window.initAdminCandleConsumer;
 
 console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
+
+// ============================================================
+// STEP 2C: BINANCE DISABLE FLAG
+// Toggle Binance on/off. Default OFF (Firestore only)
+// ============================================================
+
+// ============================================================
+// BIN-C1. GLOBAL FLAG
+// ============================================================
+
+window.USE_BINANCE = false;  // CHANGE TO true TO RE-ENABLE BINANCE
+
+console.log('[BIN-C] Binance flag:', window.USE_BINANCE ? 'ENABLED' : 'DISABLED');
+console.log('[BIN-C] Using:', window.USE_BINANCE ? 'Binance API' : 'Firestore (admin candles)');
+
+// ============================================================
+// BIN-C2. PATCH startLivePrice
+// ============================================================
+
+(function patchStartLivePrice() {
+  if (typeof window.startLivePrice !== 'function') {
+    console.warn('[BIN-C] startLivePrice not found');
+    return;
+  }
+
+  var origStartLivePrice = window.startLivePrice;
+
+  window.startLivePrice = function() {
+    if (!window.USE_BINANCE) {
+      console.log('[BIN-C] Binance WS disabled - using Firestore');
+      return;
+    }
+
+    console.log('[BIN-C] Binance WS enabled - starting');
+    return origStartLivePrice.apply(this, arguments);
+  };
+
+  console.log('[BIN-C] startLivePrice patched');
+})();
+
+// ============================================================
+// BIN-C3. PATCH loadCandles
+// ============================================================
+
+(function patchLoadCandles() {
+  if (typeof window.loadCandles !== 'function') {
+    console.warn('[BIN-C] loadCandles not found');
+    return;
+  }
+
+  var origLoadCandles = window.loadCandles;
+
+  window.loadCandles = async function() {
+    if (!window.USE_BINANCE) {
+      console.log('[BIN-C] Binance API disabled - using Firestore');
+      
+      // Trigger Firestore load instead
+      if (typeof window.switchToAdminMarket === 'function') {
+        var symbol = window.selectedAsset || 'BTCUSDT';
+        await window.switchToAdminMarket(symbol);
+      }
+      return;
+    }
+
+    console.log('[BIN-C] Binance API enabled - loading');
+    return await origLoadCandles.apply(this, arguments);
+  };
+
+  console.log('[BIN-C] loadCandles patched');
+})();
+
+// ============================================================
+// BIN-C4. STOP BINANCE WS (if running)
+// ============================================================
+
+(function stopRunningBinanceWS() {
+  try {
+    if (window.livePriceWS) {
+      console.log('[BIN-C] Stopping existing Binance WS');
+      window.livePriceWS.close();
+      window.livePriceWS = null;
+    }
+  } catch(e) {}
+})();
+
+// ============================================================
+// BIN-C5. HOOK ASSET SELECT (disable Binance)
+// ============================================================
+
+(function patchAssetSelect() {
+  var sel = document.getElementById('asset-select');
+  if (!sel) return;
+
+  // Remove existing listeners by cloning
+  var newSel = sel.cloneNode(true);
+  sel.parentNode.replaceChild(newSel, sel);
+
+  newSel.addEventListener('change', async function() {
+    var symbol = newSel.value;
+    window.selectedAsset = symbol;
+    console.log('[BIN-C] Asset changed:', symbol);
+
+    if (window.USE_BINANCE) {
+      // Binance path
+      if (typeof window.loadCandles === 'function') {
+        await window.loadCandles();
+      }
+      if (typeof window.startLivePrice === 'function') {
+        window.startLivePrice();
+      }
+    } else {
+      // Firestore path
+      if (typeof window.switchToAdminMarket === 'function') {
+        await window.switchToAdminMarket(symbol);
+      }
+    }
+  });
+
+  console.log('[BIN-C] Asset select patched');
+})();
+
+// ============================================================
+// BIN-C6. HOOK TIMEFRAME SWITCH (disable Binance)
+// ============================================================
+
+(function patchTimeframeSwitch() {
+  // Override the timeframe change handler
+  var originalItems = document.querySelectorAll('.qx-tf-item');
+  
+  originalItems.forEach(function(btn) {
+    // Remove old handlers by cloning
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener('click', async function() {
+      // Close modal
+      var modal = document.getElementById('tf-modal');
+      if (modal) modal.classList.add('hidden');
+      
+      // Update active
+      document.querySelectorAll('.qx-tf-item').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      newBtn.classList.add('active');
+      
+      var tf = newBtn.dataset.tf;
+      window.selectedTimeframe = tf;
+      var label = document.getElementById('qx-tf-active');
+      if (label) label.textContent = tf;
+      
+      console.log('[BIN-C] Timeframe changed:', tf);
+      
+      if (window.USE_BINANCE) {
+        if (typeof window.loadCandles === 'function') {
+          await window.loadCandles();
+        }
+      } else {
+        // Firestore path - reload market
+        var symbol = window.selectedAsset || 'BTCUSDT';
+        if (typeof window.switchToAdminMarket === 'function') {
+          await window.switchToAdminMarket(symbol);
+        }
+      }
+    });
+  });
+
+  console.log('[BIN-C] Timeframe switch patched');
+})();
+
+// ============================================================
+// BIN-C7. TOGGLE FUNCTION (for testing)
+// ============================================================
+
+window.setBinanceMode = function(enabled) {
+  window.USE_BINANCE = enabled;
+  console.log('[BIN-C] Binance mode:', enabled ? 'ENABLED' : 'DISABLED');
+  
+  if (!enabled) {
+    // Stop Binance WS
+    if (window.livePriceWS) {
+      try { window.livePriceWS.close(); } catch(e) {}
+      window.livePriceWS = null;
+    }
+    // Switch to Firestore
+    var symbol = window.selectedAsset || 'BTCUSDT';
+    if (typeof window.switchToAdminMarket === 'function') {
+      window.switchToAdminMarket(symbol);
+    }
+  } else {
+    // Switch to Binance
+    if (typeof window.loadCandles === 'function') {
+      window.loadCandles();
+    }
+    if (typeof window.startLivePrice === 'function') {
+      window.startLivePrice();
+    }
+  }
+  
+  return window.USE_BINANCE;
+};
+
+// ============================================================
+// BIN-C8. INIT
+// ============================================================
+
+console.log('===== STEP 2C: BINANCE DISABLE FLAG LOADED =====');
+console.log('  To enable Binance: window.setBinanceMode(true)');
+console.log('  To disable Binance: window.setBinanceMode(false)');
