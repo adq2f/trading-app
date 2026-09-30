@@ -2934,3 +2934,277 @@ setInterval(async function() {
 }, 5000);
 
 console.log('===== PRICE AUTO-SYNC ACTIVE =====');
+
+// ============================================================
+// PERMANENT CLICK FIX
+// Uses querySelector (bypass null-guard) + capture phase
+// ============================================================
+
+(function PERMANENT_CLICK_FIX() {
+  console.log('[ClickFix] Loading...');
+
+  function bindClick(selector, handler) {
+    var el = document.querySelector(selector);
+    if (!el) return false;
+    el.onclick = null;
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      try { handler(e); } catch(err) { console.error('[ClickFix]', err); }
+    }, true);
+    return true;
+  }
+
+  function bindAllClicks() {
+    // Trade buttons
+    bindClick('#call-btn', function() {
+      if (window.placeTrade) window.placeTrade('call');
+    });
+
+    bindClick('#put-btn', function() {
+      if (window.placeTrade) window.placeTrade('put');
+    });
+
+    // Top bar
+    bindClick('#balance-chip', function() {
+      var p = document.querySelector('#balance-popup');
+      var o = document.querySelector('#balance-popup-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+      if (window.refreshBalanceDisplays) window.refreshBalanceDisplays();
+    });
+
+    bindClick('#deposit-btn', function() {
+      var p = document.querySelector('#deposit-popup');
+      var o = document.querySelector('#deposit-popup-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+    });
+
+    bindClick('#notif-btn', function() {
+      var b = document.querySelector('#notif-badge');
+      if (b) { b.textContent = '0'; b.style.display = 'none'; }
+    });
+
+    // Chart tools
+    bindClick('#drawer-toggle', function() {
+      var d = document.querySelector('#qx-drawer');
+      var o = document.querySelector('#drawer-overlay');
+      if (d) d.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+      if (window.updateCandleCountdown) window.updateCandleCountdown();
+    });
+
+    bindClick('#drawing-toggle', function() {
+      var p = document.querySelector('#drawing-panel');
+      var o = document.querySelector('#drawing-overlay');
+      if (p) p.classList.remove('hidden');
+      if (o) o.classList.remove('hidden');
+    });
+
+    bindClick('#tf-badge', function() {
+      var m = document.querySelector('#tf-modal');
+      if (m) m.classList.remove('hidden');
+    });
+
+    // Bottom nav
+    document.querySelectorAll('.qx-nav-btn').forEach(function(btn) {
+      var nav = btn.dataset.nav;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (nav === 'help') {
+          var cp = document.querySelector('#chat-popup');
+          var co = document.querySelector('#chat-popup-overlay');
+          if (cp) cp.classList.remove('hidden');
+          if (co) co.classList.remove('hidden');
+          if (window.startUserChatListener) window.startUserChatListener();
+        } else if (nav === 'more') {
+          var mm = document.querySelector('#more-menu');
+          if (mm) mm.classList.remove('hidden');
+        } else if (nav === 'profile') {
+          var ap = document.querySelector('#account-popup');
+          if (ap) ap.classList.remove('hidden');
+        } else if (nav === 'tournament') {
+          var tp = document.querySelector('#tournament-popup');
+          if (tp) tp.classList.remove('hidden');
+        } else if (nav === 'chart') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, true);
+    });
+
+    // Asset select
+    var sel = document.querySelector('#asset-select');
+    if (sel && !sel.dataset.clickFix) {
+      sel.dataset.clickFix = '1';
+      sel.addEventListener('change', function() {
+        window.selectedAsset = sel.value;
+        if (window.switchToAdminMarket) {
+          window.switchToAdminMarket(sel.value);
+        }
+      });
+    }
+
+    // Investment
+    document.querySelectorAll('.qx-inc-btn').forEach(function(btn) {
+      var action = btn.dataset.action;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var input = document.querySelector('#trade-amount');
+        if (!input) return;
+        var v = parseFloat(input.value) || 0;
+        if (action === 'plus') v += 1;
+        else v = Math.max(1, v - 1);
+        input.value = v;
+      }, true);
+    });
+
+    // Trades tabs
+    document.querySelectorAll('.qx-trades-tab').forEach(function(tab) {
+      var which = tab.dataset.tradesTab;
+      tab.onclick = null;
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.qx-trades-tab').forEach(function(t) {
+          t.classList.remove('active');
+        });
+        tab.classList.add('active');
+        var ap = document.querySelector('#qx-trades-active-pane');
+        var hp = document.querySelector('#qx-trades-history-pane');
+        if (ap) ap.classList.toggle('active', which === 'active');
+        if (hp) hp.classList.toggle('active', which === 'history');
+      }, true);
+    });
+
+    // Close buttons
+    document.querySelectorAll('.popup-close, .qx-drawer-close, .qx-drawing-close, .qx-tf-close, .qx-more-close').forEach(function(btn) {
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var parent = btn.closest('.popup, .qx-drawer, .qx-drawing-panel, .qx-tf-modal, .qx-more-menu');
+        if (parent) parent.classList.add('hidden');
+      }, true);
+    });
+
+    // Drawing tools
+    document.querySelectorAll('.qx-tool-btn').forEach(function(btn) {
+      var tool = btn.dataset.tool;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (tool === 'Eraser') {
+          if (window.clearAllDrawings) window.clearAllDrawings();
+          return;
+        }
+        document.querySelectorAll('.qx-tool-btn').forEach(function(b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        window.currentDrawingTool = tool;
+        var canvas = document.querySelector('#drawing-canvas');
+        if (canvas) {
+          if (tool === 'cursor') canvas.classList.remove('active');
+          else canvas.classList.add('active');
+        }
+      }, true);
+    });
+
+    // Timeframe items
+    document.querySelectorAll('.qx-tf-item').forEach(function(btn) {
+      var tf = btn.dataset.tf;
+      btn.onclick = null;
+      btn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelectorAll('.qx-tf-item').forEach(function(b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        window.selectedTimeframe = tf;
+        var label = document.querySelector('#qx-tf-active');
+        if (label) label.textContent = tf;
+        var modal = document.querySelector('#tf-modal');
+        if (modal) modal.classList.add('hidden');
+        if (window.switchToAdminMarket) {
+          await window.switchToAdminMarket(window.selectedAsset || 'BTCUSDT');
+        }
+      }, true);
+    });
+
+    // More menu items
+    document.querySelectorAll('.qx-more-item').forEach(function(item) {
+      var action = item.dataset.menu;
+      item.onclick = null;
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var mm = document.querySelector('#more-menu');
+        if (mm) mm.classList.add('hidden');
+
+        if (action === 'deposit') {
+          var dp = document.querySelector('#deposit-popup');
+          var dv = document.querySelector('#deposit-popup-overlay');
+          if (dp) dp.classList.remove('hidden');
+          if (dv) dv.classList.remove('hidden');
+        } else if (action === 'withdraw') {
+          var wp = document.querySelector('#withdraw-popup');
+          var wv = document.querySelector('#withdraw-popup-overlay');
+          if (wp) wp.classList.remove('hidden');
+          if (wv) wv.classList.remove('hidden');
+        } else if (action === 'chat') {
+          var cp = document.querySelector('#chat-popup');
+          var co = document.querySelector('#chat-popup-overlay');
+          if (cp) cp.classList.remove('hidden');
+          if (co) co.classList.remove('hidden');
+        } else if (action === 'trades') {
+          var ts = document.querySelector('.qx-trades-section');
+          if (ts) ts.scrollIntoView({ behavior: 'smooth' });
+        } else if (action === 'logout') {
+          if (window.auth && window.signOut) {
+            window.signOut(window.auth);
+          }
+        }
+      }, true);
+    });
+
+    // ACCOUNT OPTIONS
+    document.querySelectorAll('.qx-acc-option').forEach(function(opt) {
+      var accType = opt.dataset.accType;
+      opt.onclick = null;
+      opt.addEventListener('click', function(e) {
+        if (e.target.closest('.qx-acc-edit')) return;
+        e.preventDefault();
+        if (window.switchAccount) window.switchAccount(accType);
+      }, true);
+    });
+
+    // ACC BTN POPUP
+    document.querySelectorAll('.acc-btn-popup').forEach(function(btn) {
+      var acc = btn.dataset.acc;
+      btn.onclick = null;
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.switchAccount) window.switchAccount(acc);
+      }, true);
+    });
+  }
+
+  // Run multiple times
+  setTimeout(bindAllClicks, 500);
+  setTimeout(bindAllClicks, 2000);
+  setTimeout(bindAllClicks, 5000);
+
+  // Run every 5s (catch new elements)
+  setInterval(bindAllClicks, 5000);
+
+  console.log('[ClickFix] ✅ Ready — auto-bind every 5s');
+})();
+
+console.log('===== PERMANENT CLICK FIX LOADED =====');
