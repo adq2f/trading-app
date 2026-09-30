@@ -13,45 +13,7 @@
   <link rel="stylesheet" href="style.css?v=25">
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<script>
-// ============================================
-// SIMPLE DEBUG — No module, just check
-// ============================================
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    var out = [];
-    out.push("=== PAGE DEBUG ===");
-    out.push("Time: " + new Date().toLocaleTimeString());
-    out.push("URL: " + location.href.substring(0, 60));
-    out.push("");
-    out.push("--- JAVASCRIPT CHECK ---");
-    out.push("window.chartRef: " + typeof window.chartRef);
-    out.push("window.candleSeries: " + typeof window.candleSeries);
-    out.push("window.placeTrade: " + typeof window.placeTrade);
-    out.push("window.renderTickMark: " + typeof window.renderTickMark);
-    out.push("window.currentUser: " + (window.currentUser ? "YES" : "NO"));
-    out.push("");
-    out.push("--- DOM CHECK ---");
-    out.push("tv-chart: " + (document.getElementById("tv-chart") ? "YES" : "NO"));
-    out.push("chart-wrapper: " + (document.getElementById("chart-wrapper") ? "YES" : "NO"));
-    out.push("qx-tick-container: " + (document.getElementById("qx-tick-container") ? "YES" : "NO"));
-    out.push("balance-chip: " + (document.getElementById("balance-chip") ? "YES" : "NO"));
-    out.push("");
-    out.push("--- APP.JS LOAD CHECK ---");
-    var appLoaded = typeof window.placeTrade === "function";
-    out.push("app.js loaded: " + (appLoaded ? "YES" : "NO - SYNTAX ERROR!"));
-    
-    if (!appLoaded) {
-      out.push("");
-      out.push("⚠️ app.js FAILED TO LOAD!");
-      out.push("Check console for red errors");
-    }
-    
-    alert(out.join("\n"));
-  }, 5000);
-});
-</script>
-  <body>
+<body>
 
   <!-- ============================================
        LOGIN PAGE
