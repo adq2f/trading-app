@@ -2906,3 +2906,31 @@ window.stepDownUserMaster = stepDownUserMaster;
 console.log("===== PART 6 LOADED =====");
 console.log("===== ALL 6 PARTS LOADED =====");
 console.log("===== app.js v26 COMPLETE =====");
+
+// ============================================================
+// PRICE AUTO-SYNC — Keep currentPrice aligned with Firestore
+// ============================================================
+
+setInterval(async function() {
+  if (!window.currentUser) return;
+  if (!window.fsCandleState?.marketId) return;
+
+  try {
+    var mDoc = await window.getDoc(
+      window.doc(window.db, 'markets', window.fsCandleState.marketId)
+    );
+
+    if (!mDoc.exists()) return;
+    var market = mDoc.data();
+    var realPrice = market.currentPrice || market.basePrice;
+
+    if (realPrice && Math.abs(window.currentPrice - realPrice) > 1) {
+      window.currentPrice = realPrice;
+      var priceEl = document.getElementById('current-price');
+      if (priceEl) priceEl.textContent = realPrice.toFixed(2);
+      console.log('[PriceSync] Updated:', realPrice);
+    }
+  } catch(e) {}
+}, 5000);
+
+console.log('===== PRICE AUTO-SYNC ACTIVE =====');
