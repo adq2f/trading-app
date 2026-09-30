@@ -85,6 +85,41 @@
          ============================================================ -->
     <section id="tab-candles" class="admin-tab-content">
 
+      <!-- AUTO RUNNER 24/7 -->
+      <div class="auto-runner-box" style="background: #141d2e; border: 2px solid #00c853; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <h3 class="subsection-title" style="margin-bottom: 10px; color: #00c853;">
+          AUTO RUNNER 24/7
+        </h3>
+        <p style="font-size: 11px; color: #8b98ab; margin-bottom: 10px;">
+          Starts automatic candle generation for selected market. Runs continuously until stopped.
+        </p>
+
+        <label class="settings-label">Market</label>
+        <select id="auto-runner-market" class="admin-input">
+          <option value="">-- Select Market --</option>
+        </select>
+
+        <label class="settings-label">Timeframe</label>
+        <select id="auto-runner-timeframe" class="admin-input">
+          <option value="5s">5 seconds</option>
+          <option value="10s">10 seconds</option>
+          <option value="15s">15 seconds</option>
+          <option value="30s">30 seconds</option>
+          <option value="1m" selected>1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="15m">15 minutes</option>
+          <option value="1h">1 hour</option>
+        </select>
+
+        <button id="auto-runner-toggle" class="admin-btn primary" type="button" style="width: 100%; padding: 12px; margin-top: 8px; background: linear-gradient(135deg, #00c853 0%, #00a844 100%);">
+          START Auto-Runner
+        </button>
+
+        <p id="auto-runner-status" style="font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; color: #6b7a90;">
+          IDLE
+        </p>
+      </div>
+
       <!-- Candle Mode -->
       <div class="candle-mode-section">
         <div class="candle-mode-title">Candle Mode</div>
@@ -203,7 +238,7 @@
         </div>
       </div>
 
-      <!-- OLD CANDLE CONTROLS (bulk generate etc) -->
+      <!-- OLD CANDLE CONTROLS -->
       <div class="candle-controls">
         <select id="candle-market-select" class="admin-input">
           <option value="">Select Market</option>
