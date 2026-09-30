@@ -4785,3 +4785,422 @@ window.loadAdminTournaments = loadAdminTournaments;
 console.log('===== admin.js v33-clean — PART 7/7 LOADED =====');
 console.log('===== ✅ admin.js FULLY LOADED — v33-clean =====');
 console.log('===== Try: window.runTests() =====');
+// ============================================================
+// admin.js v33-clean — DESIGNER EXTRA
+// Quick Setup + Candle Designer + Scheduled List
+// ============================================================
+
+// ============================================================
+// D1. QUICK SETUP — Create 10 Realistic Markets
+// ============================================================
+
+var QUICK_SETUP_MARKETS = [
+  { name: 'BTC/USD',  symbol: 'BTCUSDT', basePrice: 95000,  payout: 85, winRate: 50 },
+  { name: 'ETH/USD',  symbol: 'ETHUSDT', basePrice: 3400,   payout: 85, winRate: 50 },
+  { name: 'BNB/USD',  symbol: 'BNBUSDT', basePrice: 620,    payout: 85, winRate: 50 },
+  { name: 'SOL/USD',  symbol: 'SOLUSDT', basePrice: 180,    payout: 85, winRate: 50 },
+  { name: 'XRP/USD',  symbol: 'XRPUSDT', basePrice: 2.20,   payout: 85, winRate: 50 },
+  { name: 'EUR/USD',  symbol: 'EURUSD',  basePrice: 1.0850, payout: 85, winRate: 50 },
+  { name: 'GBP/USD',  symbol: 'GBPUSD',  basePrice: 1.2650, payout: 85, winRate: 50 },
+  { name: 'XAU/USD',  symbol: 'XAUUSD',  basePrice: 2650,   payout: 85, winRate: 50 },
+  { name: 'XAG/USD',  symbol: 'XAGUSD',  basePrice: 30.50,  payout: 85, winRate: 50 },
+  { name: 'USOIL',    symbol: 'USOIL',   basePrice: 75.50,  payout: 85, winRate: 50 }
+];
+
+async function runQuickSetup() {
+  var btn = document.getElementById('quick-setup-btn');
+  var status = document.getElementById('quick-setup-status');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Creating markets...';
+  }
+  if (status) {
+    status.textContent = 'Please wait...';
+    status.style.color = '#2196f3';
+  }
+
+  var created = 0;
+  var failed = 0;
+
+  for (var i = 0; i < QUICK_SETUP_MARKETS.length; i++) {
+    var m = QUICK_SETUP_MARKETS[i];
+
+    try {
+      // Check if market exists
+      var existingSnap = await getDocs(collection(db, 'markets'));
+      var exists = false;
+      existingSnap.forEach(function(d) {
+        var data = d.data();
+        if (data.symbol === m.symbol) exists = true;
+      });
+
+      if (exists) {
+        console.log('[QuickSetup] Already exists:', m.symbol);
+        continue;
+      }
+
+      var marketId = m.symbol.toLowerCase() + '_' + Date.now() + '_' + i;
+
+      await setDoc(doc(db, 'markets', marketId), {
+        id: marketId,
+        name: m.name,
+        symbol: m.symbol,
+        basePrice: m.basePrice,
+        currentPrice: m.basePrice,
+        enabled: true,
+        payout: m.payout,
+        winRate: m.winRate,
+        candleMode: 'locked',
+        currentCandleIndex: 0,
+        autoModeInterval: 5000,
+        profitLossSettings: {
+          profitPercent: 40,
+          lossPercent: 60,
+          autoAdjust: true,
+          favorHouse: true,
+          maxWinnersPerCandle: 5,
+          minWinnersPerCandle: 1
+        },
+        behaviorSettings: {
+          enabledBehaviors: [
+            'normal', 'hard', 'extremely-hard',
+            'flat', 'big', 'small', 'doji',
+            'hammer', 'shooting-star',
+            'trend-up', 'trend-down',
+            'spike', 'range', 'falti'
+          ]
+        },
+        sizePresets: {
+          small: 5,
+          normal: 20,
+          medium: 40,
+          big: 80,
+          huge: 200
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      created++;
+      console.log('[QuickSetup] Created:', m.symbol, '@ $' + m.basePrice);
+
+    } catch (err) {
+      failed++;
+      console.error('[QuickSetup] Failed:', m.symbol, err.message);
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'Create 10 Markets';
+  }
+
+  if (status) {
+    if (failed === 0) {
+      status.style.color = '#00c853';
+      status.textContent = 'Created ' + created + ' markets!';
+    } else {
+      status.style.color = '#ffb300';
+      status.textContent = 'Created: ' + created + ' | Failed: ' + failed;
+    }
+  }
+
+  alert('Quick Setup Done!\n\nCreated: ' + created + '\nAlready existing: ' + (10 - created - failed) + '\nFailed: ' + failed);
+}
+
+// Bind Quick Setup button
+(function bindQuickSetup() {
+  var btn = document.getElementById('quick-setup-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!confirm('Create 10 realistic markets?\n\nBTC, ETH, BNB, SOL, XRP, EUR/USD, GBP/USD, Gold, Silver, Oil')) return;
+    runQuickSetup();
+  });
+  console.log('[QuickSetup] Button bound');
+})();
+
+// ============================================================
+// D2. CANDLE DESIGNER — Save to Schedule
+// ============================================================
+
+async function saveDesignerCandle() {
+  var marketId = document.getElementById('designer-market')?.value;
+  var date = document.getElementById('designer-date')?.value;
+  var time = document.getElementById('designer-time')?.value;
+  var timeframe = document.getElementById('designer-timeframe')?.value;
+  var direction = document.getElementById('designer-direction')?.value;
+  var behavior = document.getElementById('designer-behavior')?.value;
+  var size = document.getElementById('designer-size')?.value;
+  var exactClose = document.getElementById('designer-exact')?.value;
+  var status = document.getElementById('designer-status');
+
+  function setStatus(text, color) {
+    if (status) {
+      status.textContent = text;
+      status.style.color = color || '#6b7a90';
+    }
+  }
+
+  // Validation
+  if (!marketId) { setStatus('Select a market', '#ff5252'); return; }
+  if (!date) { setStatus('Select date', '#ff5252'); return; }
+  if (!time) { setStatus('Select time', '#ff5252'); return; }
+
+  // Build datetime
+  var datetimeStr = date + 'T' + time + ':00';
+  var datetimeMs = new Date(datetimeStr).getTime();
+
+  if (isNaN(datetimeMs)) { setStatus('Invalid date/time', '#ff5252'); return; }
+  if (datetimeMs < Date.now() - 60000) { setStatus('Time is in the past', '#ff5252'); return; }
+
+  var scheduledId = 'sc_' + datetimeMs + '_' + Math.random().toString(36).substr(2, 6);
+
+  var scheduledData = {
+    id: scheduledId,
+    datetime: datetimeStr,
+    datetimeMs: datetimeMs,
+    date: date,
+    time: time,
+    timeframe: timeframe,
+    direction: direction,
+    behavior: behavior,
+    size: size,
+    exactClose: exactClose ? parseFloat(exactClose) : null,
+    applied: false,
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    setStatus('Saving...', '#2196f3');
+
+    await setDoc(
+      doc(db, 'markets', marketId, 'scheduledCandles', scheduledId),
+      scheduledData
+    );
+
+    setStatus('Saved! ' + direction.toUpperCase() + ' / ' + behavior, '#00c853');
+    console.log('[Designer] Saved:', scheduledData);
+
+    // Clear exact close input only
+    var exactInput = document.getElementById('designer-exact');
+    if (exactInput) exactInput.value = '';
+
+    // Auto-load scheduled list
+    setTimeout(loadScheduledList, 500);
+
+  } catch (err) {
+    setStatus('Error: ' + err.message, '#ff5252');
+    console.error('[Designer] Save error:', err);
+  }
+}
+
+// Bind Designer add button
+(function bindDesignerAdd() {
+  var btn = document.getElementById('designer-add-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    saveDesignerCandle();
+  });
+  console.log('[Designer] Add button bound');
+})();
+
+// ============================================================
+// D3. POPULATE DESIGNER MARKET DROPDOWN
+// ============================================================
+
+function populateDesignerMarkets() {
+  var sel = document.getElementById('designer-market');
+  if (!sel) return;
+
+  onSnapshot(collection(db, 'markets'), function(snap) {
+    var current = sel.value;
+    sel.innerHTML = '<option value="">-- Select Market --</option>';
+
+    var markets = [];
+    snap.forEach(function(d) {
+      markets.push({ id: d.id, ...d.data() });
+    });
+    markets.sort(function(a, b) {
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    markets.forEach(function(m) {
+      if (!m.enabled) return;
+      var opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name + ' (' + m.symbol + ')';
+      sel.appendChild(opt);
+    });
+
+    if (current) sel.value = current;
+    console.log('[Designer] Markets loaded:', markets.length);
+  });
+}
+
+// ============================================================
+// D4. LOAD SCHEDULED CANDLES LIST
+// ============================================================
+
+async function loadScheduledList() {
+  var container = document.getElementById('scheduled-list');
+  var marketId = document.getElementById('designer-market')?.value;
+
+  if (!container) return;
+
+  if (!marketId) {
+    container.innerHTML = '<p style="color:#6b7a90;text-align:center;padding:10px;">Select a market first</p>';
+    return;
+  }
+
+  container.innerHTML = '<p style="color:#2196f3;text-align:center;padding:10px;">Loading...</p>';
+
+  try {
+    var snap = await getDocs(collection(db, 'markets', marketId, 'scheduledCandles'));
+
+    if (snap.empty) {
+      container.innerHTML = '<p style="color:#6b7a90;text-align:center;padding:10px;">No scheduled candles</p>';
+      return;
+    }
+
+    var list = [];
+    snap.forEach(function(d) {
+      list.push({ id: d.id, ...d.data() });
+    });
+
+    list.sort(function(a, b) {
+      return (a.datetimeMs || 0) - (b.datetimeMs || 0);
+    });
+
+    var html = '';
+    list.slice(0, 50).forEach(function(s) {
+      var dirColor = s.direction === 'up' ? '#00c853'
+                   : s.direction === 'down' ? '#ff5252'
+                   : s.direction === 'smart' ? '#2196f3'
+                   : '#ffb300';
+
+      var appliedBadge = s.applied
+        ? '<span style="color:#6b7a90;font-size:10px;">[APPLIED]</span>'
+        : '<span style="color:#00c853;font-size:10px;">[PENDING]</span>';
+
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#0b1220;border-radius:6px;margin-bottom:6px;border-left:3px solid ' + dirColor + ';">' +
+        '<div>' +
+          '<div style="color:#fff;font-weight:700;font-size:12px;">' + (s.date || '') + ' ' + (s.time || '') + '</div>' +
+          '<div style="color:' + dirColor + ';font-size:11px;font-weight:600;">' + (s.direction || '').toUpperCase() + ' / ' + (s.behavior || '') + '</div>' +
+          '<div style="color:#6b7a90;font-size:10px;">Size: ' + (s.size || '') + (s.exactClose ? ' | Exact: ' + s.exactClose : '') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          appliedBadge +
+          '<button onclick="deleteScheduled(\'' + marketId + '\',\'' + s.id + '\')" style="display:block;margin-top:4px;background:#3a1220;color:#ff5252;border:1px solid #ff5252;border-radius:4px;padding:3px 8px;font-size:10px;cursor:pointer;">Delete</button>' +
+        '</div>' +
+      '</div>';
+    });
+
+    container.innerHTML = html;
+    console.log('[Designer] Loaded', list.length, 'scheduled candles');
+
+  } catch (err) {
+    container.innerHTML = '<p style="color:#ff5252;text-align:center;padding:10px;">Error: ' + err.message + '</p>';
+    console.error('[Designer] Load error:', err);
+  }
+}
+
+// Bind load scheduled button
+(function bindLoadScheduled() {
+  var btn = document.getElementById('load-scheduled-btn');
+  if (!btn || btn.dataset.bound === '1') return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    loadScheduledList();
+  });
+  console.log('[Designer] Load button bound');
+})();
+
+// ============================================================
+// D5. DELETE SCHEDULED CANDLE
+// ============================================================
+
+window.deleteScheduled = async function(marketId, scheduledId) {
+  if (!confirm('Delete this scheduled candle?')) return;
+  try {
+    await deleteDoc(doc(db, 'markets', marketId, 'scheduledCandles', scheduledId));
+    console.log('[Designer] Deleted:', scheduledId);
+    loadScheduledList();
+  } catch (err) {
+    alert('Delete failed: ' + err.message);
+  }
+};
+
+// ============================================================
+// D6. AUTO-FILL DESIGNER DATE/TIME
+// ============================================================
+
+function autoFillDesignerDateTime() {
+  var dateInput = document.getElementById('designer-date');
+  var timeInput = document.getElementById('designer-time');
+
+  if (dateInput && !dateInput.value) {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    dateInput.value = yyyy + '-' + mm + '-' + dd;
+  }
+
+  if (timeInput && !timeInput.value) {
+    var now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    var hh = String(now.getHours()).padStart(2, '0');
+    var min = String(now.getMinutes()).padStart(2, '0');
+    timeInput.value = hh + ':' + min;
+  }
+}
+
+// ============================================================
+// D7. INIT DESIGNER
+// ============================================================
+
+function initDesigner() {
+  populateDesignerMarkets();
+  autoFillDesignerDateTime();
+
+  // Reload scheduled list when market changes
+  var marketSel = document.getElementById('designer-market');
+  if (marketSel && marketSel.dataset.boundDesigner !== '1') {
+    marketSel.dataset.boundDesigner = '1';
+    marketSel.addEventListener('change', function() {
+      loadScheduledList();
+    });
+  }
+
+  console.log('[Designer] Initialized');
+}
+
+// Init on ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initDesigner, 1500);
+  });
+} else {
+  setTimeout(initDesigner, 1500);
+}
+
+setTimeout(initDesigner, 3000);
+setTimeout(initDesigner, 5000);
+
+// ============================================================
+// D8. EXPOSE
+// ============================================================
+
+window.runQuickSetup = runQuickSetup;
+window.saveDesignerCandle = saveDesignerCandle;
+window.loadScheduledList = loadScheduledList;
+window.deleteScheduled = window.deleteScheduled;
+window.initDesigner = initDesigner;
+
+console.log('===== admin.js v33-clean — DESIGNER EXTRA LOADED =====');
