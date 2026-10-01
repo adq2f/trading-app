@@ -137,7 +137,7 @@
   if (w <= 0) w = this.options.width || window.innerWidth || 360;
   if (h <= 0) h = this.options.height || 400;
 
-  if (w < 100 || h < 100) {
+if (w < 100 || h < 100) {
     var self = this;
     if (!self.__resizeRetries) self.__resizeRetries = 0;
     self.__resizeRetries++;
@@ -147,7 +147,7 @@
     return;
   }
 
-  self.__resizeRetries = 0;
+  this.__resizeRetries = 0;
 
   this.options.width = w;
   this.options.height = h;
@@ -2099,17 +2099,6 @@
       height: this.options.height
     };
   };
-// Preserve scroll position on resize
-    var savedOffset = this.viewport ? this.viewport.offsetX : 0;
-    var savedSpacing = this.viewport ? this.viewport.candleSpacing : 6;
-
-    this._resize();
-
-    // Restore scroll position
-    if (this.viewport) {
-      this.viewport.offsetX = savedOffset;
-      this.viewport.candleSpacing = savedSpacing;
-    }
   // ==========================================================
   // PART 7D: REMOVE CHART (cleanup)
   // ==========================================================
