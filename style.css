@@ -727,8 +727,8 @@ input, select {
 .qx-chart-area {
   position: relative;
   background: #0d1117;
-  flex: 1 1 auto;         /* ← Grow to fill space */
-  min-height: 400px;
+  flex: 1 1 auto;
+  min-height: 380px;
   overflow: hidden;
 }
 
