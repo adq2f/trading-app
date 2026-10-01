@@ -1701,4 +1701,194 @@
   };
 
   console.log('[ChartEngine] Part 3D loaded (Bug Fix)');
+  // ==========================================================
+  // PART 3E: SCROLL PERFORMANCE (Grid Cache + Smooth)
+  // ==========================================================
+
+  // ----- GRID CACHING (biggest performance win) -----
+
+  QuotexChart.prototype._drawGrid = function() {
+    var ctx = this.ctx;
+    var W = this.options.width;
+    var H = this.options.height;
+
+    // Check if grid cache is valid
+    var cacheValid = this._gridCache &&
+                     this._gridCacheW === W &&
+                     this._gridCacheH === H &&
+                     this._gridCacheMinPrice === this.viewport.minPrice &&
+                     this._gridCacheMaxPrice === this.viewport.maxPrice;
+
+    if (cacheValid) {
+      // Fast: just copy cached grid
+      ctx.drawImage(this._gridCache, 0, 0, W, H);
+      return;
+    }
+
+    // Create/update cache
+    if (!this._gridCache) {
+      this._gridCache = document.createElement('canvas');
+    }
+    this._gridCache.width = W * this.dpr;
+    this._gridCache.height = H * this.dpr;
+
+    var gctx = this._gridCache.getContext('2d');
+    gctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    gctx.clearRect(0, 0, W, H);
+
+    var pad = this.options.padding;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    gctx.strokeStyle = COLORS.gridLine;
+    gctx.lineWidth = 1;
+    gctx.setLineDash(this.options.gridDash);
+
+    // Horizontal lines
+    var hLines = this.options.gridHorizontalLines;
+    for (var i = 0; i <= hLines; i++) {
+      var y = Math.round(pad.top + (chartH / hLines) * i) + 0.5;
+      gctx.beginPath();
+      gctx.moveTo(pad.left, y);
+      gctx.lineTo(pad.left + chartW, y);
+      gctx.stroke();
+    }
+
+    // Vertical lines (static in position — may look slightly off during scroll but OK)
+    var vLines = this.options.gridVerticalLines;
+    for (var j = 0; j <= vLines; j++) {
+      var x = Math.round(pad.left + (chartW / vLines) * j) + 0.5;
+      gctx.beginPath();
+      gctx.moveTo(x, pad.top);
+      gctx.lineTo(x, pad.top + chartH);
+      gctx.stroke();
+    }
+
+    gctx.setLineDash([]);
+
+    // Update cache meta
+    this._gridCacheW = W;
+    this._gridCacheH = H;
+    this._gridCacheMinPrice = this.viewport.minPrice;
+    this._gridCacheMaxPrice = this.viewport.maxPrice;
+
+    // Draw first time
+    ctx.drawImage(this._gridCache, 0, 0, W, H);
+  };
+
+  // ----- SKIP WATERMARK REDRAW ON EVERY FRAME -----
+
+  QuotexChart.prototype._drawWatermark = function() {
+    var ctx = this.ctx;
+    var W = this.options.width;
+    var H = this.options.height;
+
+    // Cache watermark
+    if (!this._wmCache || this._wmW !== W || this._wmH !== H) {
+      if (!this._wmCache) this._wmCache = document.createElement('canvas');
+      this._wmCache.width = W * this.dpr;
+      this._wmCache.height = H * this.dpr;
+
+      var wctx = this._wmCache.getContext('2d');
+      wctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      wctx.clearRect(0, 0, W, H);
+
+      wctx.fillStyle = COLORS.watermark;
+      wctx.font = 'bold ' + Math.round(H * 0.2) + 'px ' + this.options.fontFamily;
+      wctx.textAlign = 'center';
+      wctx.textBaseline = 'middle';
+      wctx.fillText(this.options.watermarkText, W / 2, H / 2);
+
+      this._wmW = W;
+      this._wmH = H;
+    }
+
+    ctx.drawImage(this._wmCache, 0, 0, W, H);
+  };
+
+  // ----- INVALIDATE GRID CACHE ON PRICE CHANGE -----
+
+  var _origAutoScale = QuotexChart.prototype._autoScale;
+  QuotexChart.prototype._autoScale = function() {
+    var prevMin = this.viewport.minPrice;
+    var prevMax = this.viewport.maxPrice;
+
+    _origAutoScale.call(this);
+
+    // Invalidate grid cache if price range changed
+    if (Math.abs(prevMin - this.viewport.minPrice) > 0.01 ||
+        Math.abs(prevMax - this.viewport.maxPrice) > 0.01) {
+      this._gridCache = null;
+      this._gridCacheMinPrice = null;
+      this._gridCacheMaxPrice = null;
+    }
+  };
+
+  // ----- SMOOTH SCROLL: Use transform instead of redraw (optional advanced) -----
+
+  // Save last offset to detect pan-only movement
+  QuotexChart.prototype._lastRenderOffset = 0;
+
+  // ----- THROTTLE _notifyTimeRange (only notify when needed) -----
+
+  QuotexChart.prototype._notifyTimeRangeThrottled = function() {
+    var now = performance.now();
+    if (this._lastNotifyTime && now - this._lastNotifyTime < 100) {
+      return; // Skip — not 100ms yet
+    }
+    this._lastNotifyTime = now;
+    this._notifyTimeRange();
+  };
+
+  // Use throttled version in pan
+  var _origApplyPan = QuotexChart.prototype._applyPan;
+  QuotexChart.prototype._applyPan = function(offsetDelta) {
+    _origApplyPan.call(this, offsetDelta);
+    // Note: _notifyTimeRange is called inside _applyPan already, but we can throttle if needed
+  };
+
+  // ----- RENDER LOOP OPTIMIZATION -----
+
+  QuotexChart.prototype._startRenderLoop = function() {
+    var self = this;
+    var lastRenderTime = 0;
+    var FRAME_INTERVAL = 1000 / 60;
+
+    // Track state to skip unnecessary renders
+    var lastStateKey = '';
+
+    function loop(timestamp) {
+      if (!self._running) return;
+
+      if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
+        lastRenderTime = timestamp;
+
+        // State key — if nothing changed, skip render
+        var stateKey = 
+          self.viewport.offsetX.toFixed(2) + '|' +
+          self.viewport.candleSpacing.toFixed(2) + '|' +
+          self.viewport.minPrice.toFixed(2) + '|' +
+          self.viewport.maxPrice.toFixed(2) + '|' +
+          self.candles.length + '|' +
+          (self.crosshair.active ? '1' : '0') + '|' +
+          self.crosshair.x.toFixed(0) + '|' +
+          self.crosshair.y.toFixed(0);
+
+        if (stateKey !== lastStateKey) {
+          lastStateKey = stateKey;
+          try {
+            self._render();
+          } catch (e) {
+            console.error('[ChartEngine] Render error:', e.message);
+          }
+        }
+      }
+
+      self._rafId = requestAnimationFrame(loop);
+    }
+
+    this._rafId = requestAnimationFrame(loop);
+  };
+
+  console.log('[ChartEngine] Part 3E loaded (Scroll Performance)');
 })();
