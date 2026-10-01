@@ -728,7 +728,7 @@ input, select {
   position: relative;
   background: #0d1117;
   flex: 1 1 auto;         /* ← Grow to fill space */
-  min-height: 300px;
+  min-height: 400px;
   overflow: hidden;
 }
 
