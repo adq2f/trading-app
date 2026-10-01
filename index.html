@@ -10,7 +10,64 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Auto cache-buster for CSS -->
+  <!-- FIX 1: Chart wrapper MUST have fixed height BEFORE JS loads -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #0d1117;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    #chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 50vh;          /* FIX: 50% viewport */
+      min-height: 380px;     /* FIX: minimum */
+      max-height: 55vh;      /* FIX: maximum */
+      overflow: hidden;
+      background: #0d1117;
+      contain: strict;       /* FIX: prevents layout shift */
+    }
+
+    @media (max-height: 700px) {
+      #chart-wrapper {
+        height: 45vh;
+        min-height: 340px;
+      }
+    }
+
+    #tv-chart {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #tv-chart canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #drawing-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    #drawing-canvas.active {
+      pointer-events: auto;
+    }
+  </style>
+
   <script>
     (function() {
       var v = Date.now();
@@ -24,12 +81,9 @@
     })();
   </script>
 
-<!-- Eruda Console (DISABLED — was covering chart) -->
   <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
   <script>
     (function initEruda() {
-      // DISABLED: Eruda was covering the chart on mobile
-      // Enable manually in console: eruda.init()
       console.log("[ERUDA] Disabled (call eruda.init() to enable)");
     })();
   </script>
@@ -68,7 +122,6 @@
   <!-- DASHBOARD PAGE -->
   <div id="dashboard-page" class="page hidden">
 
-    <!-- TOP BAR -->
     <header class="qx-topbar">
       <button class="qx-account-chip" id="balance-chip">
         <span class="qx-flag">&#127470;&#127475;</span>
@@ -88,7 +141,6 @@
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
 
-    <!-- BONUS BANNER -->
     <div class="qx-bonus-banner" id="bonus-banner">
       <span class="qx-bonus-rocket">&#128640;</span>
       <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
@@ -192,59 +244,19 @@
         <button class="qx-drawing-close" id="drawing-panel-close" aria-label="Close">&#10005;</button>
       </div>
       <div class="qx-drawing-grid">
-        <button class="qx-tool-btn active" data-tool="cursor">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 4l7 17 2-7 7-2z"/>
-          </svg>
-          <span>Cursor</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="TrendLine">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M4 20L20 4"/>
-          </svg>
-          <span>Trend</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="HorizontalLine">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M3 12h18"/>
-          </svg>
-          <span>Horizontal</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="VerticalLine">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M12 3v18"/>
-          </svg>
-          <span>Vertical</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="Rectangle">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="6" width="16" height="12" rx="1"/>
-          </svg>
-          <span>Rectangle</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="FibRetracement">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-          </svg>
-          <span>Fib</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="TextAnnotation">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 7V5h16v2M9 5v14M15 5v14"/>
-          </svg>
-          <span>Text</span>
-        </button>
-        <button class="qx-tool-btn" data-tool="Eraser">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 21l3-3M6 18l-3-3L14 4l7 7-11 11z"/>
-          </svg>
-          <span>Clear</span>
-        </button>
+        <button class="qx-tool-btn active" data-tool="cursor"><span>Cursor</span></button>
+        <button class="qx-tool-btn" data-tool="TrendLine"><span>Trend</span></button>
+        <button class="qx-tool-btn" data-tool="HorizontalLine"><span>Horizontal</span></button>
+        <button class="qx-tool-btn" data-tool="VerticalLine"><span>Vertical</span></button>
+        <button class="qx-tool-btn" data-tool="Rectangle"><span>Rectangle</span></button>
+        <button class="qx-tool-btn" data-tool="FibRetracement"><span>Fib</span></button>
+        <button class="qx-tool-btn" data-tool="TextAnnotation"><span>Text</span></button>
+        <button class="qx-tool-btn" data-tool="Eraser"><span>Clear</span></button>
       </div>
     </div>
     <div class="qx-drawing-overlay hidden" id="drawing-overlay"></div>
 
-    <!-- TIMEFRAME GRID MODAL -->
+    <!-- TIMEFRAME MODAL -->
     <div class="qx-tf-modal hidden" id="tf-modal">
       <div class="qx-tf-overlay" id="tf-overlay"></div>
       <div class="qx-tf-panel">
@@ -346,10 +358,6 @@
           Trades <span class="qx-trades-count" id="trades-count-badge">0</span>
         </button>
         <button class="qx-trades-tab" data-trades-tab="history">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 7v5l3 3"/>
-          </svg>
           <span id="active-count">0</span>
         </button>
       </div>
@@ -399,7 +407,6 @@
           <path d="M6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/>
           <path d="M9 20h6M12 16v4"/>
         </svg>
-        <span class="qx-nav-badge" id="tour-badge">3</span>
       </button>
       <button class="qx-nav-btn" data-nav="more" aria-label="More">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -407,14 +414,12 @@
           <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
           <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
         </svg>
-        <span class="qx-nav-badge" id="more-badge">4</span>
       </button>
     </nav>
 
   </div>
 
-  <!-- POPUPS -->
-
+  <!-- POPUPS (same as before) -->
   <div class="popup hidden" id="balance-popup">
     <div class="popup-overlay" id="balance-popup-overlay"></div>
     <div class="popup-content">
@@ -567,23 +572,19 @@
     </div>
   </div>
 
-  <!-- GLOBAL ERROR CATCHER -->
   <script>
   (function() {
     window.__jsErrors = window.__jsErrors || [];
-
     window.addEventListener('error', function(e) {
       var msg = "JS ERROR: " + e.message + " at " + e.filename + ":" + e.lineno;
       window.__jsErrors.push(msg);
       console.error(msg);
     });
-
     window.addEventListener('unhandledrejection', function(e) {
       var msg = "PROMISE REJECT: " + (e.reason ? (e.reason.message || e.reason) : "unknown");
       window.__jsErrors.push(msg);
       console.error(msg);
     });
-
     window.addEventListener('load', function() {
       setTimeout(function() {
         if (typeof window.placeTrade !== "function") {
@@ -596,10 +597,8 @@
   })();
   </script>
 
-  <!-- CHART ENGINE (Custom Canvas 2D — Quotex style) -->
   <script src="chart-engine.js"></script>
 
-  <!-- Auto-versioned APP SCRIPT -->
   <script type="module">
     (function() {
       var v = window.__APP_VERSION || Date.now();
