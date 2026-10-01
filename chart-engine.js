@@ -577,4 +577,109 @@
   };
 
   console.log('[ChartEngine] Part 2 loaded (Candles + Price + Time)');
+  // ==========================================================
+  // PART 3A: COORDINATE SYSTEM (Critical for Stability)
+  // ==========================================================
+  // Data (time, price) <-> Screen (x, y) conversions
+  // Used by ALL drawing methods for stable rendering
+
+  // ----- TIME TO X (screen coordinate) -----
+
+  QuotexChart.prototype._timeToX = function(time) {
+    var pad = this.options.padding;
+    var spacing = this.viewport.candleSpacing;
+
+    // Find candle index by time
+    var idx = this._findCandleIndex(time);
+    if (idx === -1) return null;
+
+    // Calculate X position
+    var relativeIdx = idx - this.viewport.offsetX;
+    var x = pad.left + (relativeIdx + 0.5) * spacing;
+
+    return x;
+  };
+
+  // ----- PRICE TO Y (screen coordinate) -----
+
+  QuotexChart.prototype._priceToY = function(price) {
+    var pad = this.options.padding;
+    var H = this.options.height;
+    var chartH = H - pad.top - pad.bottom;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return null;
+
+    var y = pad.top + chartH - ((price - priceMin) / priceRange) * chartH;
+    return y;
+  };
+
+  // ----- X TO TIME (reverse conversion) -----
+
+  QuotexChart.prototype._xToTime = function(x) {
+    var pad = this.options.padding;
+    var spacing = this.viewport.candleSpacing;
+
+    var relativeIdx = (x - pad.left) / spacing - 0.5;
+    var idx = Math.round(this.viewport.offsetX + relativeIdx);
+
+    if (idx < 0 || idx >= this.candles.length) return null;
+    return this.candles[idx].time;
+  };
+
+  // ----- Y TO PRICE (reverse conversion) -----
+
+  QuotexChart.prototype._yToPrice = function(y) {
+    var pad = this.options.padding;
+    var H = this.options.height;
+    var chartH = H - pad.top - pad.bottom;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return null;
+
+    var price = priceMax - ((y - pad.top) / chartH) * priceRange;
+    return price;
+  };
+
+  // ----- FIND CANDLE INDEX BY TIME -----
+
+  QuotexChart.prototype._findCandleIndex = function(time) {
+    if (this.candles.length === 0) return -1;
+
+    // Binary search for O(log n)
+    var low = 0;
+    var high = this.candles.length - 1;
+
+    while (low <= high) {
+      var mid = Math.floor((low + high) / 2);
+      if (this.candles[mid].time === time) return mid;
+      if (this.candles[mid].time < time) low = mid + 1;
+      else high = mid - 1;
+    }
+
+    // Not exact — return closest
+    if (high < 0) return 0;
+    if (low >= this.candles.length) return this.candles.length - 1;
+
+    var dLow = Math.abs(this.candles[low].time - time);
+    var dHigh = Math.abs(this.candles[high].time - time);
+
+    return dLow < dHigh ? low : high;
+  };
+
+  // ----- FIND CANDLE BY TIME (returns candle object) -----
+
+  QuotexChart.prototype._findCandleByTime = function(time) {
+    var idx = this._findCandleIndex(time);
+    if (idx === -1) return null;
+    return this.candles[idx];
+  };
+
+  console.log('[ChartEngine] Part 3A loaded (Coordinate System)');
 })();
