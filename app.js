@@ -4443,4 +4443,5 @@ console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
 
   document.body.appendChild(btn);
   console.log('[DEBUG] Floating button added');
+}
 })();
