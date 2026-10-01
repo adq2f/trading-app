@@ -1042,4 +1042,223 @@
   }
 
   console.log('[ChartEngine] Part 3B loaded (Pan + Zoom + Interaction)');
+  // ==========================================================
+  // PART 3C: PERFORMANCE FIX + ZOOM BUG FIX
+  // ==========================================================
+
+  // ----- FIX 1: Better zoom with clamping + smooth -----
+
+  QuotexChart.prototype._applyZoom = function(newSpacing, anchorX) {
+    // Clamp spacing (2px min, 30px max)
+    if (newSpacing < 2) newSpacing = 2;
+    if (newSpacing > 30) newSpacing = 30;
+
+    var oldSpacing = this.viewport.candleSpacing;
+
+    // No change? skip
+    if (Math.abs(newSpacing - oldSpacing) < 0.1) return;
+
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+
+    // Default anchor: right side (real-time area)
+    if (anchorX === undefined || anchorX === null) {
+      anchorX = pad.left + chartW * 0.8;
+    }
+
+    // Which candle is under anchor?
+    var relativeIdx = (anchorX - pad.left) / oldSpacing;
+    var anchorCandleIdx = this.viewport.offsetX + relativeIdx;
+
+    // Apply new spacing
+    this.viewport.candleSpacing = newSpacing;
+
+    // Recompute offset to keep anchor candle at same X
+    var newRelativeIdx = (anchorX - pad.left) / newSpacing;
+    var newOffset = anchorCandleIdx - newRelativeIdx;
+
+    // ==== CLAMP OFFSET (FIX "back করে দেয়") ====
+    var maxVisible = Math.ceil(chartW / newSpacing);
+
+    // Minimum: allow scroll back so last candle can be at right edge
+    var minOffset = -maxVisible * 0.5;
+
+    // Maximum: allow scroll forward to show latest candle + right offset
+    var maxOffset = Math.max(0, this.candles.length - maxVisible + this.options.rightOffsetCandles);
+
+    // When fully zoomed out, keep at least a few candles visible
+    if (this.candles.length <= maxVisible) {
+      // All candles visible — pin to left
+      newOffset = -Math.floor((maxVisible - this.candles.length) / 2);
+    } else {
+      // Clamp
+      if (newOffset < minOffset) newOffset = minOffset;
+      if (newOffset > maxOffset) newOffset = maxOffset;
+    }
+
+    // If offset barely changed, skip work
+    if (Math.abs(newOffset - this.viewport.offsetX) < 0.01 &&
+        Math.abs(newSpacing - oldSpacing) < 0.01) {
+      return;
+    }
+
+    this.viewport.offsetX = newOffset;
+
+    // Throttle: only autoScale if spacing changed significantly
+    if (Math.abs(newSpacing - oldSpacing) > 0.3) {
+      this._autoScale();
+      this._notifyTimeRange();
+    }
+  };
+
+  // ----- FIX 2: Better pan clamping -----
+
+  QuotexChart.prototype._applyPan = function(offsetDelta) {
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+    var maxVisible = Math.ceil(chartW / spacing);
+
+    var newOffset = this.viewport.offsetX + offsetDelta;
+
+    // Clamp
+    var minOffset = -maxVisible * 0.5;
+    var maxOffset = Math.max(0, this.candles.length - maxVisible + this.options.rightOffsetCandles);
+
+    if (this.candles.length <= maxVisible) {
+      // All visible — pin to center
+      newOffset = -Math.floor((maxVisible - this.candles.length) / 2);
+    } else {
+      if (newOffset < minOffset) newOffset = minOffset;
+      if (newOffset > maxOffset) newOffset = maxOffset;
+    }
+
+    if (Math.abs(newOffset - this.viewport.offsetX) < 0.001) return;
+
+    this.viewport.offsetX = newOffset;
+
+    // Note: do NOT autoScale on pan (only zoom should)
+    this._notifyTimeRange();
+  };
+
+  // ----- FIX 3: Throttled render loop (performance) -----
+
+  QuotexChart.prototype._startRenderLoop = function() {
+    var self = this;
+    var lastRenderTime = 0;
+    var FRAME_INTERVAL = 1000 / 60;  // 60 FPS
+
+    function loop(timestamp) {
+      if (!self._running) return;
+
+      // Only render if enough time passed
+      if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
+        lastRenderTime = timestamp;
+        try {
+          self._render();
+        } catch (e) {
+          console.error('[ChartEngine] Render error:', e.message);
+        }
+      }
+
+      self._rafId = requestAnimationFrame(loop);
+    }
+
+    this._rafId = requestAnimationFrame(loop);
+  };
+
+  // ----- FIX 4: Cache visible candles per frame -----
+
+  QuotexChart.prototype._getVisibleCandles = function() {
+    // Use cached value if same frame
+    var now = performance.now();
+    if (this._lastVisCache &&
+        this._lastVisCacheTime &&
+        now - this._lastVisCacheTime < 16 &&
+        this._lastVisCacheOffset === this.viewport.offsetX &&
+        this._lastVisCacheSpacing === this.viewport.candleSpacing) {
+      return this._lastVisCache;
+    }
+
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var chartW = W - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+
+    var maxVisible = Math.ceil(chartW / spacing) + 2;
+    var start = Math.max(0, Math.floor(this.viewport.offsetX));
+    var end = Math.min(this.candles.length, start + maxVisible + 1);
+
+    var result = this.candles.slice(start, end);
+
+    // Cache
+    this._lastVisCache = result;
+    this._lastVisCacheTime = now;
+    this._lastVisCacheOffset = this.viewport.offsetX;
+    this._lastVisCacheSpacing = this.viewport.candleSpacing;
+
+    return result;
+  };
+
+  // ----- FIX 5: Faster wheel zoom (smooth, not jumpy) -----
+
+  QuotexChart.prototype._onWheel = function(e) {
+    e.preventDefault();
+
+    // Smaller step for smooth zoom
+    var step = e.deltaMode === 1 ? 0.05 : 0.02;
+    var delta = e.deltaY > 0 ? -step : step;
+
+    var currentSpacing = this.viewport.candleSpacing;
+    var newSpacing = currentSpacing * (1 + delta);
+
+    // Clamp immediate
+    if (newSpacing < 2) newSpacing = 2;
+    if (newSpacing > 30) newSpacing = 30;
+
+    var rect = this.canvas.getBoundingClientRect();
+    var mouseX = e.clientX - rect.left;
+
+    this._applyZoom(newSpacing, mouseX);
+  };
+
+  // ----- FIX 6: Fit content (smooth) -----
+
+  QuotexChart.prototype.fitContent = function() {
+    if (this.candles.length === 0) return;
+
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+
+    // Fit visible candles but keep min 20 visible
+    var targetCount = Math.min(this.candles.length, Math.max(20, Math.floor(chartW / 6)));
+    var spacing = chartW / targetCount;
+
+    if (spacing < 2) spacing = 2;
+    if (spacing > 30) spacing = 30;
+
+    this.viewport.candleSpacing = spacing;
+    this.viewport.offsetX = Math.max(0, this.candles.length - targetCount + this.options.rightOffsetCandles);
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  // ----- FIX 7: Real-time scroll (right edge) -----
+
+  QuotexChart.prototype.scrollToRealTime = function() {
+    if (this.candles.length === 0) return;
+
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+    var maxVisible = Math.ceil(chartW / spacing);
+
+    this.viewport.offsetX = Math.max(0, this.candles.length - maxVisible + this.options.rightOffsetCandles);
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  console.log('[ChartEngine] Part 3C loaded (Performance + Zoom Fix)');
 })();
