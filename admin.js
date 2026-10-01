@@ -7477,3 +7477,135 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   console.log('[Phase7-9-D] Check: window.phase7_9_D.checkStatus()');
 
 })();
+// ============================================================
+// PHASE 7-9 — PART E: FIRESTORE WRITE ENFORCEMENT
+// Final layer: Force behavior in Firestore write even if
+// original startNewCandle uses "normal"
+// ============================================================
+
+(function phase7_9_PartE() {
+  if (window.__phase7_9_PartE_Loaded) {
+    console.log('[Phase7-9-E] Already loaded');
+    return;
+  }
+  window.__phase7_9_PartE_Loaded = true;
+
+  console.log('[Phase7-9-E] Loading Firestore enforcement...');
+
+  // ==========================================================
+  // F1. GET ACTIVE BEHAVIOR
+  // ==========================================================
+
+  function getActiveBehavior() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && sel.value && sel.value !== 'normal') {
+      return sel.value;
+    }
+    if (window.adminSettings && window.adminSettings.candleBehavior &&
+        window.adminSettings.candleBehavior !== 'normal') {
+      return window.adminSettings.candleBehavior;
+    }
+    return null;  // null = no override needed
+  }
+
+  // ==========================================================
+  // F2. HOOK setDoc (Firestore write) — before write
+  // ==========================================================
+
+  if (typeof window.setDoc === 'function' && !window.__p79_setDocHooked) {
+    window.__p79_setDocHooked = true;
+    var prevSetDoc = window.setDoc;
+
+    window.setDoc = function(ref, data, options) {
+      try {
+        // Check if this is a liveCandle write
+        if (ref && ref.path && ref.path.indexOf('liveCandles') !== -1) {
+          var active = getActiveBehavior();
+          if (active && data && data.behavior !== active) {
+            console.log('[Phase7-9-E] Intercepting Firestore write:',
+              data.behavior, '→', active);
+
+            // Re-shape candle with active behavior
+            var shaped = window.applyCandleBehavior(
+              active,
+              data.open,
+              data.close,
+              data.direction || 'up'
+            );
+
+            data.open = shaped.open;
+            data.high = shaped.high;
+            data.low = shaped.low;
+            data.close = shaped.close;
+            data.direction = shaped.direction;
+            data.behavior = shaped.behavior;
+
+            console.log('[Phase7-9-E] ✅ Re-shaped candle:', shaped);
+          }
+        }
+      } catch(e) {
+        console.error('[Phase7-9-E] Error:', e.message);
+      }
+      return prevSetDoc.call(this, ref, data, options);
+    };
+
+    console.log('[Phase7-9-E] setDoc hooked (Firestore enforcement)');
+  } else {
+    console.warn('[Phase7-9-E] setDoc already hooked or not found');
+  }
+
+  // ==========================================================
+  // F3. HOOK writeLiveCandle (backup)
+  // ==========================================================
+
+  if (typeof window.writeLiveCandle === 'function' && !window.__p79_writeHooked) {
+    window.__p79_writeHooked = true;
+    var prevWrite = window.writeLiveCandle;
+
+    window.writeLiveCandle = async function(candleData, candleStartMs) {
+      var active = getActiveBehavior();
+
+      if (active && candleData && candleData.behavior !== active) {
+        console.log('[Phase7-9-E] Fixing writeLiveCandle:',
+          candleData.behavior, '→', active);
+
+        var shaped = window.applyCandleBehavior(
+          active,
+          candleData.open,
+          candleData.close,
+          candleData.direction || 'up'
+        );
+
+        candleData.open = shaped.open;
+        candleData.high = shaped.high;
+        candleData.low = shaped.low;
+        candleData.close = shaped.close;
+        candleData.direction = shaped.direction;
+        candleData.behavior = shaped.behavior;
+      }
+
+      return prevWrite.call(this, candleData, candleStartMs);
+    };
+
+    console.log('[Phase7-9-E] writeLiveCandle hooked');
+  }
+
+  // ==========================================================
+  // F4. DIAGNOSTIC
+  // ==========================================================
+
+  window.phase7_9_E = {
+    getActiveBehavior: getActiveBehavior,
+    checkStatus: function() {
+      return {
+        setDocHooked: !!window.__p79_setDocHooked,
+        writeHooked: !!window.__p79_writeHooked,
+        activeBehavior: getActiveBehavior() || 'none'
+      };
+    }
+  };
+
+  console.log('[Phase7-9-E] ✅ Part E loaded');
+  console.log('[Phase7-9-E] Check: window.phase7_9_E.checkStatus()');
+
+})();
