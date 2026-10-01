@@ -7288,3 +7288,192 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   console.log('[Phase7-9-C] Check: window.phase7_9_C.checkStatus()');
 
 })();
+// ============================================================
+// PHASE 7-9 — PART D: STARTNEWCANDLE INTERNAL OVERRIDE
+// Fix: Force dropdown behavior even when no scheduled candle
+// ============================================================
+
+(function phase7_9_PartD() {
+  if (window.__phase7_9_PartD_Loaded) {
+    console.log('[Phase7-9-D] Already loaded');
+    return;
+  }
+  window.__phase7_9_PartD_Loaded = true;
+
+  console.log('[Phase7-9-D] Loading internal override...');
+
+  // ==========================================================
+  // E1. GET ACTIVE BEHAVIOR
+  // ==========================================================
+
+  function getActiveBehavior() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && sel.value && sel.value !== 'normal') {
+      return sel.value;
+    }
+    if (window.adminSettings && window.adminSettings.candleBehavior) {
+      return window.adminSettings.candleBehavior;
+    }
+    return 'normal';
+  }
+
+  var SIZE_ONLY = ['normal', 'medium', 'big', 'huge'];
+  function isSizeOnly(b) {
+    return SIZE_ONLY.indexOf(b) !== -1;
+  }
+
+  // ==========================================================
+  // E2. PATCH: state.behavior assignment protection
+  // We monitor state.behavior every 100ms and force it back
+  // if it changed to "normal" while dropdown has 14-behavior
+  // ==========================================================
+
+  var lastForcedBehavior = 'normal';
+
+  setInterval(function() {
+    if (!window.autoRunnerState) return;
+
+    var active = getActiveBehavior();
+    if (isSizeOnly(active)) return;
+
+    // If dropdown has 14-behavior but state.behavior is wrong
+    if (window.autoRunnerState.behavior !== active) {
+      var old = window.autoRunnerState.behavior;
+      window.autoRunnerState.behavior = active;
+      if (old !== active) {
+        console.log('[Phase7-9-D] state.behavior forced:', old, '→', active);
+      }
+    }
+  }, 100);
+
+  console.log('[Phase7-9-D] state.behavior monitor active (every 100ms)');
+
+  // ==========================================================
+  // E3. PATCH: createNewCandle — force 14-behavior
+  // (adds another layer of protection)
+  // ==========================================================
+
+  if (typeof window.createNewCandle === 'function') {
+    var prevCreate = window.createNewCandle;
+
+    window.createNewCandle = function(prevClose, behavior, direction, size, basePrice, exactClose) {
+      try {
+        var active = getActiveBehavior();
+
+        // If dropdown has 14-behavior, force it
+        if (!isSizeOnly(active)) {
+          console.log('[Phase7-9-D] Forcing:', active, '(was:', behavior + ')');
+
+          var open = Number(prevClose) || Number(basePrice) || 50000;
+          var defaultClose = open + (direction === 'up' ? 10 : -10);
+
+          if (exactClose && !isNaN(exactClose)) {
+            defaultClose = Number(exactClose);
+          }
+
+          var result = window.applyCandleBehavior(
+            active,
+            open,
+            defaultClose,
+            direction
+          );
+
+          console.log('[Phase7-9-D] ✅ Forced:', result.behavior);
+          return result;
+        }
+
+        return prevCreate.apply(this, arguments);
+      } catch (err) {
+        console.error('[Phase7-9-D] Error:', err.message);
+        return prevCreate.apply(this, arguments);
+      }
+    };
+
+    console.log('[Phase7-9-D] createNewCandle wrapped (final layer)');
+  }
+
+  // ==========================================================
+  // E4. HOOK: writeLiveCandle — fix behavior in Firestore write
+  // ==========================================================
+
+  if (typeof window.writeLiveCandle === 'function') {
+    var prevWrite = window.writeLiveCandle;
+
+    window.writeLiveCandle = async function(candleData, candleStartMs) {
+      try {
+        var active = getActiveBehavior();
+
+        // If dropdown has 14-behavior but candleData.behavior is wrong
+        if (!isSizeOnly(active) && candleData.behavior !== active) {
+          console.log('[Phase7-9-D] Fixing Firestore write behavior:', candleData.behavior, '→', active);
+          candleData.behavior = active;
+
+          // Also re-apply shape
+          var shaped = window.applyCandleBehavior(
+            active,
+            candleData.open,
+            candleData.close,
+            candleData.direction
+          );
+          candleData.high = shaped.high;
+          candleData.low = shaped.low;
+          candleData.open = shaped.open;
+          candleData.close = shaped.close;
+          candleData.direction = shaped.direction;
+        }
+      } catch(e) {
+        console.error('[Phase7-9-D] writeLiveCandle pre-fix error:', e.message);
+      }
+      return prevWrite.apply(this, arguments);
+    };
+
+    console.log('[Phase7-9-D] writeLiveCandle wrapped');
+  } else {
+    console.warn('[Phase7-9-D] writeLiveCandle not found');
+  }
+
+  // ==========================================================
+  // E5. DROPDOWN CHANGE — instant apply
+  // ==========================================================
+
+  setTimeout(function() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && !sel.dataset.p7dBound) {
+      sel.dataset.p7dBound = '1';
+      sel.addEventListener('change', function() {
+        var b = sel.value;
+        console.log('[Phase7-9-D] Dropdown changed:', b);
+
+        if (window.autoRunnerState) {
+          window.autoRunnerState.behavior = b;
+        }
+        if (window.adminSettings) {
+          window.adminSettings.candleBehavior = b;
+        }
+      });
+      console.log('[Phase7-9-D] Dropdown watcher active');
+    }
+  }, 2000);
+
+  // ==========================================================
+  // E6. DIAGNOSTIC
+  // ==========================================================
+
+  window.phase7_9_D = {
+    getActiveBehavior: getActiveBehavior,
+    checkStatus: function() {
+      var sel = document.getElementById('p79-behavior-select');
+      return {
+        dropdownValue: sel ? sel.value : 'N/A',
+        adminSettingsBehavior: window.adminSettings ? window.adminSettings.candleBehavior : 'N/A',
+        autoRunnerBehavior: window.autoRunnerState ? window.autoRunnerState.behavior : 'N/A',
+        isSizeOnly: isSizeOnly(getActiveBehavior()),
+        shouldForce: !isSizeOnly(getActiveBehavior())
+      };
+    }
+  };
+
+  console.log('[Phase7-9-D] ✅ Part D loaded');
+  console.log('[Phase7-9-D] Check: window.phase7_9_D.checkStatus()');
+
+})();
