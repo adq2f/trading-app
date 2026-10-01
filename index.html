@@ -11,7 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* ============ RESET ============ */
+    /* ============================================
+       RESET + PAGE LOCK (Quotex style)
+       ============================================ */
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -20,25 +22,25 @@
     html, body {
       margin: 0;
       padding: 0;
+      width: 100%;
       height: 100%;
+      overflow: hidden !important;
+      position: fixed !important;
+      top: 0;
+      left: 0;
       background: #0d1117;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       color: #e6edf3;
-      overflow-x: hidden;
       overscroll-behavior: none;
-    }
-
-    body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
     }
 
     .hidden {
       display: none !important;
     }
 
-    /* ============ LOGIN PAGE ============ */
+    /* ============================================
+       LOGIN PAGE
+       ============================================ */
     #login-page {
       display: flex;
       align-items: center;
@@ -46,6 +48,11 @@
       min-height: 100vh;
       padding: 20px;
       background: linear-gradient(180deg, #0d1117 0%, #0a0e14 100%);
+      overflow-y: auto;
+    }
+
+    #login-page.hidden {
+      display: none !important;
     }
 
     .login-box {
@@ -103,6 +110,7 @@
       font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
+      font-family: inherit;
     }
 
     .input-group input:focus {
@@ -120,6 +128,7 @@
       font-weight: 700;
       cursor: pointer;
       transition: transform 0.15s;
+      font-family: inherit;
     }
 
     .btn-primary:active {
@@ -136,6 +145,7 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
+      font-family: inherit;
     }
 
     .message {
@@ -145,16 +155,27 @@
       color: #ff5252;
     }
 
-    /* ============ DASHBOARD ============ */
+    /* ============================================
+       DASHBOARD — FLEX LAYOUT (100vh fixed)
+       ============================================ */
     #dashboard-page {
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
-      padding-bottom: 60px;
       background: #0d1117;
+      padding: 0;
+      margin: 0;
     }
 
-    /* ============ TOP BAR ============ */
+    #dashboard-page.hidden {
+      display: none !important;
+    }
+
+    /* ============================================
+       TOP BAR (fixed)
+       ============================================ */
     .qx-topbar {
       display: flex;
       align-items: center;
@@ -162,9 +183,7 @@
       padding: 10px 14px;
       background: #0e1621;
       border-bottom: 1px solid #1e2a3a;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      flex-shrink: 0;
     }
 
     .qx-account-chip {
@@ -181,11 +200,10 @@
       font-weight: 600;
       cursor: pointer;
       min-width: 0;
+      font-family: inherit;
     }
 
-    .qx-flag {
-      font-size: 16px;
-    }
+    .qx-flag { font-size: 16px; }
 
     .qx-badge {
       background: #ff9800;
@@ -220,6 +238,7 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .qx-bell-badge {
@@ -248,9 +267,13 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
     }
 
-    /* ============ BONUS BANNER ============ */
+    /* ============================================
+       BONUS BANNER (fixed)
+       ============================================ */
     .qx-bonus-banner {
       display: flex;
       align-items: center;
@@ -260,16 +283,13 @@
       color: #ffffff;
       font-size: 12px;
       font-weight: 600;
+      flex-shrink: 0;
       position: relative;
     }
 
-    .qx-bonus-rocket {
-      font-size: 14px;
-    }
+    .qx-bonus-rocket { font-size: 14px; }
 
-    .qx-bonus-text {
-      flex: 1;
-    }
+    .qx-bonus-text { flex: 1; }
 
     .qx-bonus-tag {
       background: rgba(0, 0, 0, 0.25);
@@ -285,14 +305,21 @@
       font-size: 14px;
       cursor: pointer;
       padding: 0 4px;
+      font-family: inherit;
     }
 
-    /* ============ CHART AREA ============ */
+    /* ============================================
+       CHART AREA (fixed height, no scroll)
+       ============================================ */
     .qx-chart-area {
       position: relative;
       width: 100%;
+      height: 40vh;
+      max-height: 40vh;
+      min-height: 260px;
       background: #0d1117;
       flex-shrink: 0;
+      overflow: hidden;
     }
 
     .qx-chart-tools {
@@ -366,23 +393,27 @@
     .qx-chart-wrapper {
       position: relative;
       width: 100%;
-      height: 50vh;
-      min-height: 380px;
-      max-height: 55vh;
+      height: 100%;
       overflow: hidden;
       background: #0d1117;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     #tv-chart {
-      width: 100%;
-      height: 100%;
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
     }
 
     #tv-chart canvas {
       display: block !important;
+      touch-action: none !important;
     }
 
     #drawing-canvas {
@@ -413,7 +444,9 @@
       z-index: 20;
     }
 
-    /* ============ TRADE PANEL — QUOTEX EXACT ============ */
+    /* ============================================
+       TRADE PANEL (fixed)
+       ============================================ */
     .qx-trade-panel {
       padding: 12px 14px 14px 14px;
       background: #0e1621;
@@ -437,9 +470,7 @@
       min-width: 0;
     }
 
-    .qx-trade-flag {
-      font-size: 16px;
-    }
+    .qx-trade-flag { font-size: 16px; }
 
     .qx-asset-select {
       background: transparent;
@@ -511,7 +542,6 @@
       transform: translateX(18px);
     }
 
-    /* Timer + Investment row */
     .qx-trade-row {
       display: grid;
       grid-template-columns: 1fr 1.6fr;
@@ -597,7 +627,6 @@
       background: #3a4556;
     }
 
-    /* Payout row */
     .qx-payout-row {
       display: flex;
       justify-content: space-between;
@@ -637,7 +666,6 @@
       letter-spacing: 0.3px;
     }
 
-    /* ============ BUY / SELL BUTTONS — QUOTEX STYLE ============ */
     .qx-trade-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -675,12 +703,6 @@
       transform: scale(0.97);
     }
 
-    .qx-buy-btn > span:first-child,
-    .qx-sell-btn > span:first-child {
-      font-size: 16px;
-      letter-spacing: 0.3px;
-    }
-
     .qx-btn-arrow {
       display: inline-flex;
       align-items: center;
@@ -694,7 +716,6 @@
       line-height: 1;
     }
 
-    /* Trade message */
     .qx-trade-message {
       text-align: center;
       margin-top: 8px;
@@ -703,17 +724,26 @@
       font-weight: 600;
     }
 
-    /* ============ TRADES SECTION ============ */
+    /* ============================================
+       TRADES SECTION (scrollable)
+       ============================================ */
     .qx-trades-section {
       background: #0e1621;
       border-top: 1px solid #1e2a3a;
-      padding: 0 0 80px 0;
-      flex: 1;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      min-height: 0;
+      padding-bottom: 70px;
     }
 
     .qx-trades-header {
       display: flex;
       border-bottom: 1px solid #1e2a3a;
+      position: sticky;
+      top: 0;
+      background: #0e1621;
+      z-index: 5;
     }
 
     .qx-trades-tab {
@@ -802,7 +832,9 @@
       margin-bottom: 8px;
     }
 
-    /* ============ BOTTOM NAV ============ */
+    /* ============================================
+       BOTTOM NAV (fixed)
+       ============================================ */
     .qx-bottom-nav {
       position: fixed;
       bottom: 0;
@@ -814,6 +846,7 @@
       border-top: 1px solid #1e2a3a;
       z-index: 100;
       padding-bottom: env(safe-area-inset-bottom, 0);
+      flex-shrink: 0;
     }
 
     .qx-nav-btn {
@@ -837,7 +870,9 @@
       color: #ffffff;
     }
 
-    /* ============ POPUPS ============ */
+    /* ============================================
+       POPUPS
+       ============================================ */
     .popup {
       position: fixed;
       inset: 0;
@@ -846,6 +881,10 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
+    }
+
+    .popup.hidden {
+      display: none !important;
     }
 
     .popup-overlay {
@@ -889,6 +928,7 @@
       cursor: pointer;
       padding: 0 4px;
       line-height: 1;
+      font-family: inherit;
     }
 
     .popup-content input,
@@ -928,16 +968,9 @@
       padding: 4px 0;
     }
 
-    .payment-label {
-      color: #6b7a90;
-    }
+    .payment-label { color: #6b7a90; }
+    .payment-value { color: #ffffff; font-weight: 600; }
 
-    .payment-value {
-      color: #ffffff;
-      font-weight: 600;
-    }
-
-    /* Account options in popup */
     .qx-acc-option {
       display: flex;
       align-items: center;
@@ -975,9 +1008,7 @@
       border-radius: 50%;
     }
 
-    .qx-acc-info {
-      flex: 1;
-    }
+    .qx-acc-info { flex: 1; }
 
     .qx-acc-title {
       font-size: 13px;
@@ -1073,7 +1104,6 @@
       border-color: #00c853;
     }
 
-    /* User Chat */
     .chat-popup-content {
       max-width: 450px;
       height: 70vh;
@@ -1133,11 +1163,14 @@
       font-family: inherit;
     }
 
-    /* More Menu */
     .qx-more-menu {
       position: fixed;
       inset: 0;
       z-index: 1000;
+    }
+
+    .qx-more-menu.hidden {
+      display: none !important;
     }
 
     .qx-more-overlay {
@@ -1211,7 +1244,6 @@
       margin: 8px 0;
     }
 
-    /* Drawer */
     .qx-drawer {
       position: fixed;
       top: 0;
@@ -1228,6 +1260,8 @@
 
     .qx-drawer.hidden {
       transform: translateX(-100%);
+      display: block !important;
+      pointer-events: none;
     }
 
     .qx-drawer-header {
@@ -1337,7 +1371,10 @@
       z-index: 999;
     }
 
-    /* Drawing Panel */
+    .qx-drawer-overlay.hidden {
+      display: none !important;
+    }
+
     .qx-drawing-panel {
       position: fixed;
       bottom: 0;
@@ -1349,6 +1386,10 @@
       z-index: 1000;
       max-height: 60vh;
       overflow-y: auto;
+    }
+
+    .qx-drawing-panel.hidden {
+      display: none !important;
     }
 
     .qx-drawing-header {
@@ -1405,7 +1446,10 @@
       z-index: 999;
     }
 
-    /* Timeframe Modal */
+    .qx-drawing-overlay.hidden {
+      display: none !important;
+    }
+
     .qx-tf-modal {
       position: fixed;
       inset: 0;
@@ -1413,6 +1457,10 @@
       display: flex;
       align-items: flex-end;
       justify-content: center;
+    }
+
+    .qx-tf-modal.hidden {
+      display: none !important;
     }
 
     .qx-tf-overlay {
@@ -1486,22 +1534,28 @@
       transform: translateX(50%);
       pointer-events: none;
       z-index: 10;
+      display: none;
     }
 
     .qx-time-labels {
       position: absolute;
-      bottom: 4px;
-      left: 0;
-      right: 60px;
-      display: flex;
-      justify-content: space-around;
+      bottom: 2px;
+      left: 8px;
+      right: 65px;
+      display: none;
+      justify-content: space-between;
       pointer-events: none;
       z-index: 8;
+      height: 14px;
+      overflow: hidden;
     }
 
     .qx-time-label {
       font-size: 10px;
       color: #6b7a90;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      font-weight: 500;
     }
 
     .qx-time-label.active {
@@ -1516,17 +1570,23 @@
       inset: 0;
       pointer-events: none;
       z-index: 15;
+      display: none;
     }
 
-    /* ============ RESPONSIVE ============ */
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
     @media (max-height: 700px) {
-      .qx-chart-wrapper {
-        height: 45vh;
-        min-height: 340px;
+      .qx-chart-area {
+        height: 42vh;
+        min-height: 240px;
       }
       .qx-buy-btn,
       .qx-sell-btn {
         height: 48px;
+      }
+      .qx-topbar {
+        padding: 8px 12px;
       }
     }
 
@@ -1542,6 +1602,12 @@
       .qx-investment-box input {
         font-size: 16px;
       }
+    }
+
+    /* Scrollbar hidden for cleaner look */
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
     }
   </style>
 
