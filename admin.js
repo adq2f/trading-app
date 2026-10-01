@@ -6843,36 +6843,43 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
 
 })();
 // ============================================================
-// PHASE 16 — PART 1: AUTO-RUNNER PERSISTENT (Hybrid)
-// Purpose: Page reload holeo Auto-Runner chalu thakbe
-// Storage: localStorage (instant) + Firestore (backup)
+// PHASE 16 — PART 1 (v2): AUTO-RUNNER PERSISTENT
+// Fixed: Uses window.auth.currentUser (admin.js)
 // ============================================================
 
-(function phase16_AutoRunnerPersistent() {
-  if (window.__phase16_Part1_Loaded) {
-    console.log('[Phase16-1] Already loaded');
+(function phase16_AutoRunnerPersistent_v2() {
+  if (window.__phase16_Part1v2_Loaded) {
+    console.log('[Phase16-1v2] Already loaded');
     return;
   }
-  window.__phase16_Part1_Loaded = true;
+  window.__phase16_Part1v2_Loaded = true;
 
-  console.log('[Phase16-1] Loading Auto-Runner Persistent...');
-
-  // ==========================================================
-  // P1. STORAGE KEYS
-  // ==========================================================
+  console.log('[Phase16-1v2] Loading Auto-Runner Persistent v2...');
 
   var LS_KEY = 'qx_autoRunner_state_v1';
   var FS_DOC = 'autoRunnerState';
 
   // ==========================================================
-  // P2. GET CURRENT STATE (for save)
+  // HELPER: Get current user (multi-source)
+  // ==========================================================
+
+  function getActiveUser() {
+    try {
+      if (window.currentUser && window.currentUser.uid) return window.currentUser;
+      if (window.auth && window.auth.currentUser) return window.auth.currentUser;
+      if (window.adminUser && window.adminUser.uid) return window.adminUser;
+    } catch(e) {}
+    return null;
+  }
+
+  // ==========================================================
+  // GET STATE
   // ==========================================================
 
   function getCurrentState() {
     var state = window.autoRunnerState || {};
     var behavior = 'normal';
 
-    // Read from dropdown if available
     var sel = document.getElementById('p79-behavior-select');
     if (sel && sel.value) behavior = sel.value;
     else if (window.adminSettings && window.adminSettings.candleBehavior) {
@@ -6891,21 +6898,21 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   }
 
   // ==========================================================
-  // P3. SAVE STATE (localStorage + Firestore)
+  // SAVE STATE
   // ==========================================================
 
   async function saveState() {
     try {
       var s = getCurrentState();
+      console.log('[Phase16-1v2] Saving state:', s);
 
-      // localStorage
       try {
         localStorage.setItem(LS_KEY, JSON.stringify(s));
       } catch(e) {}
 
-      // Firestore
-      try {
-        if (window.setDoc && window.doc && window.db && window.currentUser) {
+      var user = getActiveUser();
+      if (user && window.setDoc && window.doc && window.db) {
+        try {
           await window.setDoc(
             window.doc(window.db, 'settings', FS_DOC),
             {
@@ -6915,38 +6922,36 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
               behavior: s.behavior,
               direction: s.direction,
               size: s.size,
-              adminUid: window.currentUser ? window.currentUser.uid : null,
-              lastUpdate: Date.now(),
-              savedAt: new Date().toISOString()
+              adminUid: user.uid,
+              adminEmail: user.email || null,
+              lastUpdate: Date.now()
             },
             { merge: true }
           );
-          console.log('[Phase16-1] State saved to Firestore');
+          console.log('[Phase16-1v2] ✅ Saved to Firestore');
+        } catch(e) {
+          console.warn('[Phase16-1v2] Firestore save error:', e.message);
         }
-      } catch(e) {
-        console.warn('[Phase16-1] Firestore save error:', e.message);
+      } else {
+        console.warn('[Phase16-1v2] No user or Firestore not ready');
       }
-
-      console.log('[Phase16-1] State saved:', s);
     } catch(e) {
-      console.error('[Phase16-1] saveState error:', e.message);
+      console.error('[Phase16-1v2] saveState error:', e.message);
     }
   }
 
   // ==========================================================
-  // P4. LOAD STATE
+  // LOAD STATE
   // ==========================================================
 
   async function loadState() {
     try {
-      // Priority 1: localStorage (instant)
       var local = null;
       try {
         var raw = localStorage.getItem(LS_KEY);
         if (raw) local = JSON.parse(raw);
       } catch(e) {}
 
-      // Priority 2: Firestore (if localStorage empty)
       var remote = null;
       if (!local) {
         try {
@@ -6954,185 +6959,158 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
             var snap = await window.getDoc(
               window.doc(window.db, 'settings', FS_DOC)
             );
-            if (snap.exists()) {
-              remote = snap.data();
-            }
+            if (snap.exists()) remote = snap.data();
           }
         } catch(e) {}
       }
 
       var state = local || remote;
       if (!state) return null;
-
-      // Only restore if was active
       if (!state.active) return null;
 
-      console.log('[Phase16-1] Restoring state:', state);
+      console.log('[Phase16-1v2] Loaded state:', state);
       return state;
-
     } catch(e) {
-      console.error('[Phase16-1] loadState error:', e.message);
+      console.error('[Phase16-1v2] loadState error:', e.message);
       return null;
     }
   }
 
   // ==========================================================
-  // P5. RESTORE AUTO-RUNNER
+  // RESTORE
   // ==========================================================
 
   async function restoreAutoRunner() {
     try {
       var state = await loadState();
       if (!state) {
-        console.log('[Phase16-1] No state to restore');
+        console.log('[Phase16-1v2] No state to restore');
         return;
       }
-
       if (!state.marketId) {
-        console.log('[Phase16-1] No marketId in state');
+        console.log('[Phase16-1v2] No marketId');
         return;
       }
-
-      // Wait for startAutoRunner to be ready
       if (typeof window.startAutoRunner !== 'function') {
-        console.warn('[Phase16-1] startAutoRunner not ready, retrying...');
+        console.warn('[Phase16-1v2] startAutoRunner not ready');
         setTimeout(restoreAutoRunner, 2000);
         return;
       }
 
-      // Restore dropdown behavior
+      // Restore behavior to dropdown
       if (state.behavior) {
         var sel = document.getElementById('p79-behavior-select');
-        if (sel) {
-          sel.value = state.behavior;
-          console.log('[Phase16-1] Behavior restored:', state.behavior);
-        }
+        if (sel) sel.value = state.behavior;
         if (window.adminSettings) {
           window.adminSettings.candleBehavior = state.behavior;
         }
       }
 
-      // Start auto-runner
-      console.log('[Phase16-1] Restarting Auto-Runner:', state.marketId);
+      console.log('[Phase16-1v2] Restarting:', state.marketId);
       await window.startAutoRunner(state.marketId, state.timeframe);
-
-      console.log('[Phase16-1] ✅ Auto-Runner restored');
-
+      console.log('[Phase16-1v2] ✅ Auto-Runner restored');
     } catch(e) {
-      console.error('[Phase16-1] restoreAutoRunner error:', e.message);
+      console.error('[Phase16-1v2] restore error:', e.message);
     }
   }
 
   // ==========================================================
-  // P6. HOOK startAutoRunner (save on start)
+  // HOOK startAutoRunner
   // ==========================================================
 
   if (typeof window.startAutoRunner === 'function') {
     var prevStart = window.startAutoRunner;
-
     window.startAutoRunner = async function(marketId, timeframe) {
-      console.log('[Phase16-1] startAutoRunner called:', marketId);
-
+      console.log('[Phase16-1v2] startAutoRunner called:', marketId);
       var result = await prevStart.apply(this, arguments);
-
-      // Save state after successful start
-      setTimeout(function() {
-        saveState();
-      }, 500);
-
+      setTimeout(saveState, 800);
       return result;
     };
-
-    console.log('[Phase16-1] startAutoRunner hooked for save');
+    console.log('[Phase16-1v2] startAutoRunner hooked');
   }
 
   // ==========================================================
-  // P7. HOOK stopAutoRunner (save on stop)
+  // HOOK stopAutoRunner
   // ==========================================================
 
   if (typeof window.stopAutoRunner === 'function') {
     var prevStop = window.stopAutoRunner;
-
     window.stopAutoRunner = function() {
-      console.log('[Phase16-1] stopAutoRunner called');
+      console.log('[Phase16-1v2] stopAutoRunner called');
       var result = prevStop.apply(this, arguments);
-
-      setTimeout(function() {
-        saveState();
-      }, 300);
-
+      setTimeout(saveState, 500);
       return result;
     };
-
-    console.log('[Phase16-1] stopAutoRunner hooked');
+    console.log('[Phase16-1v2] stopAutoRunner hooked');
   }
 
   // ==========================================================
-  // P8. AUTO-RESTORE ON PAGE LOAD
+  // AUTO-RESTORE ON LOAD (uses multi-source user)
   // ==========================================================
 
-  // Wait for user login + all systems ready
   var tries = 0;
+  var maxTries = 60; // 60s
   var checkReady = setInterval(function() {
     tries++;
 
-    var userReady = window.currentUser;
+    var user = getActiveUser();
     var runnerReady = typeof window.startAutoRunner === 'function';
     var firestoreReady = window.db && window.doc;
 
-    if (userReady && runnerReady && firestoreReady) {
+    if (user && runnerReady && firestoreReady) {
       clearInterval(checkReady);
-      console.log('[Phase16-1] Systems ready, checking restore...');
-
-      setTimeout(function() {
-        restoreAutoRunner();
-      }, 2000);
-    } else if (tries >= 30) {
+      console.log('[Phase16-1v2] Systems ready. User:', user.email);
+      setTimeout(restoreAutoRunner, 1500);
+    } else if (tries >= maxTries) {
       clearInterval(checkReady);
-      console.warn('[Phase16-1] Timeout waiting for systems');
+      console.warn('[Phase16-1v2] Timeout. Status:', {
+        user: !!user,
+        runner: runnerReady,
+        firestore: firestoreReady
+      });
     }
   }, 1000);
 
   // ==========================================================
-  // P9. SAVE ON BEHAVIOR CHANGE
+  // WATCH DROPDOWN
   // ==========================================================
 
-  // Watch dropdown
-  var dropdown = document.getElementById('p79-behavior-select');
-  if (dropdown) {
-    dropdown.addEventListener('change', function() {
-      setTimeout(saveState, 300);
-    });
-  }
+  setTimeout(function() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && !sel.dataset.p16Bound) {
+      sel.dataset.p16Bound = '1';
+      sel.addEventListener('change', function() {
+        console.log('[Phase16-1v2] Behavior changed:', sel.value);
+        if (window.adminSettings) {
+          window.adminSettings.candleBehavior = sel.value;
+        }
+        setTimeout(saveState, 500);
+      });
+      console.log('[Phase16-1v2] Dropdown watch active');
+    }
+  }, 3000);
 
-  // Watch on other UI changes periodically
+  // ==========================================================
+  // PERIODIC SAVE (safety)
+  // ==========================================================
+
   setInterval(function() {
     if (window.autoRunnerState && window.autoRunnerState.active) {
-      // Only save occasionally
-      var raw = null;
-      try { raw = localStorage.getItem(LS_KEY); } catch(e) {}
-      if (raw) {
-        try {
-          var saved = JSON.parse(raw);
-          var currentBehavior = getCurrentState().behavior;
-          if (saved.behavior !== currentBehavior) {
-            saveState();
-          }
-        } catch(e) {}
-      }
+      saveState();
     }
-  }, 15000);
+  }, 60000); // every 60s
 
   // ==========================================================
-  // P10. EXPOSE
+  // EXPOSE
   // ==========================================================
 
   window.phase16 = window.phase16 || {};
   window.phase16.saveAutoRunnerState = saveState;
   window.phase16.loadAutoRunnerState = loadState;
   window.phase16.restoreAutoRunner = restoreAutoRunner;
+  window.phase16.getActiveUser = getActiveUser;
 
-  console.log('[Phase16-1] ✅ Part 1 loaded');
-  console.log('[Phase16-1] Manual test: window.phase16.restoreAutoRunner()');
+  console.log('[Phase16-1v2] ✅ Loaded');
+  console.log('[Phase16-1v2] Test: window.phase16.restoreAutoRunner()');
 
 })();
