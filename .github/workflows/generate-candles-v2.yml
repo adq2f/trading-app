@@ -1,0 +1,16 @@
+name: Generate Candles 24/7
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger candle generation
+        run: |
+          echo "Triggering at $(date)"
+          curl -s "https://adq2f.github.io/trading-app/cron.html" -o /dev/null
+          echo "✅ Done"
