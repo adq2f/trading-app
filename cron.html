@@ -101,11 +101,36 @@
               continue;
             }
 
-            const open = lastClose;
-            const movement = (Math.random() - 0.5) * 100;
-            const close = open + movement;
-            const high = Math.max(open, close) + Math.random() * 20;
-            const low = Math.min(open, close) - Math.random() * 20;
+            // Base prices for realistic fallback
+const basePrices = {
+  'BTCUSDT': 95000,
+  'ETHUSDT': 3500,
+  'BNBUSDT': 700,
+  'SOLUSDT': 140,
+  'XRPUSDT': 2.5,
+  'EURUSD': 1.08,
+  'GBPUSD': 1.27,
+  'XAUUSD': 2650,
+  'XAGUSD': 31,
+  'USOIL': 75
+};
+
+const basePrice = basePrices[market.symbol] || market.basePrice || 100;
+
+if (!lastClose || lastClose <= 0 || lastClose < basePrice * 0.5 || lastClose > basePrice * 2) {
+  lastClose = basePrice;
+}
+
+// Realistic movement (0.05% to 0.15%)
+const open = lastClose;
+const volatilityPct = 0.0005 + Math.random() * 0.001;
+const direction = Math.random() - 0.5;
+const movement = open * volatilityPct * direction * 2;
+const close = open + movement;
+
+const wickSize = Math.abs(movement) * (0.5 + Math.random() * 1.5);
+const high = Math.max(open, close) + wickSize * Math.random();
+const low = Math.min(open, close) - wickSize * Math.random();
 
             await setDoc(
               doc(db, 'markets', market.id, 'liveCandles', candleId),
