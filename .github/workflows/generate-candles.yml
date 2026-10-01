@@ -1,0 +1,17 @@
+name: Generate Candles 24/7
+
+on:
+  schedule:
+    # প্রতি ৫ মিনিটে একবার চলবে
+    - cron: '*/5 * * * *'
+  workflow_dispatch:  # ম্যানুয়াল trigger এর জন্য
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit cron page
+        run: |
+          echo "Triggering candle generation..."
+          curl -s "https://adq2f.github.io/trading-app/cron.html" -o /dev/null
+          echo "✅ Triggered at $(date)"
