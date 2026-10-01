@@ -328,5 +328,253 @@
 
   console.log('[ChartEngine] Part 1 loaded (Foundation)');
   console.log('[ChartEngine] Next: Part 2 - Candle Rendering');
+  // ==========================================================
+  // PART 2: CANDLE RENDERING + PRICE SCALE + TIME SCALE
+  // ==========================================================
 
+  // ----- DRAW CANDLES -----
+
+  QuotexChart.prototype._drawCandles = function() {
+    var ctx = this.ctx;
+    var vis = this._getVisibleCandles();
+    if (vis.length === 0) return;
+
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    var spacing = this.viewport.candleSpacing;
+    var candleW = spacing * this.options.candleBodyRatio;
+    if (candleW < 1.5) candleW = 1.5;
+    if (candleW > 20) candleW = 20;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return;
+
+    var priceToY = function(price) {
+      return pad.top + chartH - ((price - priceMin) / priceRange) * chartH;
+    };
+
+    for (var i = 0; i < vis.length; i++) {
+      var c = vis[i];
+      var xCenter = pad.left + (i + 0.5) * spacing;
+
+      var openY = priceToY(c.open);
+      var closeY = priceToY(c.close);
+      var highY = priceToY(c.high);
+      var lowY = priceToY(c.low);
+
+      var isGreen = c.close >= c.open;
+      var bodyColor = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+      var bodyBorder = isGreen ? COLORS.candleGreenBorder : COLORS.candleRedBorder;
+      var wickColor = isGreen ? COLORS.candleGreenWick : COLORS.candleRedWick;
+
+      // Wick
+      ctx.strokeStyle = wickColor;
+      ctx.lineWidth = this.options.wickWidth;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(xCenter) + 0.5, Math.round(highY));
+      ctx.lineTo(Math.round(xCenter) + 0.5, Math.round(lowY));
+      ctx.stroke();
+
+      // Body
+      var bodyTop = Math.min(openY, closeY);
+      var bodyBottom = Math.max(openY, closeY);
+      var bodyHeight = bodyBottom - bodyTop;
+      if (bodyHeight < 1) bodyHeight = 1;
+
+      var bodyLeft = xCenter - candleW / 2;
+      var bodyWidth = candleW;
+
+      // Fill
+      ctx.fillStyle = bodyColor;
+      ctx.fillRect(
+        Math.round(bodyLeft),
+        Math.round(bodyTop),
+        Math.round(bodyWidth),
+        Math.round(bodyHeight)
+      );
+
+      // Border (thin outline for sharp look)
+      ctx.strokeStyle = bodyBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        Math.round(bodyLeft) + 0.5,
+        Math.round(bodyTop) + 0.5,
+        Math.round(bodyWidth) - 1,
+        Math.round(bodyHeight) - 1
+      );
+    }
+  };
+
+  // ----- DRAW PRICE SCALE -----
+
+  QuotexChart.prototype._drawPriceScale = function() {
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartH = H - pad.top - pad.bottom;
+    var chartW = W - pad.left - pad.right;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return;
+
+    ctx.setLineDash([]);
+
+    // Price labels
+    var lines = this.options.gridHorizontalLines;
+    for (var i = 0; i <= lines; i++) {
+      var y = pad.top + (chartH / lines) * i;
+      var price = priceMax - (priceRange / lines) * i;
+
+      ctx.fillStyle = COLORS.textPrimary;
+      ctx.font = this.options.fontSizePrice + 'px ' + this.options.fontFamily;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        formatPrice(price, this.options.priceDecimals),
+        pad.left + chartW + 8,
+        y
+      );
+    }
+
+    // Current price highlight
+    if (this.candles.length > 0) {
+      var last = this.candles[this.candles.length - 1];
+      var currentPrice = last.close;
+      var currentY = pad.top + chartH - ((currentPrice - priceMin) / priceRange) * chartH;
+
+      if (currentY >= pad.top && currentY <= pad.top + chartH) {
+        var isGreen = last.close >= last.open;
+        var highlightColor = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+
+        // Background box
+        var boxH = 18;
+        ctx.fillStyle = highlightColor;
+        ctx.fillRect(
+          pad.left + chartW + 4,
+          currentY - boxH / 2,
+          W - (pad.left + chartW) - 6,
+          boxH
+        );
+
+        // Text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold ' + this.options.fontSizePrice + 'px ' + this.options.fontFamily;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+          formatPrice(currentPrice, this.options.priceDecimals),
+          pad.left + chartW + 8,
+          currentY
+        );
+
+        // Dashed horizontal line at current price
+        ctx.strokeStyle = 'rgba(255, 179, 0, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, Math.round(currentY) + 0.5);
+        ctx.lineTo(pad.left + chartW, Math.round(currentY) + 0.5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  };
+
+  // ----- DRAW TIME SCALE -----
+
+  QuotexChart.prototype._drawTimeScale = function() {
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    var vis = this._getVisibleCandles();
+    if (vis.length === 0) return;
+
+    var spacing = this.viewport.candleSpacing;
+
+    // Show time label every N candles
+    var labelEvery = 3;
+    if (spacing < 5) labelEvery = 5;
+    if (spacing < 3) labelEvery = 8;
+    if (spacing > 12) labelEvery = 1;
+    if (spacing > 20) labelEvery = 1;
+
+    var timeY = pad.top + chartH + 16;
+
+    ctx.fillStyle = COLORS.textSecondary;
+    ctx.font = this.options.fontSizeTime + 'px ' + this.options.fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    var start = Math.max(0, this.viewport.offsetX);
+    var maxVisible = Math.ceil(chartW / spacing);
+
+    for (var i = 0; i < maxVisible; i++) {
+      var idx = start + i;
+      if (idx >= this.candles.length) break;
+
+      if (i % labelEvery !== 0) continue;
+
+      var c = this.candles[idx];
+      var xCenter = pad.left + (i + 0.5) * spacing;
+
+      if (xCenter > pad.left + chartW - 15) continue;
+
+      ctx.fillStyle = COLORS.textSecondary;
+      ctx.fillText(formatTime(c.time), xCenter, timeY);
+    }
+
+    // Current time highlight
+    if (vis.length > 0) {
+      var lastIdx = start + vis.length - 1;
+      var lastCandle = this.candles[lastIdx];
+      var lastX = pad.left + (vis.length - 0.5) * spacing;
+
+      if (lastX < pad.left + chartW - 15) {
+        var bgW = 40;
+        var bgH = 18;
+        ctx.fillStyle = 'rgba(0, 192, 118, 0.15)';
+        ctx.fillRect(lastX - bgW / 2, timeY - bgH / 2, bgW, bgH);
+
+        ctx.fillStyle = COLORS.candleGreen;
+        ctx.font = 'bold ' + this.options.fontSizeTime + 'px ' + this.options.fontFamily;
+        ctx.fillText(formatTime(lastCandle.time), lastX, timeY);
+      }
+    }
+  };
+
+  // ----- OVERRIDE RENDER (add candles + scales) -----
+
+  QuotexChart.prototype._render = function() {
+    var ctx = this.ctx;
+    var W = this.options.width;
+    var H = this.options.height;
+
+    // Clear background
+    ctx.fillStyle = COLORS.background;
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw order (bottom to top):
+    if (this.options.showGrid) this._drawGrid();
+    this._drawCandles();
+    if (this.options.showWatermark) this._drawWatermark();
+    this._drawPriceScale();
+    this._drawTimeScale();
+  };
+
+  console.log('[ChartEngine] Part 2 loaded (Candles + Price + Time)');
 })();
