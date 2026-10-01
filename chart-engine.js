@@ -1261,4 +1261,444 @@
   };
 
   console.log('[ChartEngine] Part 3C loaded (Performance + Zoom Fix)');
+  // ==========================================================
+  // PART 3D: BUG FIX (Line 538 Error)
+  // Fix: "Cannot read properties of undefined (reading 'time')"
+  // ==========================================================
+
+  // ----- FIXED _autoScale (guards against empty/undefined) -----
+
+  QuotexChart.prototype._autoScale = function() {
+    if (!this.candles || this.candles.length === 0) {
+      this.viewport.minPrice = 0;
+      this.viewport.maxPrice = 1;
+      return;
+    }
+
+    var vis = this._getVisibleCandles();
+    if (!vis || vis.length === 0) {
+      // Fallback: use last 20 candles
+      var start = Math.max(0, this.candles.length - 20);
+      vis = this.candles.slice(start);
+    }
+
+    if (!vis || vis.length === 0) return;
+
+    var min = Infinity, max = -Infinity;
+    for (var i = 0; i < vis.length; i++) {
+      var c = vis[i];
+      if (!c || typeof c.high !== 'number' || typeof c.low !== 'number') continue;
+      if (c.high > max) max = c.high;
+      if (c.low < min) min = c.low;
+    }
+
+    if (min === Infinity || max === -Infinity) {
+      this.viewport.minPrice = 0;
+      this.viewport.maxPrice = 1;
+      return;
+    }
+
+    if (max === min) max = min + 1;
+
+    var range = max - min;
+    this.viewport.minPrice = min - range * 0.08;
+    this.viewport.maxPrice = max + range * 0.08;
+  };
+
+  // ----- FIXED _notifyTimeRange (guards) -----
+
+  QuotexChart.prototype._notifyTimeRange = function() {
+    try {
+      var vis = this._getVisibleCandles();
+      if (!vis || vis.length === 0) return;
+
+      var firstCandle = vis[0];
+      var lastCandle = vis[vis.length - 1];
+      if (!firstCandle || !lastCandle) return;
+
+      var range = { from: firstCandle.time, to: lastCandle.time };
+      for (var i = 0; i < this._timeRangeSubs.length; i++) {
+        try { this._timeRangeSubs[i](range); } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('[ChartEngine] _notifyTimeRange error:', e.message);
+    }
+  };
+
+  // ----- FIXED _getVisibleCandles (no undefined) -----
+
+  QuotexChart.prototype._getVisibleCandles = function() {
+    // Cache
+    var now = performance.now();
+    if (this._lastVisCache &&
+        this._lastVisCacheTime &&
+        now - this._lastVisCacheTime < 16 &&
+        this._lastVisCacheOffset === this.viewport.offsetX &&
+        this._lastVisCacheSpacing === this.viewport.candleSpacing) {
+      return this._lastVisCache;
+    }
+
+    if (!this.candles || this.candles.length === 0) {
+      return [];
+    }
+
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var chartW = W - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+
+    if (spacing <= 0) spacing = 6;
+
+    var maxVisible = Math.ceil(chartW / spacing) + 2;
+
+    // Safe offset
+    var offset = this.viewport.offsetX;
+    if (isNaN(offset)) offset = 0;
+    if (offset < 0) offset = 0;
+
+    var start = Math.floor(offset);
+    if (start < 0) start = 0;
+    if (start >= this.candles.length) start = Math.max(0, this.candles.length - maxVisible);
+
+    var end = Math.min(this.candles.length, start + maxVisible + 1);
+
+    // Safe slice
+    var result = [];
+    for (var i = start; i < end; i++) {
+      if (this.candles[i]) {
+        result.push(this.candles[i]);
+      }
+    }
+
+    // Cache
+    this._lastVisCache = result;
+    this._lastVisCacheTime = now;
+    this._lastVisCacheOffset = this.viewport.offsetX;
+    this._lastVisCacheSpacing = this.viewport.candleSpacing;
+
+    return result;
+  };
+
+  // ----- FIXED _drawCandles (guards) -----
+
+  QuotexChart.prototype._drawCandles = function() {
+    var ctx = this.ctx;
+    var vis = this._getVisibleCandles();
+    if (!vis || vis.length === 0) return;
+
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    var spacing = this.viewport.candleSpacing;
+    if (spacing <= 0) spacing = 6;
+
+    var candleW = spacing * this.options.candleBodyRatio;
+    if (candleW < 1.5) candleW = 1.5;
+    if (candleW > 20) candleW = 20;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return;
+
+    var priceToY = function(price) {
+      return pad.top + chartH - ((price - priceMin) / priceRange) * chartH;
+    };
+
+    for (var i = 0; i < vis.length; i++) {
+      var c = vis[i];
+      if (!c) continue;
+
+      var open = Number(c.open) || 0;
+      var close = Number(c.close) || 0;
+      var high = Number(c.high) || 0;
+      var low = Number(c.low) || 0;
+
+      var xCenter = pad.left + (i + 0.5) * spacing;
+
+      var openY = priceToY(open);
+      var closeY = priceToY(close);
+      var highY = priceToY(high);
+      var lowY = priceToY(low);
+
+      var isGreen = close >= open;
+      var bodyColor = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+      var bodyBorder = isGreen ? COLORS.candleGreenBorder : COLORS.candleRedBorder;
+      var wickColor = isGreen ? COLORS.candleGreenWick : COLORS.candleRedWick;
+
+      // Wick
+      ctx.strokeStyle = wickColor;
+      ctx.lineWidth = this.options.wickWidth;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(xCenter) + 0.5, Math.round(highY));
+      ctx.lineTo(Math.round(xCenter) + 0.5, Math.round(lowY));
+      ctx.stroke();
+
+      // Body
+      var bodyTop = Math.min(openY, closeY);
+      var bodyBottom = Math.max(openY, closeY);
+      var bodyHeight = bodyBottom - bodyTop;
+      if (bodyHeight < 1) bodyHeight = 1;
+
+      var bodyLeft = xCenter - candleW / 2;
+      var bodyWidth = candleW;
+
+      // Fill
+      ctx.fillStyle = bodyColor;
+      ctx.fillRect(
+        Math.round(bodyLeft),
+        Math.round(bodyTop),
+        Math.round(bodyWidth),
+        Math.round(bodyHeight)
+      );
+
+      // Border
+      ctx.strokeStyle = bodyBorder;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        Math.round(bodyLeft) + 0.5,
+        Math.round(bodyTop) + 0.5,
+        Math.round(bodyWidth) - 1,
+        Math.round(bodyHeight) - 1
+      );
+    }
+  };
+
+  // ----- FIXED _drawTimeScale (guards) -----
+
+  QuotexChart.prototype._drawTimeScale = function() {
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    var vis = this._getVisibleCandles();
+    if (!vis || vis.length === 0) return;
+
+    var spacing = this.viewport.candleSpacing;
+    if (spacing <= 0) return;
+
+    var labelEvery = 3;
+    if (spacing < 5) labelEvery = 5;
+    if (spacing < 3) labelEvery = 8;
+    if (spacing > 12) labelEvery = 1;
+    if (spacing > 20) labelEvery = 1;
+
+    var timeY = pad.top + chartH + 16;
+
+    ctx.fillStyle = COLORS.textSecondary;
+    ctx.font = this.options.fontSizeTime + 'px ' + this.options.fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    var start = Math.max(0, Math.floor(this.viewport.offsetX));
+    var maxVisible = Math.ceil(chartW / spacing);
+
+    for (var i = 0; i < maxVisible; i++) {
+      var idx = start + i;
+      if (idx >= this.candles.length) break;
+
+      if (i % labelEvery !== 0) continue;
+
+      var c = this.candles[idx];
+      if (!c || typeof c.time !== 'number') continue;
+
+      var xCenter = pad.left + (i + 0.5) * spacing;
+
+      if (xCenter > pad.left + chartW - 15) continue;
+
+      ctx.fillStyle = COLORS.textSecondary;
+      ctx.fillText(formatTime(c.time), xCenter, timeY);
+    }
+
+    // Current time highlight
+    if (vis.length > 0) {
+      var lastCandle = vis[vis.length - 1];
+      if (!lastCandle) return;
+
+      var lastX = pad.left + (vis.length - 0.5) * spacing;
+
+      if (lastX < pad.left + chartW - 15) {
+        var bgW = 40;
+        var bgH = 18;
+        ctx.fillStyle = 'rgba(0, 192, 118, 0.15)';
+        ctx.fillRect(lastX - bgW / 2, timeY - bgH / 2, bgW, bgH);
+
+        ctx.fillStyle = COLORS.candleGreen;
+        ctx.font = 'bold ' + this.options.fontSizeTime + 'px ' + this.options.fontFamily;
+        ctx.fillText(formatTime(lastCandle.time), lastX, timeY);
+      }
+    }
+  };
+
+  // ----- FIXED _drawPriceScale (guards) -----
+
+  QuotexChart.prototype._drawPriceScale = function() {
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartH = H - pad.top - pad.bottom;
+    var chartW = W - pad.left - pad.right;
+
+    var priceMin = this.viewport.minPrice;
+    var priceMax = this.viewport.maxPrice;
+    var priceRange = priceMax - priceMin;
+
+    if (priceRange <= 0) return;
+
+    ctx.setLineDash([]);
+
+    var lines = this.options.gridHorizontalLines;
+    for (var i = 0; i <= lines; i++) {
+      var y = pad.top + (chartH / lines) * i;
+      var price = priceMax - (priceRange / lines) * i;
+
+      ctx.fillStyle = COLORS.textPrimary;
+      ctx.font = this.options.fontSizePrice + 'px ' + this.options.fontFamily;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        formatPrice(price, this.options.priceDecimals),
+        pad.left + chartW + 8,
+        y
+      );
+    }
+
+    if (this.candles.length > 0) {
+      var last = this.candles[this.candles.length - 1];
+      if (!last || typeof last.close !== 'number') return;
+
+      var currentPrice = last.close;
+      var currentY = pad.top + chartH - ((currentPrice - priceMin) / priceRange) * chartH;
+
+      if (currentY >= pad.top && currentY <= pad.top + chartH) {
+        var isGreen = last.close >= last.open;
+        var highlightColor = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+
+        var boxH = 18;
+        ctx.fillStyle = highlightColor;
+        ctx.fillRect(
+          pad.left + chartW + 4,
+          currentY - boxH / 2,
+          W - (pad.left + chartW) - 6,
+          boxH
+        );
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold ' + this.options.fontSizePrice + 'px ' + this.options.fontFamily;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+          formatPrice(currentPrice, this.options.priceDecimals),
+          pad.left + chartW + 8,
+          currentY
+        );
+
+        ctx.strokeStyle = 'rgba(255, 179, 0, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, Math.round(currentY) + 0.5);
+        ctx.lineTo(pad.left + chartW, Math.round(currentY) + 0.5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  };
+
+  // ----- IMPROVED RENDER (with error guards) -----
+
+  QuotexChart.prototype._render = function() {
+    var ctx = this.ctx;
+    var W = this.options.width;
+    var H = this.options.height;
+
+    if (W <= 0 || H <= 0) return;
+
+    // Clear
+    ctx.fillStyle = COLORS.background;
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw sequence
+    try {
+      if (this.options.showGrid) this._drawGrid();
+    } catch (e) { console.warn('[Chart] Grid:', e.message); }
+
+    try {
+      this._drawCandles();
+    } catch (e) { console.warn('[Chart] Candles:', e.message); }
+
+    try {
+      if (this.options.showWatermark) this._drawWatermark();
+    } catch (e) { console.warn('[Chart] Watermark:', e.message); }
+
+    try {
+      this._drawPriceScale();
+    } catch (e) { console.warn('[Chart] PriceScale:', e.message); }
+
+    try {
+      this._drawTimeScale();
+    } catch (e) { console.warn('[Chart] TimeScale:', e.message); }
+  };
+
+  // ----- BETTER setData (guards) -----
+
+  QuotexChart.prototype.setData = function(data) {
+    if (!Array.isArray(data)) {
+      console.warn('[ChartEngine] setData: not array');
+      return;
+    }
+
+    // Filter valid candles
+    this.candles = data.filter(function(c) {
+      return c && typeof c.time === 'number' &&
+             typeof c.open === 'number' &&
+             typeof c.high === 'number' &&
+             typeof c.low === 'number' &&
+             typeof c.close === 'number';
+    });
+
+    if (this.candles.length > this.options.visibleCandleCount) {
+      this.viewport.offsetX = this.candles.length - this.options.visibleCandleCount;
+    } else {
+      this.viewport.offsetX = 0;
+    }
+
+    this._autoScale();
+    this._notifyTimeRange();
+
+    console.log('[ChartEngine] setData:', this.candles.length, 'candles');
+  };
+
+  // ----- BETTER update (guards) -----
+
+  QuotexChart.prototype.update = function(candle) {
+    if (!candle || typeof candle.time !== 'number') return;
+
+    if (this.candles.length === 0) {
+      this.candles.push(candle);
+    } else {
+      var last = this.candles[this.candles.length - 1];
+      if (!last) {
+        this.candles.push(candle);
+      } else if (candle.time === last.time) {
+        this.candles[this.candles.length - 1] = candle;
+      } else if (candle.time > last.time) {
+        this.candles.push(candle);
+      } else {
+        return;
+      }
+    }
+
+    this._autoScale();
+  };
+
+  console.log('[ChartEngine] Part 3D loaded (Bug Fix)');
 })();
