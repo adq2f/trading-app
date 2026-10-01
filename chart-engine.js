@@ -1,6 +1,6 @@
 // ============================================================
-// QUOTEX CLONE — CHART ENGINE v2
-// Custom Canvas 2D Chart (100% Quotex-exact)
+// QUOTEX CLONE - CHART ENGINE v2
+// Custom Canvas 2D Chart (Quotex-exact)
 // Part 1: Foundation
 // ============================================================
 
@@ -11,10 +11,6 @@
   }
 
   console.log('[ChartEngine] Loading v2 Part 1...');
-
-  // ==========================================================
-  // COLORS — Quotex exact
-  // ==========================================================
 
   var COLORS = {
     background: '#0d1117',
@@ -42,19 +38,10 @@
 
   window.CHART_COLORS = COLORS;
 
-  // ==========================================================
-  // DEFAULT OPTIONS
-  // ==========================================================
-
   var DEFAULT_OPTIONS = {
     width: 0,
     height: 0,
-    padding: {
-      top: 25,
-      right: 65,
-      bottom: 30,
-      left: 8
-    },
+    padding: { top: 25, right: 65, bottom: 30, left: 8 },
     candleSpacing: 6,
     candleBodyRatio: 0.75,
     wickWidth: 1,
@@ -73,10 +60,6 @@
     visibleCandleCount: 60,
     rightOffsetCandles: 8
   };
-
-  // ==========================================================
-  // UTILITY
-  // ==========================================================
 
   function mergeOptions(target, source) {
     var result = {};
@@ -107,10 +90,6 @@
   window.chartFormatPrice = formatPrice;
   window.chartFormatTime = formatTime;
 
-  // ==========================================================
-  // QUOTEXCHART CLASS
-  // ==========================================================
-
   function QuotexChart(container, options) {
     if (!container) {
       console.error('[ChartEngine] Container required');
@@ -131,7 +110,6 @@
 
     this._timeRangeSubs = [];
 
-    // Canvas
     this.canvas = document.createElement('canvas');
     this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     this.container.innerHTML = '';
@@ -150,33 +128,21 @@
     console.log('[ChartEngine] Chart created:', this.options.width + 'x' + this.options.height);
   }
 
-  // ==========================================================
-  // RESIZE
-  // ==========================================================
-
   QuotexChart.prototype._resize = function() {
     var w = this.container.clientWidth;
     var h = this.container.clientHeight;
     if (w <= 0 || h <= 0) return;
-
     this.options.width = w;
     this.options.height = h;
-
     this.canvas.width = w * this.dpr;
     this.canvas.height = h * this.dpr;
     this.canvas.style.width = w + 'px';
     this.canvas.style.height = h + 'px';
-
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   };
 
-  // ==========================================================
-  // BIND EVENTS
-  // ==========================================================
-
   QuotexChart.prototype._bindEvents = function() {
     var self = this;
-
     if (window.ResizeObserver) {
       this._resizeObserver = new ResizeObserver(function() {
         self._resize();
@@ -188,10 +154,6 @@
       });
     }
   };
-
-  // ==========================================================
-  // RENDER LOOP
-  // ==========================================================
 
   QuotexChart.prototype._startRenderLoop = function() {
     var self = this;
@@ -211,10 +173,6 @@
     }
   };
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
-
   QuotexChart.prototype._render = function() {
     var ctx = this.ctx;
     var W = this.options.width;
@@ -226,10 +184,6 @@
     if (this.options.showGrid) this._drawGrid();
     if (this.options.showWatermark) this._drawWatermark();
   };
-
-  // ==========================================================
-  // GRID
-  // ==========================================================
 
   QuotexChart.prototype._drawGrid = function() {
     var ctx = this.ctx;
@@ -265,10 +219,6 @@
     ctx.setLineDash([]);
   };
 
-  // ==========================================================
-  // WATERMARK
-  // ==========================================================
-
   QuotexChart.prototype._drawWatermark = function() {
     var ctx = this.ctx;
     var W = this.options.width;
@@ -283,10 +233,6 @@
     ctx.restore();
   };
 
-  // ==========================================================
-  // PUBLIC API — setData
-  // ==========================================================
-
   QuotexChart.prototype.setData = function(data) {
     if (!Array.isArray(data)) return;
     this.candles = data.slice();
@@ -300,10 +246,6 @@
     this._autoScale();
     this._notifyTimeRange();
   };
-
-  // ==========================================================
-  // PUBLIC API — update
-  // ==========================================================
 
   QuotexChart.prototype.update = function(candle) {
     if (!candle || typeof candle.time !== 'number') return;
@@ -323,10 +265,6 @@
 
     this._autoScale();
   };
-
-  // ==========================================================
-  // AUTO SCALE
-  // ==========================================================
 
   QuotexChart.prototype._autoScale = function() {
     if (this.candles.length === 0) {
@@ -351,10 +289,6 @@
     this.viewport.maxPrice = max + range * 0.08;
   };
 
-  // ==========================================================
-  // GET VISIBLE CANDLES
-  // ==========================================================
-
   QuotexChart.prototype._getVisibleCandles = function() {
     var pad = this.options.padding;
     var W = this.options.width;
@@ -367,10 +301,6 @@
 
     return this.candles.slice(start, end);
   };
-
-  // ==========================================================
-  // SUBSCRIBERS
-  // ==========================================================
 
   QuotexChart.prototype.subscribeVisibleTimeRangeChange = function(cb) {
     if (typeof cb === 'function') {
@@ -387,10 +317,6 @@
     }
   };
 
-  // ==========================================================
-  // DESTROY
-  // ==========================================================
-
   QuotexChart.prototype.destroy = function() {
     this._stopRenderLoop();
     if (this._resizeObserver) this._resizeObserver.disconnect();
@@ -398,13 +324,9 @@
     console.log('[ChartEngine] Chart destroyed');
   };
 
-  // ==========================================================
-  // EXPOSE
-  // ==========================================================
-
   window.QuotexChart = QuotexChart;
 
-  console.log('[ChartEngine] ✅ Part 1 loaded (Foundation)');
-  console.log('[ChartEngine] Next: Part 2 — Candle Rendering');
+  console.log('[ChartEngine] Part 1 loaded (Foundation)');
+  console.log('[ChartEngine] Next: Part 2 - Candle Rendering');
 
 })();
