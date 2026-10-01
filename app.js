@@ -430,103 +430,60 @@ function initChart() {
   var wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 290;
   if (!wrapperHeight || wrapperHeight < 100) wrapperHeight = 290;
 
-  // ===== Create Chart =====
-  var realChart = LightweightCharts.createChart(chartEl, {
+    // ===== Create QuotexChart (custom engine) =====
+  var realChart = new window.QuotexChart(chartEl, {
     width: chartEl.clientWidth,
     height: wrapperHeight,
-    layout: {
-      background: { color: "#0a0f1a" },
-      textColor: "#6b7a90",
-      fontSize: 11
-    },
-    grid: {
-      vertLines: { color: "#131a26", style: 0 },
-      horzLines: { color: "#131a26", style: 0 }
-    },
-    crosshair: {
-      mode: LightweightCharts.CrosshairMode.Normal,
-      vertLine: {
-        color: "#58a6ff", width: 1, style: 2,
-        labelBackgroundColor: "#1f6feb"
-      },
-      horzLine: {
-        color: "#58a6ff", width: 1, style: 2,
-        labelBackgroundColor: "#1f6feb"
-      }
-    },
-    rightPriceScale: {
-      borderColor: "#1f2a3d",
-      scaleMargins: { top: 0.1, bottom: 0.1 }
-    },
-    timeScale: {
-      borderColor: "#1f2a3d",
-      timeVisible: true,
-      secondsVisible: false,
-      rightOffset: 5,
-      barSpacing: 8,
-      fixLeftEdge: false,
-      lockVisibleTimeRangeOnResize: true,
-      rightBarStaysOnScroll: true,
-      borderVisible: false,
-      visible: false
-    },
-    handleScroll: {
-      mouseWheel: true,
-      pressedMouseMove: true,
-      horzTouchDrag: true,
-      vertTouchDrag: false
-    },
-    handleScale: {
-      axisPressedMouseMove: true,
-      mouseWheel: true,
-      pinch: true
-    }
+    showGrid: true,
+    showWatermark: true,
+    showCrosshair: true,
+    watermarkText: 'QUOTEX',
+    visibleCandleCount: 60,
+    candleSpacing: 6,
+    candleBodyRatio: 0.75
   });
 
   chart = realChart;
   window.chart = realChart;
   window.chartRef = realChart;
 
-  console.log("[CHART] ✅ chartRef exposed");
+  console.log("[CHART] QUOTEX Chart created");
+  console.log("[CHART] chartRef exposed");
   console.log("[CHART] timeScale:", typeof realChart.timeScale);
   console.log("[CHART] addCandlestickSeries:", typeof realChart.addCandlestickSeries);
 
   // ===== Candlestick Series =====
   candleSeries = realChart.addCandlestickSeries({
-    upColor: "#00c853",
-    downColor: "#ff5252",
-    borderUpColor: "#00c853",
-    borderDownColor: "#ff5252",
-    wickUpColor: "#00c853",
-    wickDownColor: "#ff5252",
-    priceLineVisible: false,
-    lastValueVisible: false
+    upColor: "#00c076",
+    downColor: "#ff3b30",
+    borderUpColor: "#00c076",
+    borderDownColor: "#ff3b30",
+    wickUpColor: "#00c076",
+    wickDownColor: "#ff3b30"
   });
   window.candleSeries = candleSeries;
   console.log("[CHART] ✅ candleSeries exposed");
 
-  // ===== Watermark =====
+  // ===== Hide HTML overlays (engine draws everything) =====
   try {
-    var wm = document.createElement("div");
-    wm.className = "qx-chart-watermark";
-    wm.textContent = "QUOTEX";
-    chartEl.appendChild(wm);
+    var oldWm = chartEl.querySelector('.qx-chart-watermark');
+    if (oldWm) oldWm.remove();
   } catch(e) {}
 
-  // ===== Price Dot =====
   try {
     var pd = document.getElementById("qx-price-dot");
     if (pd) pd.style.display = "none";
   } catch(e) {}
 
-  // ===== Time Labels updater =====
-  startTimeLabelsUpdater();
+  try {
+    var htmlTimeLabels = document.getElementById('qx-time-labels');
+    if (htmlTimeLabels) htmlTimeLabels.style.display = 'none';
+  } catch(e) {}
 
   // ===== Subscribe to chart changes =====
   try {
     realChart.timeScale().subscribeVisibleTimeRangeChange(function() {
       if (typeof redrawDrawings === "function") redrawDrawings();
-      if (typeof updateTimeLabels === "function") updateTimeLabels();
       if (typeof updateEntryLine === "function") updateEntryLine();
       if (typeof refreshVerticalLines === "function") refreshVerticalLines();
     });
@@ -547,6 +504,8 @@ function initChart() {
       if (typeof resizeDrawingCanvas === "function") resizeDrawingCanvas();
     }
   });
+
+  console.log("[CHART] Init complete (QuotexChart)");
 }
 
 // ============================================
