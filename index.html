@@ -26,15 +26,15 @@
 
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 
-<!-- Eruda Console (DISABLED — enable manually if needed) -->
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>
-  (function initEruda() {
-    // Eruda DISABLED — chart cover করে
-    // Enable manually: eruda.init()
-    console.log("[ERUDA] Disabled (enable with eruda.init())");
-  })();
-</script>
+<!-- Eruda Console (DISABLED — was covering chart) -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    (function initEruda() {
+      // DISABLED: Eruda was covering the chart on mobile
+      // Enable manually in console: eruda.init()
+      console.log("[ERUDA] Disabled (call eruda.init() to enable)");
+    })();
+  </script>
 </head>
 <body>
 
