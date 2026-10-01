@@ -420,32 +420,53 @@ function initChart() {
     return;
   }
 
+  // === FIX 1: Prevent double-init ===
+  if (window.__chartInitDone) {
+    console.log('[CHART] Already initialized, skipping');
+    return;
+  }
+
+  // === FIX 2: Wait for layout (double rAF) ===
+  if (!window.__chartLayoutReady) {
+    window.__chartLayoutReady = true;
+    console.log('[CHART] Waiting for layout...');
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        initChart();
+      });
+    });
+    return;
+  }
+
+  // === FIX 3: Read ACTUAL height from wrapper ===
+  var wrapperRect = chartWrapper ? chartWrapper.getBoundingClientRect() : null;
+  var wrapperHeight = wrapperRect ? wrapperRect.height : 0;
+
+  if (!wrapperHeight || wrapperHeight < 100) {
+    wrapperHeight = Math.max(380, Math.round(window.innerHeight * 0.5));
+    console.warn('[CHART] Fallback height:', wrapperHeight);
+  }
+
+  // Lock container sizes BEFORE creating chart
+  if (chartWrapper) {
+    chartWrapper.style.height = wrapperHeight + 'px';
+    chartWrapper.style.minHeight = wrapperHeight + 'px';
+  }
+  chartEl.style.height = wrapperHeight + 'px';
+  chartEl.style.minHeight = wrapperHeight + 'px';
   chartEl.innerHTML = "";
 
+  console.log('[CHART] Height locked:', wrapperHeight + 'px');
+
+  // Destroy old chart if exists
   if (chart) {
     try { chart.remove(); } catch(e) {}
     chart = null;
   }
 
-  // Force Quotex-like height
-var wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 0;
-if (!wrapperHeight || wrapperHeight < 300) {
-  wrapperHeight = Math.max(380, Math.round(window.innerHeight * 0.5));
-  if (chartWrapper) {
-    chartWrapper.style.height = wrapperHeight + 'px';
-    chartWrapper.style.minHeight = wrapperHeight + 'px';
-  }
-  var area = document.querySelector('.qx-chart-area');
-  if (area) {
-    area.style.height = wrapperHeight + 'px';
-    area.style.minHeight = wrapperHeight + 'px';
-  }
-}
-console.log('[CHART] Height:', wrapperHeight + 'px');
-
-    // ===== Create QuotexChart (custom engine) =====
+  // === FIX 4: Create QuotexChart with EXPLICIT size ===
   var realChart = new window.QuotexChart(chartEl, {
-    width: chartEl.clientWidth,
+    width: chartEl.clientWidth || window.innerWidth,
     height: wrapperHeight,
     showGrid: true,
     showWatermark: true,
@@ -461,9 +482,6 @@ console.log('[CHART] Height:', wrapperHeight + 'px');
   window.chartRef = realChart;
 
   console.log("[CHART] QUOTEX Chart created");
-  console.log("[CHART] chartRef exposed");
-  console.log("[CHART] timeScale:", typeof realChart.timeScale);
-  console.log("[CHART] addCandlestickSeries:", typeof realChart.addCandlestickSeries);
 
   // ===== Candlestick Series =====
   candleSeries = realChart.addCandlestickSeries({
@@ -475,9 +493,9 @@ console.log('[CHART] Height:', wrapperHeight + 'px');
     wickDownColor: "#ff3b30"
   });
   window.candleSeries = candleSeries;
-  console.log("[CHART] ✅ candleSeries exposed");
+  console.log("[CHART] candleSeries exposed");
 
-  // ===== Hide HTML overlays (engine draws everything) =====
+  // ===== Hide HTML overlays =====
   try {
     var oldWm = chartEl.querySelector('.qx-chart-watermark');
     if (oldWm) oldWm.remove();
@@ -493,7 +511,6 @@ console.log('[CHART] Height:', wrapperHeight + 'px');
     if (htmlTimeLabels) htmlTimeLabels.style.display = 'none';
   } catch(e) {}
 
-  // ===== Hide HTML overlay containers (engine draws them) =====
   try {
     var entryLineContainer = document.getElementById('qx-entry-line-container');
     if (entryLineContainer) entryLineContainer.style.display = 'none';
@@ -509,7 +526,7 @@ console.log('[CHART] Height:', wrapperHeight + 'px');
     if (tickContainer) tickContainer.style.display = 'none';
   } catch(e) {}
 
-  // ===== Subscribe to chart changes =====
+  // ===== Subscribe =====
   try {
     realChart.timeScale().subscribeVisibleTimeRangeChange(function() {
       if (typeof redrawDrawings === "function") redrawDrawings();
@@ -518,23 +535,38 @@ console.log('[CHART] Height:', wrapperHeight + 'px');
     });
   } catch(e) {}
 
-  // ===== Drawing system init =====
   if (typeof initDrawingSystem === "function") initDrawingSystem();
 
-  // ===== Resize handler =====
-  window.addEventListener("resize", function() {
-    if (chart && chartWrapper && chartEl) {
-      try {
-        chart.applyOptions({
-          width: chartEl.clientWidth,
-          height: chartWrapper.clientHeight
-        });
-      } catch(e) {}
-      if (typeof resizeDrawingCanvas === "function") resizeDrawingCanvas();
-    }
-  });
+  // === FIX 5: Resize handler (only real changes) ===
+  if (!window.__chartResizeBound) {
+    window.__chartResizeBound = true;
+    var lastW = window.innerWidth;
+    var lastH = window.innerHeight;
 
-  console.log("[CHART] Init complete (QuotexChart)");
+    window.addEventListener("resize", function() {
+      var nowW = window.innerWidth;
+      var nowH = window.innerHeight;
+
+      if (Math.abs(nowW - lastW) < 20 && Math.abs(nowH - lastH) < 20) return;
+      lastW = nowW;
+      lastH = nowH;
+
+      if (chart && window.chartRef) {
+        var rect = chartWrapper ? chartWrapper.getBoundingClientRect() : null;
+        var h = rect ? rect.height : Math.max(380, Math.round(nowH * 0.5));
+        try {
+          chart.applyOptions({
+            width: chartEl.clientWidth,
+            height: h
+          });
+        } catch(e) {}
+        if (typeof resizeDrawingCanvas === "function") resizeDrawingCanvas();
+      }
+    });
+  }
+
+  window.__chartInitDone = true;
+  console.log("[CHART] Init complete");
 }
 
 // ============================================
@@ -2478,37 +2510,6 @@ setInterval(function() {
 // CHART RESIZE FORCE (FIXED — no scroll reset)
 // Only resize if wrap size actually changed significantly
 // ============================================
-(function resizeChecker() {
-  var lastW = 0;
-  var lastH = 0;
-
-  setInterval(function() {
-    try {
-      if (!window.chartRef || typeof window.chartRef.applyOptions !== "function") return;
-
-      var wrap = document.getElementById("chart-wrapper");
-      if (!wrap) return;
-
-      var w = wrap.clientWidth;
-      var h = wrap.clientHeight;
-
-      if (w <= 0 || h <= 0) return;
-
-      // Only resize if WRAPPER size changed (not chart's internal size)
-      if (Math.abs(w - lastW) > 5 || Math.abs(h - lastH) > 5) {
-        lastW = w;
-        lastH = h;
-
-        window.chartRef.applyOptions({
-          width: w,
-          height: h
-        });
-
-        console.log('[Resize] Chart resized to:', w + 'x' + h);
-      }
-    } catch(e) {}
-  }, 2000);
-})();
 
 // ============================================
 // FINAL EXPOSE
