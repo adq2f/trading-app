@@ -682,4 +682,364 @@
   };
 
   console.log('[ChartEngine] Part 3A loaded (Coordinate System)');
+  // ==========================================================
+  // PART 3B: PAN + ZOOM + INTERACTION
+  // ==========================================================
+
+  // ----- OVERRIDE BIND EVENTS (add interaction) -----
+
+  QuotexChart.prototype._bindEvents = function() {
+    var self = this;
+
+    // Resize observer
+    if (window.ResizeObserver) {
+      this._resizeObserver = new ResizeObserver(function() {
+        self._resize();
+      });
+      this._resizeObserver.observe(this.container);
+    } else {
+      window.addEventListener('resize', function() {
+        self._resize();
+      });
+    }
+
+    // ===== INTERACTION STATE =====
+    this._interaction = {
+      isPanning: false,
+      isPinching: false,
+      startX: 0,
+      startY: 0,
+      startOffsetX: 0,
+      startSpacing: 0,
+      startDistance: 0,
+      lastTouchX: 0,
+      lastTouchY: 0,
+      moved: false
+    };
+
+    var canvas = this.canvas;
+
+    // ===== TOUCH EVENTS =====
+    canvas.addEventListener('touchstart', function(e) {
+      self._onTouchStart(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', function(e) {
+      self._onTouchMove(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', function(e) {
+      self._onTouchEnd(e);
+    }, { passive: false });
+
+    // ===== MOUSE EVENTS =====
+    canvas.addEventListener('mousedown', function(e) {
+      self._onMouseDown(e);
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+      self._onMouseMove(e);
+    });
+
+    canvas.addEventListener('mouseup', function(e) {
+      self._onMouseUp(e);
+    });
+
+    canvas.addEventListener('mouseleave', function(e) {
+      self._onMouseUp(e);
+    });
+
+    // ===== WHEEL (ZOOM) =====
+    canvas.addEventListener('wheel', function(e) {
+      self._onWheel(e);
+    }, { passive: false });
+  };
+
+  // ==========================================================
+  // TOUCH HANDLERS
+  // ==========================================================
+
+  QuotexChart.prototype._onTouchStart = function(e) {
+    e.preventDefault();
+
+    var t = e.touches;
+
+    if (t.length === 1) {
+      // Single touch → pan start
+      this._interaction.isPanning = true;
+      this._interaction.moved = false;
+      this._interaction.startX = t[0].clientX;
+      this._interaction.startY = t[0].clientY;
+      this._interaction.startOffsetX = this.viewport.offsetX;
+      this._interaction.lastTouchX = t[0].clientX;
+      this._interaction.lastTouchY = t[0].clientY;
+
+      // Crosshair active
+      var rect = this.canvas.getBoundingClientRect();
+      this.crosshair.x = t[0].clientX - rect.left;
+      this.crosshair.y = t[0].clientY - rect.top;
+      this.crosshair.active = true;
+
+    } else if (t.length === 2) {
+      // Two fingers → pinch start
+      this._interaction.isPinching = true;
+      this._interaction.isPanning = false;
+      this._interaction.startDistance = this._getTouchDistance(t[0], t[1]);
+      this._interaction.startSpacing = this.viewport.candleSpacing;
+      this._interaction.startOffsetX = this.viewport.offsetX;
+
+      // Midpoint for zoom center
+      var midX = (t[0].clientX + t[1].clientX) / 2;
+      this._interaction.startX = midX;
+    }
+  };
+
+  QuotexChart.prototype._onTouchMove = function(e) {
+    e.preventDefault();
+
+    var t = e.touches;
+
+    if (t.length === 1 && this._interaction.isPanning) {
+      // Pan
+      var dx = t[0].clientX - this._interaction.lastTouchX;
+
+      if (Math.abs(dx) > 2) {
+        this._interaction.moved = true;
+      }
+
+      var spacing = this.viewport.candleSpacing;
+      var offsetDelta = -dx / spacing;
+
+      this._applyPan(offsetDelta);
+
+      this._interaction.lastTouchX = t[0].clientX;
+
+      // Crosshair update
+      var rect = this.canvas.getBoundingClientRect();
+      this.crosshair.x = t[0].clientX - rect.left;
+      this.crosshair.y = t[0].clientY - rect.top;
+      this.crosshair.active = true;
+
+    } else if (t.length === 2 && this._interaction.isPinching) {
+      // Pinch zoom
+      var distance = this._getTouchDistance(t[0], t[1]);
+      var ratio = distance / this._interaction.startDistance;
+
+      var newSpacing = this._interaction.startSpacing * ratio;
+      this._applyZoom(newSpacing, this._interaction.startX);
+    }
+  };
+
+  QuotexChart.prototype._onTouchEnd = function(e) {
+    e.preventDefault();
+
+    if (e.touches.length === 0) {
+      // All touches ended
+      this._interaction.isPanning = false;
+      this._interaction.isPinching = false;
+
+      // Deactivate crosshair after short delay
+      var self = this;
+      if (!this._interaction.moved) {
+        setTimeout(function() {
+          if (!self._interaction.isPanning && !self._interaction.isPinching) {
+            self.crosshair.active = false;
+          }
+        }, 1500);
+      } else {
+        this.crosshair.active = false;
+      }
+    }
+  };
+
+  // ==========================================================
+  // MOUSE HANDLERS
+  // ==========================================================
+
+  QuotexChart.prototype._onMouseDown = function(e) {
+    this._interaction.isPanning = true;
+    this._interaction.moved = false;
+    this._interaction.startX = e.clientX;
+    this._interaction.startY = e.clientY;
+    this._interaction.startOffsetX = this.viewport.offsetX;
+    this._interaction.lastTouchX = e.clientX;
+
+    var rect = this.canvas.getBoundingClientRect();
+    this.crosshair.x = e.clientX - rect.left;
+    this.crosshair.y = e.clientY - rect.top;
+    this.crosshair.active = true;
+  };
+
+  QuotexChart.prototype._onMouseMove = function(e) {
+    // Update crosshair always
+    var rect = this.canvas.getBoundingClientRect();
+    this.crosshair.x = e.clientX - rect.left;
+    this.crosshair.y = e.clientY - rect.top;
+    this.crosshair.active = true;
+
+    if (this._interaction.isPanning) {
+      var dx = e.clientX - this._interaction.lastTouchX;
+
+      if (Math.abs(dx) > 2) {
+        this._interaction.moved = true;
+      }
+
+      var spacing = this.viewport.candleSpacing;
+      var offsetDelta = -dx / spacing;
+      this._applyPan(offsetDelta);
+
+      this._interaction.lastTouchX = e.clientX;
+    }
+  };
+
+  QuotexChart.prototype._onMouseUp = function(e) {
+    if (this._interaction.isPanning) {
+      this._interaction.isPanning = false;
+    }
+  };
+
+  // ==========================================================
+  // WHEEL (ZOOM)
+  // ==========================================================
+
+  QuotexChart.prototype._onWheel = function(e) {
+    e.preventDefault();
+
+    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+    var currentSpacing = this.viewport.candleSpacing;
+    var newSpacing = currentSpacing * (1 + delta);
+
+    var rect = this.canvas.getBoundingClientRect();
+    var mouseX = e.clientX - rect.left;
+
+    this._applyZoom(newSpacing, mouseX);
+  };
+
+  // ==========================================================
+  // PAN / ZOOM LOGIC
+  // ==========================================================
+
+  QuotexChart.prototype._applyPan = function(offsetDelta) {
+    var newOffset = this.viewport.offsetX + offsetDelta;
+
+    // Clamp to valid range
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+    var maxVisible = Math.ceil(chartW / spacing);
+    var minOffset = -maxVisible / 2;
+    var maxOffset = Math.max(0, this.candles.length - maxVisible / 2);
+
+    if (newOffset < minOffset) newOffset = minOffset;
+    if (newOffset > maxOffset) newOffset = maxOffset;
+
+    this.viewport.offsetX = newOffset;
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  QuotexChart.prototype._applyZoom = function(newSpacing, anchorX) {
+    // Clamp spacing
+    if (newSpacing < this.options.minCandleSpacing) newSpacing = this.options.minCandleSpacing;
+    if (newSpacing > this.options.maxCandleSpacing) newSpacing = this.options.maxCandleSpacing;
+
+    var oldSpacing = this.viewport.candleSpacing;
+
+    // Adjust offset so zoom feels natural around anchor
+    var pad = this.options.padding;
+
+    if (anchorX !== undefined && oldSpacing > 0) {
+      // Calculate which candle is at anchorX
+      var relativeIdx = (anchorX - pad.left) / oldSpacing;
+      var anchorCandleIdx = this.viewport.offsetX + relativeIdx;
+
+      // Set new spacing
+      this.viewport.candleSpacing = newSpacing;
+
+      // Recompute offset to keep anchor candle at same x
+      var newRelativeIdx = (anchorX - pad.left) / newSpacing;
+      this.viewport.offsetX = anchorCandleIdx - newRelativeIdx;
+    } else {
+      this.viewport.candleSpacing = newSpacing;
+    }
+
+    // Clamp offset
+    var chartW = this.options.width - pad.left - pad.right;
+    var maxVisible = Math.ceil(chartW / newSpacing);
+
+    if (this.viewport.offsetX < -maxVisible / 2) {
+      this.viewport.offsetX = -maxVisible / 2;
+    }
+    if (this.viewport.offsetX > this.candles.length) {
+      this.viewport.offsetX = Math.max(0, this.candles.length - maxVisible / 2);
+    }
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  // ==========================================================
+  // UTILITY: TOUCH DISTANCE
+  // ==========================================================
+
+  QuotexChart.prototype._getTouchDistance = function(t1, t2) {
+    var dx = t2.clientX - t1.clientX;
+    var dy = t2.clientY - t1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // ==========================================================
+  // PUBLIC: FIT CONTENT (auto-fit all candles)
+  // ==========================================================
+
+  QuotexChart.prototype.fitContent = function() {
+    if (this.candles.length === 0) return;
+
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+
+    // Fit all candles but cap at 100
+    var count = Math.min(this.candles.length, 100);
+    var spacing = chartW / count;
+
+    if (spacing < this.options.minCandleSpacing) spacing = this.options.minCandleSpacing;
+    if (spacing > this.options.maxCandleSpacing) spacing = this.options.maxCandleSpacing;
+
+    this.viewport.candleSpacing = spacing;
+    this.viewport.offsetX = Math.max(0, this.candles.length - count);
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  // ==========================================================
+  // PUBLIC: SCROLL TO END (right side)
+  // ==========================================================
+
+  QuotexChart.prototype.scrollToRealTime = function() {
+    if (this.candles.length === 0) return;
+
+    var pad = this.options.padding;
+    var chartW = this.options.width - pad.left - pad.right;
+    var spacing = this.viewport.candleSpacing;
+    var maxVisible = Math.ceil(chartW / spacing);
+
+    this.viewport.offsetX = Math.max(0, this.candles.length - maxVisible + this.options.rightOffsetCandles);
+
+    this._autoScale();
+    this._notifyTimeRange();
+  };
+
+  // Update options (add min/max spacing)
+  var _origMergeOptions = mergeOptions;
+  // Add defaults to DEFAULT_OPTIONS if not present
+  if (typeof DEFAULT_OPTIONS.minCandleSpacing === 'undefined') {
+    DEFAULT_OPTIONS.minCandleSpacing = 2;
+  }
+  if (typeof DEFAULT_OPTIONS.maxCandleSpacing === 'undefined') {
+    DEFAULT_OPTIONS.maxCandleSpacing = 30;
+  }
+
+  console.log('[ChartEngine] Part 3B loaded (Pan + Zoom + Interaction)');
 })();
