@@ -6518,3 +6518,327 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   console.log('[Phase7-9-A] ✅ Part A loaded');
 
 })();
+// ============================================================
+// PHASE 7-9 — 14 CANDLE BEHAVIORS (Self-Contained Block)
+// Part B: CreateNewCandle Wrap + UI + Test Menu
+// ============================================================
+// SAFE: Yeh block createNewCandle ko WRAP karega.
+//       Original function backup me rahega.
+// ============================================================
+
+(function phase7_9_Behaviors_PartB() {
+  if (window.__phase7_9_PartB_Loaded) {
+    console.log('[Phase7-9-B] Already loaded, skipping');
+    return;
+  }
+  window.__phase7_9_PartB_Loaded = true;
+
+  console.log('[Phase7-9-B] Loading Auto-Runner integration...');
+
+  // ==========================================================
+  // C1. CHECK DEPENDENCIES
+  // ==========================================================
+
+  if (typeof window.applyCandleBehavior !== 'function') {
+    console.error('[Phase7-9-B] Part A not loaded! Load Part A first.');
+    return;
+  }
+
+  if (typeof window.createNewCandle !== 'function') {
+    console.error('[Phase7-9-B] createNewCandle not found!');
+    return;
+  }
+
+  // ==========================================================
+  // C2. BACKUP ORIGINAL
+  // ==========================================================
+
+  var originalCreateNewCandle = window.createNewCandle;
+  window.__originalCreateNewCandle = originalCreateNewCandle;
+
+  console.log('[Phase7-9-B] Original createNewCandle backed up');
+
+  // ==========================================================
+  // C3. SIZE-ONLY BEHAVIORS (pass through to original)
+  // ==========================================================
+
+  var SIZE_ONLY = ['normal', 'medium', 'big', 'huge'];
+
+  function isSizeOnly(b) {
+    return SIZE_ONLY.indexOf(b) !== -1;
+  }
+
+  function is14Behavior(b) {
+    return window.CANDLE_BEHAVIORS &&
+           window.CANDLE_BEHAVIORS.indexOf(b) !== -1;
+  }
+
+  // ==========================================================
+  // C4. NEW createNewCandle (WRAPPER)
+  // ==========================================================
+
+  window.createNewCandle = function(prevClose, behavior, direction, size, basePrice, exactClose) {
+    try {
+      // If behavior is size-only (normal/medium/big/huge), use original
+      if (isSizeOnly(behavior) || !is14Behavior(behavior)) {
+        return originalCreateNewCandle.apply(this, arguments);
+      }
+
+      // 14 Behavior → apply custom logic
+      console.log('[Phase7-9-B] Applying behavior:', behavior, '| dir:', direction);
+
+      var open = Number(prevClose) || Number(basePrice) || 50000;
+      var defaultClose = open + (direction === 'up' ? 10 : -10);
+
+      // If exactClose provided, use it
+      if (exactClose && !isNaN(exactClose)) {
+        defaultClose = Number(exactClose);
+      }
+
+      // Apply behavior
+      var result = window.applyCandleBehavior(
+        behavior,
+        open,
+        defaultClose,
+        direction
+      );
+
+      console.log('[Phase7-9-B] ✅ Generated:', result);
+      return result;
+
+    } catch (err) {
+      console.error('[Phase7-9-B] Error:', err.message);
+      // Fallback to original
+      return originalCreateNewCandle.apply(this, arguments);
+    }
+  };
+
+  console.log('[Phase7-9-B] ✅ createNewCandle wrapped');
+
+  // ==========================================================
+  // C5. UI — Add behavior selector to Candle Designer
+  // ==========================================================
+
+  function addBehaviorSelectorToUI() {
+    // Find Candle Designer section
+    var designer = document.querySelector('#designer, .designer-section, [data-tab="designer"]');
+    if (!designer) {
+      // Try alternative: find where size selector is
+      var sizeSelect = document.querySelector('select[id*="size"], select[name*="size"]');
+      if (sizeSelect && sizeSelect.parentNode) {
+        designer = sizeSelect.parentNode;
+      }
+    }
+
+    if (!designer) {
+      console.warn('[Phase7-9-B] Designer UI not found, selector not added');
+      return false;
+    }
+
+    // Check if already added
+    if (document.getElementById('p79-behavior-select')) {
+      console.log('[Phase7-9-B] Selector already exists');
+      return true;
+    }
+
+    // Create selector
+    var wrapper = document.createElement('div');
+    wrapper.id = 'p79-behavior-wrapper';
+    wrapper.style.cssText = 'margin:10px 0;padding:8px;background:#1a2332;border-radius:6px;border:1px solid #2a3a4d;';
+
+    var label = document.createElement('label');
+    label.textContent = 'Candle Behavior (14 types)';
+    label.style.cssText = 'display:block;color:#8fa8c8;font-size:11px;margin-bottom:4px;font-weight:600;';
+    wrapper.appendChild(label);
+
+    var select = document.createElement('select');
+    select.id = 'p79-behavior-select';
+    select.style.cssText = 'width:100%;padding:6px;background:#0a0f1a;color:#e6edf3;border:1px solid #2a3a4d;border-radius:4px;font-size:12px;';
+
+    // Default option
+    var defOpt = document.createElement('option');
+    defOpt.value = 'normal';
+    defOpt.textContent = '-- Size Only (use original) --';
+    select.appendChild(defOpt);
+
+    // 14 behaviors
+    var labels = {
+      'doji': '1. Doji (small body, long wicks)',
+      'hammer': '2. Hammer (bottom wick)',
+      'inverted_hammer': '3. Inverted Hammer (top wick)',
+      'shooting_star': '4. Shooting Star (bearish)',
+      'hanging_man': '5. Hanging Man (bearish)',
+      'bullish_engulf': '6. Bullish Engulf',
+      'bearish_engulf': '7. Bearish Engulf',
+      'marubozu_bull': '8. Marubozu Bull (no wick)',
+      'marubozu_bear': '9. Marubozu Bear (no wick)',
+      'long_body_bull': '10. Long Body Bull',
+      'long_body_bear': '11. Long Body Bear',
+      'spinning_top': '12. Spinning Top',
+      'random': '13. Random'
+    };
+
+    window.CANDLE_BEHAVIORS.forEach(function(b) {
+      if (b === 'normal') return;
+      var opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = labels[b] || b;
+      select.appendChild(opt);
+    });
+
+    wrapper.appendChild(select);
+
+    // Save to settings
+    select.addEventListener('change', function() {
+      var b = select.value;
+      console.log('[Phase7-9-B] Behavior selected:', b);
+
+      // Save to adminSettings
+      if (window.adminSettings) {
+        window.adminSettings.candleBehavior = b;
+      }
+
+      // Also try to save to Firestore settings/global
+      try {
+        if (window.setDoc && window.db && window.doc) {
+          window.setDoc(
+            window.doc(window.db, 'settings', 'global'),
+            { candleBehavior: b },
+            { merge: true }
+          );
+        }
+      } catch(e) {}
+
+      // Update status
+      var status = document.getElementById('p79-behavior-status');
+      if (status) {
+        status.textContent = 'Active: ' + b;
+        status.style.color = '#00c853';
+      }
+    });
+
+    // Status display
+    var status = document.createElement('div');
+    status.id = 'p79-behavior-status';
+    status.style.cssText = 'margin-top:4px;color:#8fa8c8;font-size:10px;';
+    status.textContent = 'Active: normal (default)';
+    wrapper.appendChild(status);
+
+    // Insert at top of designer
+    if (designer.firstChild) {
+      designer.insertBefore(wrapper, designer.firstChild);
+    } else {
+      designer.appendChild(wrapper);
+    }
+
+    console.log('[Phase7-9-B] ✅ Behavior selector added to UI');
+    return true;
+  }
+
+  // Try to add UI
+  setTimeout(addBehaviorSelectorToUI, 2000);
+  setTimeout(addBehaviorSelectorToUI, 5000);
+
+  // ==========================================================
+  // C6. GET CURRENT BEHAVIOR (for auto-runner)
+  // ==========================================================
+
+  function getCurrentBehavior() {
+    // Priority 1: adminSettings.candleBehavior
+    if (window.adminSettings && window.adminSettings.candleBehavior) {
+      return window.adminSettings.candleBehavior;
+    }
+
+    // Priority 2: UI selector
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && sel.value && sel.value !== 'normal') {
+      return sel.value;
+    }
+
+    // Priority 3: Default
+    return 'normal';
+  }
+
+  window.getCurrentCandleBehavior = getCurrentBehavior;
+
+  // ==========================================================
+  // C7. AUTO-APPLY (Hook scheduledCandles behavior)
+  // ==========================================================
+
+  // Patch startAutoRunner to inject behavior
+  if (typeof window.startAutoRunner === 'function') {
+    var origStartAutoRunner = window.startAutoRunner;
+
+    window.startAutoRunner = async function(marketId, timeframe) {
+      console.log('[Phase7-9-B] Auto-Runner starting for:', marketId);
+
+      // Read behavior from settings
+      var behavior = getCurrentBehavior();
+      console.log('[Phase7-9-B] Auto-Runner behavior:', behavior);
+
+      // Expose for auto-runner to use
+      window.__activeAutoBehavior = behavior;
+
+      return origStartAutoRunner.apply(this, arguments);
+    };
+
+    console.log('[Phase7-9-B] ✅ startAutoRunner wrapped');
+  }
+
+  // ==========================================================
+  // C8. TEST MENU — Preview 14 behaviors
+  // ==========================================================
+
+  window.testAllBehaviors = function() {
+    console.log('');
+    console.log('===== 14 BEHAVIORS TEST =====');
+
+    var open = 100;
+    var close = 101;
+    var dir = 'up';
+
+    window.CANDLE_BEHAVIORS.forEach(function(b) {
+      var r = window.applyCandleBehavior(b, open, close, dir);
+      var bodySize = Math.abs(r.close - r.open).toFixed(3);
+      var wickUp = (r.high - Math.max(r.open, r.close)).toFixed(3);
+      var wickDown = (Math.min(r.open, r.close) - r.low).toFixed(3);
+      console.log(
+        (b + '                    ').substring(0, 20),
+        '| O:' + r.open,
+        'H:' + r.high,
+        'L:' + r.low,
+        'C:' + r.close,
+        '| body:' + bodySize,
+        '| up-wick:' + wickUp,
+        '| dn-wick:' + wickDown
+      );
+    });
+
+    console.log('===== END =====');
+    console.log('');
+    return 'Test complete — check console above';
+  };
+
+  window.testOneBehavior = function(name) {
+    var r = window.applyCandleBehavior(name, 100, 101, 'up');
+    console.log('[Test]', name, '→', r);
+    return r;
+  };
+
+  // ==========================================================
+  // C9. EXPOSE
+  // ==========================================================
+
+  window.phase7_9_B = {
+    getCurrentBehavior: getCurrentBehavior,
+    addBehaviorSelectorToUI: addBehaviorSelectorToUI,
+    testAllBehaviors: window.testAllBehaviors,
+    testOneBehavior: window.testOneBehavior,
+    originalCreateNewCandle: originalCreateNewCandle
+  };
+
+  console.log('[Phase7-9-B] ✅ Part B loaded');
+  console.log('[Phase7-9-B] Test: window.testAllBehaviors()');
+  console.log('[Phase7-9-B] Test: window.testOneBehavior("doji")');
+
+})();
