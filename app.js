@@ -420,6 +420,12 @@ function initChart() {
     return;
   }
 
+  function initChart() {
+  if (!chartEl) {
+    console.error("[CHART] tv-chart element not found");
+    return;
+  }
+
   chartEl.innerHTML = "";
 
   if (chart) {
