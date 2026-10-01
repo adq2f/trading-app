@@ -4367,3 +4367,74 @@ window.clearResultMarkers = window.clearResultMarkers;
 
 console.log('===== PHASE 15 — RESULT MARKER LOADED =====');
 console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
+// ============================================================
+// DEBUG BUTTON (Mobile-friendly console)
+// ============================================================
+(function addDebugButton() {
+  if (window.__debugBtnAdded) return;
+  window.__debugBtnAdded = true;
+
+  var btn = document.createElement('button');
+  btn.id = 'debug-float-btn';
+  btn.textContent = 'DBG';
+  btn.style.cssText = [
+    'position:fixed',
+    'bottom:80px',
+    'right:10px',
+    'width:40px',
+    'height:40px',
+    'background:linear-gradient(135deg,#2196f3,#1565c0)',
+    'color:#fff',
+    'border:2px solid #fff',
+    'border-radius:50%',
+    'font-size:11px',
+    'font-weight:bold',
+    'z-index:99999',
+    'box-shadow:0 2px 8px rgba(0,0,0,0.4)'
+  ].join(';');
+
+  btn.onclick = function() {
+    var report = [];
+
+    // Chart info
+    report.push('=== CHART INFO ===');
+    report.push('QuotexChart: ' + (typeof window.QuotexChart));
+    report.push('chartRef: ' + (window.chartRef ? 'OK' : 'NULL'));
+
+    if (window.chartRef) {
+      report.push('Chart size: ' + window.chartRef.options.width + 'x' + window.chartRef.options.height);
+      report.push('Candles: ' + (window.chartRef.candles ? window.chartRef.candles.length : 0));
+      report.push('Canvas: ' + (window.chartRef.canvas ? window.chartRef.canvas.width + 'x' + window.chartRef.canvas.height : 'N/A'));
+    }
+
+    // Canvas count
+    var tvChart = document.getElementById('tv-chart');
+    if (tvChart) {
+      var canvases = tvChart.querySelectorAll('canvas');
+      report.push('');
+      report.push('=== CANVAS COUNT ===');
+      report.push('Canvases in tv-chart: ' + canvases.length);
+      canvases.forEach(function(c, i) {
+        var isOurs = (window.chartRef && c === window.chartRef.canvas);
+        report.push('  Canvas ' + (i+1) + ': ' + c.width + 'x' + c.height + (isOurs ? ' ←OURS' : ' ←???'));
+      });
+
+      report.push('');
+      report.push('=== CHILDREN ===');
+      Array.from(tvChart.children).forEach(function(child, i) {
+        report.push('  ' + (i+1) + '. ' + child.tagName + (child.id ? '#'+child.id : ''));
+      });
+    }
+
+    // LWC check
+    report.push('');
+    report.push('LightweightCharts: ' + (typeof window.LightweightCharts));
+    report.push('USE_BINANCE: ' + window.USE_BINANCE);
+
+    // Show in alert
+    alert(report.join('\n'));
+  };
+
+  document.body.appendChild(btn);
+  console.log('[DEBUG] Floating button added');
+})();
