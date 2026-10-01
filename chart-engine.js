@@ -2121,4 +2121,43 @@
   };
 
   console.log('[ChartEngine] Part 7A-E loaded (Integration API)');
+// ============================================================
+// DEBUG: Force visual render test
+// ============================================================
+
+// Force a bright red border on canvas to verify it's drawing
+window.debugDrawRedBorder = function() {
+  if (!window.chartRef || !window.chartRef.ctx) {
+    console.log('No chart context');
+    return;
+  }
+  
+  var ctx = window.chartRef.ctx;
+  var W = window.chartRef.options.width;
+  var H = window.chartRef.options.height;
+  
+  // Draw red border
+  ctx.save();
+  ctx.strokeStyle = '#ff0000';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, W - 4, H - 4);
+  
+  // Draw test text
+  ctx.fillStyle = '#00ff00';
+  ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('CANVAS WORKS', W / 2, H / 2);
+  
+  // Draw test candles
+  ctx.fillStyle = '#00c076';
+  for (var i = 0; i < 5; i++) {
+    ctx.fillRect(50 + i * 40, 100, 20, 60);
+  }
+  
+  ctx.restore();
+  
+  console.log('✅ Red border + test text drawn. Look at chart!');
+};
+
+console.log('[DEBUG] debugDrawRedBorder() available');
 })();
