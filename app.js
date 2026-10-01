@@ -427,8 +427,21 @@ function initChart() {
     chart = null;
   }
 
-  var wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 290;
-  if (!wrapperHeight || wrapperHeight < 100) wrapperHeight = 290;
+  // Force Quotex-like height
+var wrapperHeight = chartWrapper ? chartWrapper.clientHeight : 0;
+if (!wrapperHeight || wrapperHeight < 300) {
+  wrapperHeight = Math.max(380, Math.round(window.innerHeight * 0.5));
+  if (chartWrapper) {
+    chartWrapper.style.height = wrapperHeight + 'px';
+    chartWrapper.style.minHeight = wrapperHeight + 'px';
+  }
+  var area = document.querySelector('.qx-chart-area');
+  if (area) {
+    area.style.height = wrapperHeight + 'px';
+    area.style.minHeight = wrapperHeight + 'px';
+  }
+}
+console.log('[CHART] Height:', wrapperHeight + 'px');
 
     // ===== Create QuotexChart (custom engine) =====
   var realChart = new window.QuotexChart(chartEl, {
@@ -478,6 +491,22 @@ function initChart() {
   try {
     var htmlTimeLabels = document.getElementById('qx-time-labels');
     if (htmlTimeLabels) htmlTimeLabels.style.display = 'none';
+  } catch(e) {}
+
+  // ===== Hide HTML overlay containers (engine draws them) =====
+  try {
+    var entryLineContainer = document.getElementById('qx-entry-line-container');
+    if (entryLineContainer) entryLineContainer.style.display = 'none';
+  } catch(e) {}
+
+  try {
+    var vlineContainer = document.getElementById('qx-vline-container');
+    if (vlineContainer) vlineContainer.style.display = 'none';
+  } catch(e) {}
+
+  try {
+    var tickContainer = document.getElementById('qx-tick-container');
+    if (tickContainer) tickContainer.style.display = 'none';
   } catch(e) {}
 
   // ===== Subscribe to chart changes =====
@@ -829,7 +858,6 @@ function initDrawingSystem() {
   try {
     chart.timeScale().subscribeVisibleLogicalRangeChange(function() {
       redrawDrawings();
-      updateTimeLabels();
       updateEntryLine();
     });
   } catch(e) {}
