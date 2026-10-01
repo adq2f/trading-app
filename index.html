@@ -81,12 +81,24 @@
     })();
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>
-    (function initEruda() {
-      console.log("[ERUDA] Disabled (call eruda.init() to enable)");
-    })();
-  </script>
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>
+  (function initEruda() {
+    // Eruda চালু করুন — চার্টের উপরে ওভারল্যাপ করবে, টেস্টের জন্য
+    if (window.eruda) {
+      eruda.init({
+        useShadowDom: true,
+        autoScale: true,
+        defaults: {
+          displaySize: 50,
+          transparency: 0.9,
+          theme: 'Dark'
+        }
+      });
+      console.log("[ERUDA] Enabled");
+    }
+  })();
+</script>
 </head>
 <body>
 
