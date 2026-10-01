@@ -2710,26 +2710,6 @@ function updateUserChart(candleList) {
   }
 }
 
-  if (chartData.length === 0) return;
-
-  try {
-    // Set full data (replace)
-    window.candleSeries.setData(chartData);
-
-    // Update currentPrice from last candle
-    var last = chartData[chartData.length - 1];
-    if (last) {
-      window.currentPrice = last.close;
-      window.fsCandleState.lastPrice = last.close;
-      updateUserPriceDisplay(last.close);
-    }
-
-    console.log('[FS] Chart updated:', chartData.length, 'candles');
-  } catch (err) {
-    console.error('[FS] Chart update error:', err.message);
-  }
-}
-
 // ============================================================
 // FS6. EXPOSE
 // ============================================================
@@ -2946,55 +2926,6 @@ function applyCandlesToChart(candles) {
     console.log('[FS-B] Range:', 
       unique[0].close.toFixed(2), '→', unique[unique.length-1].close.toFixed(2));
 
-  } catch (err) {
-    console.error('[FS-B] Chart apply error:', err.message);
-  }
-}
-
-  var seen = {};
-  var unique = [];
-  chartData.forEach(function(c) {
-    if (!seen[c.time]) {
-      seen[c.time] = c;
-      unique.push(c);
-    } else {
-      seen[c.time] = c;
-    }
-  });
-  unique.sort(function(a, b) { return a.time - b.time; });
-
-  if (unique.length === 0) return;
-
-  try {
-    window.candleSeries.setData(unique);
-
-    var last = unique[unique.length - 1];
-    window.currentPrice = last.close;
-    window.fsCandleState.lastPrice = last.close;
-
-    var priceEl = document.getElementById('current-price');
-    if (priceEl) {
-      priceEl.textContent = last.close.toFixed(2);
-      if (last.close >= last.open) {
-        priceEl.style.color = '#00c853';
-      } else {
-        priceEl.style.color = '#ff5252';
-      }
-    }
-
-    try {
-      var priceDot = document.getElementById('qx-price-dot');
-      if (priceDot && window.candleSeries) {
-        var yPos = window.candleSeries.priceToCoordinate(last.close);
-        if (yPos !== null && yPos !== undefined) {
-          priceDot.style.top = yPos + 'px';
-          priceDot.style.display = 'block';
-          priceDot.className = 'qx-price-dot ' + (last.close >= last.open ? 'up' : 'down');
-        }
-      }
-    } catch(e) {}
-
-    console.log('[FS-B] Chart updated:', unique.length, 'candles');
   } catch (err) {
     console.error('[FS-B] Chart apply error:', err.message);
   }
