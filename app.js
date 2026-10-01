@@ -2475,28 +2475,40 @@ setInterval(function() {
 }, 500);
 
 // ============================================
-// CHART RESIZE FORCE
+// CHART RESIZE FORCE (FIXED — no scroll reset)
+// Only resize if wrap size actually changed significantly
 // ============================================
-setInterval(function() {
-  try {
-    if (window.chartRef && typeof window.chartRef.applyOptions === "function") {
+(function resizeChecker() {
+  var lastW = 0;
+  var lastH = 0;
+
+  setInterval(function() {
+    try {
+      if (!window.chartRef || typeof window.chartRef.applyOptions !== "function") return;
+
       var wrap = document.getElementById("chart-wrapper");
-      if (wrap && wrap.clientWidth > 0 && wrap.clientHeight > 0) {
-        var currentH = 0;
-        try {
-          var opts = window.chartRef.options();
-          currentH = opts.height || 0;
-        } catch(e) {}
-        if (Math.abs(currentH - wrap.clientHeight) > 5) {
-          window.chartRef.applyOptions({
-            width: wrap.clientWidth,
-            height: wrap.clientHeight
-          });
-        }
+      if (!wrap) return;
+
+      var w = wrap.clientWidth;
+      var h = wrap.clientHeight;
+
+      if (w <= 0 || h <= 0) return;
+
+      // Only resize if WRAPPER size changed (not chart's internal size)
+      if (Math.abs(w - lastW) > 5 || Math.abs(h - lastH) > 5) {
+        lastW = w;
+        lastH = h;
+
+        window.chartRef.applyOptions({
+          width: w,
+          height: h
+        });
+
+        console.log('[Resize] Chart resized to:', w + 'x' + h);
       }
-    }
-  } catch(e) {}
-}, 2000);
+    } catch(e) {}
+  }, 2000);
+})();
 
 // ============================================
 // FINAL EXPOSE
