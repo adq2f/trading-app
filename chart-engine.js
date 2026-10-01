@@ -129,17 +129,34 @@
   }
 
   QuotexChart.prototype._resize = function() {
-    var w = this.container.clientWidth;
-    var h = this.container.clientHeight;
-    if (w <= 0 || h <= 0) return;
-    this.options.width = w;
-    this.options.height = h;
-    this.canvas.width = w * this.dpr;
-    this.canvas.height = h * this.dpr;
-    this.canvas.style.width = w + 'px';
-    this.canvas.style.height = h + 'px';
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-  };
+  if (!this.container) return;
+
+  var w = this.container.clientWidth;
+  var h = this.container.clientHeight;
+
+  if (w <= 0) w = this.options.width || window.innerWidth || 360;
+  if (h <= 0) h = this.options.height || 400;
+
+  if (w < 100 || h < 100) {
+    var self = this;
+    if (!self.__resizeRetries) self.__resizeRetries = 0;
+    self.__resizeRetries++;
+    if (self.__resizeRetries < 10) {
+      setTimeout(function() { self._resize(); }, 100);
+    }
+    return;
+  }
+
+  self.__resizeRetries = 0;
+
+  this.options.width = w;
+  this.options.height = h;
+  this.canvas.width = w * this.dpr;
+  this.canvas.height = h * this.dpr;
+  this.canvas.style.width = w + 'px';
+  this.canvas.style.height = h + 'px';
+  this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+};
 
   QuotexChart.prototype._bindEvents = function() {
     var self = this;
