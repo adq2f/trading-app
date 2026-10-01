@@ -1891,4 +1891,234 @@
   };
 
   console.log('[ChartEngine] Part 3E loaded (Scroll Performance)');
+  // ==========================================================
+  // PART 7A: INTEGRATION API
+  // Lightweight Charts compatible API for QuotexChart
+  // ==========================================================
+  // Add addCandlestickSeries() so existing app.js works without
+  // any changes. The returned object mimics candleSeries API.
+  // ==========================================================
+
+  QuotexChart.prototype.addCandlestickSeries = function(options) {
+    var self = this;
+
+    // Store series options (colors)
+    if (options) {
+      if (options.upColor) COLORS.candleGreen = options.upColor;
+      if (options.downColor) COLORS.candleRed = options.downColor;
+      if (options.borderUpColor) COLORS.candleGreenBorder = options.borderUpColor;
+      if (options.borderDownColor) COLORS.candleRedBorder = options.borderDownColor;
+      if (options.wickUpColor) COLORS.candleGreenWick = options.wickUpColor;
+      if (options.wickDownColor) COLORS.candleRedWick = options.wickDownColor;
+    }
+
+    // Series object — mimics Lightweight Charts ISeriesApi
+    var series = {
+      // ----- setData (bulk update) -----
+      setData: function(data) {
+        if (!Array.isArray(data)) {
+          console.warn('[Series] setData: not array');
+          return;
+        }
+
+        // Filter valid candles
+        var valid = data.filter(function(c) {
+          return c && typeof c.time === 'number' &&
+                 typeof c.open === 'number' &&
+                 typeof c.high === 'number' &&
+                 typeof c.low === 'number' &&
+                 typeof c.close === 'number';
+        });
+
+        self.setData(valid);
+      },
+
+      // ----- update (single candle append/update) -----
+      update: function(candle) {
+        if (!candle || typeof candle.time !== 'number') return;
+        self.update(candle);
+      },
+
+      // ----- data (read current data) -----
+      data: function() {
+        return self.candles.slice();
+      },
+
+      // ----- setMarkers (no-op — markers on canvas) -----
+      setMarkers: function(markers) {
+        // Not needed — we draw markers on canvas directly
+        self._markers = markers || [];
+      },
+
+      // ----- createPriceLine (for entry line) -----
+      createPriceLine: function(options) {
+        var line = {
+          options: options || {},
+          _isPriceLine: true
+        };
+        if (!self._priceLines) self._priceLines = [];
+        self._priceLines.push(line);
+        return line;
+      },
+
+      // ----- removePriceLine -----
+      removePriceLine: function(line) {
+        if (!self._priceLines) return;
+        var idx = self._priceLines.indexOf(line);
+        if (idx > -1) self._priceLines.splice(idx, 1);
+      },
+
+      // ----- priceToCoordinate (for HTML marker positioning) -----
+      priceToCoordinate: function(price) {
+        return self._priceToY(price);
+      },
+
+      // ----- coordinateToPrice -----
+      coordinateToPrice: function(y) {
+        return self._yToPrice(y);
+      },
+
+      // ----- Price lines store -----
+      _priceLines: []
+    };
+
+    this.series = series;
+    this.candleSeries = series;
+
+    return series;
+  };
+
+  // ==========================================================
+  // PART 7B: TIMESCALE COMPATIBILITY (for app.js)
+  // ==========================================================
+
+  QuotexChart.prototype.timeScale = function() {
+    var self = this;
+
+    return {
+      // ----- fitContent (auto-fit) -----
+      fitContent: function() {
+        self.fitContent();
+      },
+
+      // ----- scrollToRealTime -----
+      scrollToRealTime: function() {
+        self.scrollToRealTime();
+      },
+
+      // ----- setVisibleRange (no-op for now) -----
+      setVisibleRange: function(range) {
+        // Not implemented yet
+      },
+
+      // ----- getVisibleRange -----
+      getVisibleRange: function() {
+        var vis = self._getVisibleCandles();
+        if (vis.length === 0) return null;
+        return {
+          from: vis[0].time,
+          to: vis[vis.length - 1].time
+        };
+      },
+
+      // ----- timeToCoordinate -----
+      timeToCoordinate: function(time) {
+        return self._timeToX(time);
+      },
+
+      // ----- coordinateToTime -----
+      coordinateToTime: function(x) {
+        return self._xToTime(x);
+      },
+
+      // ----- subscribeVisibleTimeRangeChange -----
+      subscribeVisibleTimeRangeChange: function(cb) {
+        self.subscribeVisibleTimeRangeChange(cb);
+      },
+
+      // ----- subscribeVisibleLogicalRangeChange -----
+      subscribeVisibleLogicalRangeChange: function(cb) {
+        self.subscribeVisibleTimeRangeChange(cb);
+      },
+
+      // ----- applyOptions (no-op) -----
+      applyOptions: function(opts) {
+        if (!opts) return;
+        if (typeof opts.width === 'number') self.options.width = opts.width;
+        if (typeof opts.height === 'number') self.options.height = opts.height;
+        self._resize();
+      }
+    };
+  };
+
+  // ==========================================================
+  // PART 7C: CHART OPTIONS API (for app.js)
+  // ==========================================================
+
+  QuotexChart.prototype.applyOptions = function(opts) {
+    if (!opts) return;
+
+    if (typeof opts.width === 'number') {
+      this.options.width = opts.width;
+    }
+    if (typeof opts.height === 'number') {
+      this.options.height = opts.height;
+    }
+    if (opts.layout) {
+      if (opts.layout.background && opts.layout.background.color) {
+        COLORS.background = opts.layout.background.color;
+      }
+      if (opts.layout.textColor) {
+        COLORS.textPrimary = opts.layout.textColor;
+      }
+    }
+
+    this._resize();
+  };
+
+  QuotexChart.prototype.options = function() {
+    return {
+      width: this.options.width,
+      height: this.options.height
+    };
+  };
+
+  // ==========================================================
+  // PART 7D: REMOVE CHART (cleanup)
+  // ==========================================================
+
+  QuotexChart.prototype.remove = function() {
+    this.destroy();
+  };
+
+  // ==========================================================
+  // PART 7E: TIME LABELS API (for app.js updateTimeLabels)
+  // ==========================================================
+
+  QuotexChart.prototype.getTimeLabels = function() {
+    // Return array of {time, x} for HTML overlay
+    var vis = this._getVisibleCandles();
+    var pad = this.options.padding;
+    var spacing = this.viewport.candleSpacing;
+    var labels = [];
+
+    for (var i = 0; i < vis.length; i++) {
+      var candle = vis[i];
+      if (!candle) continue;
+
+      // Show every 3rd candle
+      if (i % 3 !== 0) continue;
+
+      var x = pad.left + (i + 0.5) * spacing;
+      labels.push({
+        time: candle.time,
+        text: formatTime(candle.time),
+        x: x
+      });
+    }
+
+    return labels;
+  };
+
+  console.log('[ChartEngine] Part 7A-E loaded (Integration API)');
 })();
