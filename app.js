@@ -722,6 +722,7 @@ function updateTimeLabels() {
       return;
     }
 
+    // Filter visible candles
     var visible = [];
     for (var i = 0; i < data.length; i++) {
       if (data[i].time >= range.from && data[i].time <= range.to) {
@@ -734,6 +735,7 @@ function updateTimeLabels() {
       return;
     }
 
+    // Pick 5 evenly spaced
     var labelCount = 5;
     var step = Math.max(1, Math.floor(visible.length / labelCount));
     var labels = [];
@@ -744,16 +746,28 @@ function updateTimeLabels() {
       var candle = visible[idx];
       if (candle && !usedTimes[candle.time]) {
         usedTimes[candle.time] = true;
-        var d = new Date(candle.time * 1000);
+        
+        // FIX: Proper time formatting
+        var t = candle.time;
+        // If seconds (< 10 digits), convert to ms
+        if (t < 1e10) t = t * 1000;
+        
+        var d = new Date(t);
+        if (isNaN(d.getTime())) continue;
+        
         var hh = String(d.getHours()).padStart(2, "0");
         var mm = String(d.getMinutes()).padStart(2, "0");
-        labels.push(hh + ":" + mm);
+        
+        labels.push({
+          text: hh + ":" + mm,
+          x: null
+        });
       }
     }
 
-    labelsEl.innerHTML = labels.map(function(l, i) {
-      var active = (i === Math.floor(labels.length / 2)) ? " active" : "";
-      return '<span class="qx-time-label' + active + '">' + l + '</span>';
+    // Render as overlay
+    labelsEl.innerHTML = labels.map(function(l) {
+      return '<span class="qx-time-label">' + l.text + '</span>';
     }).join("");
 
   } catch(e) {
