@@ -1,0 +1,64 @@
+(async function activateAdminMaster() {
+  console.log('═══════════════════════════════');
+  console.log('   ADMIN MASTER ACTIVATION');
+  console.log('═══════════════════════════════');
+  console.log('');
+  
+  if (!window.currentUser) {
+    console.log('❌ You are not logged in');
+    return;
+  }
+  
+  console.log('Admin user: ' + window.currentUser.email);
+  console.log('');
+  
+  // 1. Set candleMaster to admin
+  try {
+    await window.setDoc(
+      window.doc(window.db, 'settings', 'candleMaster'),
+      {
+        masterId: window.currentUser.uid,
+        masterType: 'admin',
+        masterEmail: window.currentUser.email,
+        heartbeat: Date.now(),
+        declaredAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+    console.log('✅ candleMaster set to admin');
+  } catch(e) {
+    console.log('❌ Failed to set master: ' + e.message);
+    return;
+  }
+  
+  // 2. Start admin heartbeat
+  if (window.__adminHeartbeatInterval) {
+    clearInterval(window.__adminHeartbeatInterval);
+  }
+  
+  window.__adminHeartbeatInterval = setInterval(async function() {
+    try {
+      await window.updateDoc(
+        window.doc(window.db, 'settings', 'candleMaster'),
+        {
+          masterId: window.currentUser.uid,
+          masterType: 'admin',
+          masterEmail: window.currentUser.email,
+          heartbeat: Date.now()
+        }
+      );
+    } catch(e) {
+      console.log('Heartbeat error: ' + e.message);
+    }
+  }, 10000);
+  
+  console.log('✅ Admin heartbeat started (every 10s)');
+  console.log('');
+  
+  console.log('═══════════════════════════════');
+  console.log('   🎯 Admin Master Active!');
+  console.log('   ⚠️  এই ট্যাব বন্ধ করবেন না!');
+  console.log('   ⏱️  অন্তত 30 মিনিট চালু রাখুন');
+  console.log('═══════════════════════════════');
+})();
