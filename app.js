@@ -415,158 +415,144 @@ console.log("===== PART 1 LOADED =====");
 // INIT CHART (CRITICAL: window.chartRef expose)
 // ============================================
 function initChart() {
+  console.log('>>> initChart() START');
+
   if (!chartEl) {
-    console.error("[CHART] tv-chart element not found");
+    console.error('[CHART] tv-chart element not found');
     return;
   }
 
-  // === FIX 1: Prevent double-init ===
   if (window.__chartInitDone) {
     console.log('[CHART] Already initialized, skipping');
     return;
   }
 
-  // === FIX 2: Wait for layout (double rAF) ===
   if (!window.__chartLayoutReady) {
     window.__chartLayoutReady = true;
     console.log('[CHART] Waiting for layout...');
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
+    setTimeout(function() {
+      try {
         initChart();
-      });
-    });
+      } catch(e) {
+        console.error('[CHART] initChart retry error:', e);
+      }
+    }, 200);
     return;
   }
 
-  // === FIX 3: Read ACTUAL height from wrapper ===
-  var wrapperRect = chartWrapper ? chartWrapper.getBoundingClientRect() : null;
-  var wrapperHeight = wrapperRect ? wrapperRect.height : 0;
-
-  if (!wrapperHeight || wrapperHeight < 100) {
-    wrapperHeight = Math.max(380, Math.round(window.innerHeight * 0.5));
-    console.warn('[CHART] Fallback height:', wrapperHeight);
-  }
-
-  // Lock container sizes BEFORE creating chart
-  if (chartWrapper) {
-    chartWrapper.style.height = wrapperHeight + 'px';
-    chartWrapper.style.minHeight = wrapperHeight + 'px';
-  }
-  chartEl.style.height = wrapperHeight + 'px';
-  chartEl.style.minHeight = wrapperHeight + 'px';
-  chartEl.innerHTML = "";
-
-  console.log('[CHART] Height locked:', wrapperHeight + 'px');
-
-  // Destroy old chart if exists
-  if (chart) {
-    try { chart.remove(); } catch(e) {}
-    chart = null;
-  }
-
-  // === FIX 4: Create QuotexChart with EXPLICIT size ===
-  var realChart = new window.QuotexChart(chartEl, {
-    width: chartEl.clientWidth || window.innerWidth,
-    height: wrapperHeight,
-    showGrid: true,
-    showWatermark: true,
-    showCrosshair: true,
-    watermarkText: 'QUOTEX',
-    visibleCandleCount: 60,
-    candleSpacing: 6,
-    candleBodyRatio: 0.75
-  });
-
-  chart = realChart;
-  window.chart = realChart;
-  window.chartRef = realChart;
-
-  console.log("[CHART] QUOTEX Chart created");
-
-  // ===== Candlestick Series =====
-  candleSeries = realChart.addCandlestickSeries({
-    upColor: "#00c076",
-    downColor: "#ff3b30",
-    borderUpColor: "#00c076",
-    borderDownColor: "#ff3b30",
-    wickUpColor: "#00c076",
-    wickDownColor: "#ff3b30"
-  });
-  window.candleSeries = candleSeries;
-  console.log("[CHART] candleSeries exposed");
-
-  // ===== Hide HTML overlays =====
   try {
-    var oldWm = chartEl.querySelector('.qx-chart-watermark');
-    if (oldWm) oldWm.remove();
-  } catch(e) {}
+    var wrapperRect = chartWrapper ? chartWrapper.getBoundingClientRect() : null;
+    var wrapperHeight = wrapperRect ? wrapperRect.height : 0;
 
-  try {
-    var pd = document.getElementById("qx-price-dot");
-    if (pd) pd.style.display = "none";
-  } catch(e) {}
+    if (!wrapperHeight || wrapperHeight < 100) {
+      wrapperHeight = Math.max(380, Math.round(window.innerHeight * 0.5));
+      console.warn('[CHART] Fallback height:', wrapperHeight);
+    }
 
-  try {
-    var htmlTimeLabels = document.getElementById('qx-time-labels');
-    if (htmlTimeLabels) htmlTimeLabels.style.display = 'none';
-  } catch(e) {}
+    if (chartWrapper) {
+      chartWrapper.style.height = wrapperHeight + 'px';
+      chartWrapper.style.minHeight = wrapperHeight + 'px';
+    }
+    chartEl.style.height = wrapperHeight + 'px';
+    chartEl.style.minHeight = wrapperHeight + 'px';
+    chartEl.innerHTML = "";
 
-  try {
-    var entryLineContainer = document.getElementById('qx-entry-line-container');
-    if (entryLineContainer) entryLineContainer.style.display = 'none';
-  } catch(e) {}
+    console.log('[CHART] Height locked:', wrapperHeight);
 
-  try {
-    var vlineContainer = document.getElementById('qx-vline-container');
-    if (vlineContainer) vlineContainer.style.display = 'none';
-  } catch(e) {}
+    if (chart) {
+      try { chart.remove(); } catch(e) {}
+      chart = null;
+    }
 
-  try {
-    var tickContainer = document.getElementById('qx-tick-container');
-    if (tickContainer) tickContainer.style.display = 'none';
-  } catch(e) {}
+    console.log('[CHART] Creating QuotexChart...');
 
-  // ===== Subscribe =====
-  try {
-    realChart.timeScale().subscribeVisibleTimeRangeChange(function() {
-      if (typeof redrawDrawings === "function") redrawDrawings();
-      if (typeof updateEntryLine === "function") updateEntryLine();
-      if (typeof refreshVerticalLines === "function") refreshVerticalLines();
+    if (typeof window.QuotexChart !== 'function') {
+      console.error('[CHART] QuotexChart class not loaded!');
+      return;
+    }
+
+    var realChart = new window.QuotexChart(chartEl, {
+      width: chartEl.clientWidth || window.innerWidth,
+      height: wrapperHeight,
+      showGrid: true,
+      showWatermark: true,
+      showCrosshair: true,
+      watermarkText: 'QUOTEX',
+      visibleCandleCount: 60,
+      candleSpacing: 6,
+      candleBodyRatio: 0.75
     });
-  } catch(e) {}
 
-  if (typeof initDrawingSystem === "function") initDrawingSystem();
+    console.log('[CHART] QuotexChart created');
 
-  // === FIX 5: Resize handler (only real changes) ===
-  if (!window.__chartResizeBound) {
-    window.__chartResizeBound = true;
-    var lastW = window.innerWidth;
-    var lastH = window.innerHeight;
+    chart = realChart;
+    window.chart = realChart;
+    window.chartRef = realChart;
 
-    window.addEventListener("resize", function() {
-      var nowW = window.innerWidth;
-      var nowH = window.innerHeight;
+    console.log('[CHART] Creating candle series...');
 
-      if (Math.abs(nowW - lastW) < 20 && Math.abs(nowH - lastH) < 20) return;
-      lastW = nowW;
-      lastH = nowH;
-
-      if (chart && window.chartRef) {
-        var rect = chartWrapper ? chartWrapper.getBoundingClientRect() : null;
-        var h = rect ? rect.height : Math.max(380, Math.round(nowH * 0.5));
-        try {
-          chart.applyOptions({
-            width: chartEl.clientWidth,
-            height: h
-          });
-        } catch(e) {}
-        if (typeof resizeDrawingCanvas === "function") resizeDrawingCanvas();
-      }
+    candleSeries = realChart.addCandlestickSeries({
+      upColor: "#00c076",
+      downColor: "#ff3b30",
+      borderUpColor: "#00c076",
+      borderDownColor: "#ff3b30",
+      wickUpColor: "#00c076",
+      wickDownColor: "#ff3b30"
     });
-  }
+    window.candleSeries = candleSeries;
 
-  window.__chartInitDone = true;
-  console.log("[CHART] Init complete");
+    console.log('[CHART] candleSeries ready');
+
+    // Hide HTML overlays
+    try {
+      var oldWm = chartEl.querySelector('.qx-chart-watermark');
+      if (oldWm) oldWm.remove();
+    } catch(e) {}
+
+    try {
+      var pd = document.getElementById("qx-price-dot");
+      if (pd) pd.style.display = "none";
+    } catch(e) {}
+
+    try {
+      var htmlTimeLabels = document.getElementById('qx-time-labels');
+      if (htmlTimeLabels) htmlTimeLabels.style.display = 'none';
+    } catch(e) {}
+
+    try {
+      var entryLineContainer = document.getElementById('qx-entry-line-container');
+      if (entryLineContainer) entryLineContainer.style.display = 'none';
+    } catch(e) {}
+
+    try {
+      var vlineContainer = document.getElementById('qx-vline-container');
+      if (vlineContainer) vlineContainer.style.display = 'none';
+    } catch(e) {}
+
+    try {
+      var tickContainer = document.getElementById('qx-tick-container');
+      if (tickContainer) tickContainer.style.display = 'none';
+    } catch(e) {}
+
+    try {
+      realChart.timeScale().subscribeVisibleTimeRangeChange(function() {
+        if (typeof redrawDrawings === "function") redrawDrawings();
+        if (typeof updateEntryLine === "function") updateEntryLine();
+        if (typeof refreshVerticalLines === "function") refreshVerticalLines();
+      });
+    } catch(e) {}
+
+    if (typeof initDrawingSystem === "function") {
+      try { initDrawingSystem(); } catch(e) { console.warn('[CHART] Drawing init error:', e); }
+    }
+
+    window.__chartInitDone = true;
+    console.log('[CHART] ✅ Init complete');
+
+  } catch(err) {
+    console.error('[CHART] ❌ FATAL ERROR:', err);
+    console.error('[CHART] Stack:', err.stack);
+  }
 }
 
 // ============================================
@@ -615,14 +601,12 @@ async function loadCandles() {
 
     if (candleData.length > 0 && candleSeries) {
       candleSeries.setData(candleData);
-      chart.timeScale().fitContent();
+      if (chart && chart.timeScale) chart.timeScale().fitContent();
       currentPrice = candleData[candleData.length - 1].close;
       window.currentPrice = currentPrice;
       prevPrice = currentPrice;
       if (currentPriceEl) currentPriceEl.textContent = currentPrice.toFixed(2);
       console.log("[Candles] " + candleData.length + " candles loaded");
-
-      // Update time labels after data load
       setTimeout(updateTimeLabels, 100);
     }
   } catch (err) {
@@ -671,7 +655,6 @@ function startLivePrice() {
           });
         }
 
-        // Update price dot
         try {
           var priceDot = document.getElementById("qx-price-dot");
           if (priceDot && candleSeries) {
@@ -684,12 +667,8 @@ function startLivePrice() {
           }
         } catch(e) {}
 
-        // Update entry line every tick
         if (typeof updateEntryLine === "function") updateEntryLine();
-
-        // Update candle countdown
         if (typeof updateCandleCountdown === "function") updateCandleCountdown();
-
         if (typeof checkExpiredTrades === "function") checkExpiredTrades();
         if (typeof updateBigTimer === "function") updateBigTimer();
       } catch (err) {}
@@ -711,15 +690,13 @@ function stopLivePrice() {
 }
 
 // ============================================
-// REAL CANDLE TIMESTAMPS (bottom of chart)
+// TIME LABELS
 // ============================================
 function startTimeLabelsUpdater() {
   if (window.__timeLabelsInterval) return;
   window.__timeLabelsInterval = setInterval(function() {
     updateTimeLabels();
   }, 5000);
-
-  // Initial
   setTimeout(updateTimeLabels, 1000);
 }
 
@@ -729,10 +706,6 @@ function updateTimeLabels() {
     if (!labelsEl) return;
     if (!window.chartRef || !window.candleSeries) return;
 
-    var chartWrap = document.getElementById("chart-wrapper");
-    if (!chartWrap) return;
-
-    // ===== Visible time range (stable) =====
     var range = null;
     try {
       range = window.chartRef.timeScale().getVisibleRange();
@@ -743,14 +716,12 @@ function updateTimeLabels() {
       return;
     }
 
-    // ===== Candle data =====
     var data = window.candleSeries.data();
     if (!data || data.length === 0) {
       labelsEl.innerHTML = "";
       return;
     }
 
-    // ===== Filter visible candles =====
     var visible = [];
     for (var i = 0; i < data.length; i++) {
       if (data[i].time >= range.from && data[i].time <= range.to) {
@@ -763,7 +734,6 @@ function updateTimeLabels() {
       return;
     }
 
-    // ===== Pick 5 evenly spaced =====
     var labelCount = 5;
     var step = Math.max(1, Math.floor(visible.length / labelCount));
     var labels = [];
@@ -781,7 +751,6 @@ function updateTimeLabels() {
       }
     }
 
-    // ===== Render =====
     labelsEl.innerHTML = labels.map(function(l, i) {
       var active = (i === Math.floor(labels.length / 2)) ? " active" : "";
       return '<span class="qx-time-label' + active + '">' + l + '</span>';
@@ -793,7 +762,7 @@ function updateTimeLabels() {
 }
 
 // ============================================
-// CANDLE COUNTDOWN (for drawer)
+// CANDLE COUNTDOWN
 // ============================================
 function updateCandleCountdown() {
   try {
@@ -805,7 +774,6 @@ function updateCandleCountdown() {
     var candleStartSec = lastCandle.time;
     var interval = convertTimeframe(selectedTimeframe);
 
-    // Convert interval to seconds
     var intervalSec = 60;
     if (interval.indexOf("s") !== -1) intervalSec = parseInt(interval);
     else if (interval === "1m") intervalSec = 60;
@@ -827,7 +795,6 @@ function updateCandleCountdown() {
     var ss = remaining % 60;
     var countdownStr = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
 
-    // Update drawer elements
     var cdEl = document.getElementById("candle-countdown");
     if (cdEl) cdEl.textContent = countdownStr;
 
@@ -840,7 +807,6 @@ function updateCandleCountdown() {
       rangeEl.textContent = startStr + " - " + endStr;
     }
 
-    // Update OHLC
     var openEl = document.getElementById("drawer-open");
     var highEl = document.getElementById("drawer-high");
     var lowEl = document.getElementById("drawer-low");
