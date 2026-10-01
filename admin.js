@@ -7114,3 +7114,177 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   console.log('[Phase16-1v2] Test: window.phase16.restoreAutoRunner()');
 
 })();
+// ============================================================
+// PHASE 7-9 — PART C: FORCE BEHAVIOR INJECTION (UPGRADED)
+// Fix: Auto-Runner always uses dropdown behavior
+// Overrides BOTH createNewCandle AND startNewCandle.state
+// ============================================================
+
+(function phase7_9_Behaviors_PartC_v2() {
+  if (window.__phase7_9_PartC_v2_Loaded) {
+    console.log('[Phase7-9-C] Already loaded');
+    return;
+  }
+  window.__phase7_9_PartC_v2_Loaded = true;
+
+  console.log('[Phase7-9-C] Loading force injection v2...');
+
+  // ==========================================================
+  // D1. GET ACTIVE BEHAVIOR (from dropdown)
+  // ==========================================================
+
+  function getActiveBehavior() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && sel.value && sel.value !== 'normal') {
+      return sel.value;
+    }
+    if (window.adminSettings && window.adminSettings.candleBehavior) {
+      return window.adminSettings.candleBehavior;
+    }
+    return 'normal';
+  }
+
+  var SIZE_ONLY = ['normal', 'medium', 'big', 'huge'];
+
+  function isSizeOnly(b) {
+    return SIZE_ONLY.indexOf(b) !== -1;
+  }
+
+  function is14Behavior(b) {
+    return window.CANDLE_BEHAVIORS &&
+           window.CANDLE_BEHAVIORS.indexOf(b) !== -1;
+  }
+
+  // ==========================================================
+  // D2. WRAP createNewCandle (final layer)
+  // ==========================================================
+
+  if (typeof window.createNewCandle === 'function') {
+    var prevCreate = window.createNewCandle;
+
+    window.createNewCandle = function(prevClose, behavior, direction, size, basePrice, exactClose) {
+      try {
+        var activeBehavior = getActiveBehavior();
+
+        // If active behavior is size-only, pass through
+        if (isSizeOnly(activeBehavior)) {
+          return prevCreate.apply(this, arguments);
+        }
+
+        // Force 14-behavior
+        console.log('[Phase7-9-C] Forcing:', activeBehavior, '(was:', behavior + ')');
+
+        var open = Number(prevClose) || Number(basePrice) || 50000;
+        var defaultClose = open + (direction === 'up' ? 10 : -10);
+
+        if (exactClose && !isNaN(exactClose)) {
+          defaultClose = Number(exactClose);
+        }
+
+        var result = window.applyCandleBehavior(
+          activeBehavior,
+          open,
+          defaultClose,
+          direction
+        );
+
+        console.log('[Phase7-9-C] ✅ Forced:', result.behavior);
+        return result;
+
+      } catch (err) {
+        console.error('[Phase7-9-C] Error:', err.message);
+        return prevCreate.apply(this, arguments);
+      }
+    };
+
+    console.log('[Phase7-9-C] ✅ createNewCandle wrapped (final)');
+  }
+
+  // ==========================================================
+  // D3. WRAP startNewCandle to FORCE state.behavior
+  // ==========================================================
+
+  if (typeof window.startNewCandle !== 'function') {
+    console.warn('[Phase7-9-C] startNewCandle not found — retry in 2s');
+    setTimeout(function() {
+      if (typeof window.startNewCandle === 'function' && !window.__p79_startWrapped) {
+        window.__p79_startWrapped = true;
+        var prevStart = window.startNewCandle;
+
+        window.startNewCandle = async function() {
+          // BEFORE calling original, override state.behavior
+          var activeBehavior = getActiveBehavior();
+          if (window.autoRunnerState && !isSizeOnly(activeBehavior)) {
+            window.autoRunnerState.behavior = activeBehavior;
+            console.log('[Phase7-9-C] state.behavior forced to:', activeBehavior);
+          }
+          return prevStart.apply(this, arguments);
+        };
+
+        console.log('[Phase7-9-C] ✅ startNewCandle wrapped (delayed)');
+      }
+    }, 2000);
+  } else if (!window.__p79_startWrapped) {
+    window.__p79_startWrapped = true;
+    var prevStart2 = window.startNewCandle;
+
+    window.startNewCandle = async function() {
+      var activeBehavior = getActiveBehavior();
+      if (window.autoRunnerState && !isSizeOnly(activeBehavior)) {
+        window.autoRunnerState.behavior = activeBehavior;
+        console.log('[Phase7-9-C] state.behavior forced to:', activeBehavior);
+      }
+      return prevStart2.apply(this, arguments);
+    };
+
+    console.log('[Phase7-9-C] ✅ startNewCandle wrapped');
+  }
+
+  // ==========================================================
+  // D4. WATCH: dropdown change → update state.behavior immediately
+  // ==========================================================
+
+  setTimeout(function() {
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && !sel.dataset.p7cBound) {
+      sel.dataset.p7cBound = '1';
+      sel.addEventListener('change', function() {
+        var b = sel.value;
+        console.log('[Phase7-9-C] Dropdown changed to:', b);
+
+        if (window.autoRunnerState) {
+          window.autoRunnerState.behavior = b;
+        }
+        if (window.adminSettings) {
+          window.adminSettings.candleBehavior = b;
+        }
+      });
+      console.log('[Phase7-9-C] Dropdown watcher active');
+    }
+  }, 3000);
+
+  // ==========================================================
+  // D5. DIAGNOSTIC
+  // ==========================================================
+
+  window.phase7_9_C = {
+    getActiveBehavior: getActiveBehavior,
+    isSizeOnly: isSizeOnly,
+    is14Behavior: is14Behavior,
+    checkStatus: function() {
+      var sel = document.getElementById('p79-behavior-select');
+      return {
+        dropdownExists: !!sel,
+        dropdownValue: sel ? sel.value : 'N/A',
+        adminSettingsBehavior: window.adminSettings ? window.adminSettings.candleBehavior : 'N/A',
+        autoRunnerBehavior: window.autoRunnerState ? window.autoRunnerState.behavior : 'N/A',
+        createNewCandleWrapped: window.createNewCandle !== window.__originalCreateNewCandle,
+        startNewCandleWrapped: !!window.__p79_startWrapped
+      };
+    }
+  };
+
+  console.log('[Phase7-9-C] ✅ Part C v2 loaded');
+  console.log('[Phase7-9-C] Check: window.phase7_9_C.checkStatus()');
+
+})();
