@@ -1,64 +1,161 @@
-(async function activateAdminMaster() {
-  console.log('═══════════════════════════════');
-  console.log('   ADMIN MASTER ACTIVATION');
-  console.log('═══════════════════════════════');
-  console.log('');
-  
-  if (!window.currentUser) {
-    console.log('❌ You are not logged in');
-    return;
-  }
-  
-  console.log('Admin user: ' + window.currentUser.email);
-  console.log('');
-  
-  // 1. Set candleMaster to admin
-  try {
-    await window.setDoc(
-      window.doc(window.db, 'settings', 'candleMaster'),
-      {
-        masterId: window.currentUser.uid,
-        masterType: 'admin',
-        masterEmail: window.currentUser.email,
-        heartbeat: Date.now(),
-        declaredAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      { merge: true }
-    );
-    console.log('✅ candleMaster set to admin');
-  } catch(e) {
-    console.log('❌ Failed to set master: ' + e.message);
-    return;
-  }
-  
-  // 2. Start admin heartbeat
-  if (window.__adminHeartbeatInterval) {
-    clearInterval(window.__adminHeartbeatInterval);
-  }
-  
-  window.__adminHeartbeatInterval = setInterval(async function() {
-    try {
-      await window.updateDoc(
-        window.doc(window.db, 'settings', 'candleMaster'),
-        {
-          masterId: window.currentUser.uid,
-          masterType: 'admin',
-          masterEmail: window.currentUser.email,
-          heartbeat: Date.now()
-        }
-      );
-    } catch(e) {
-      console.log('Heartbeat error: ' + e.message);
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candle Generator</title>
+  <style>
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: monospace;
+      padding: 20px;
+      margin: 0;
     }
-  }, 10000);
-  
-  console.log('✅ Admin heartbeat started (every 10s)');
-  console.log('');
-  
-  console.log('═══════════════════════════════');
-  console.log('   🎯 Admin Master Active!');
-  console.log('   ⚠️  এই ট্যাব বন্ধ করবেন না!');
-  console.log('   ⏱️  অন্তত 30 মিনিট চালু রাখুন');
-  console.log('═══════════════════════════════');
-})();
+    h1 { color: #00c853; font-size: 18px; }
+    #status { color: #ffb300; margin: 10px 0; font-size: 14px; }
+    pre {
+      background: #1a2332;
+      padding: 15px;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 80vh;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Quotex Candle Generator</h1>
+  <div id="status">Initializing...</div>
+  <pre id="log"></pre>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore, doc, setDoc, updateDoc, collection, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSHI9UELxtQe0jrApkjg_F46LwKuG-vns",
+      authDomain: "trading-app-b2b27.firebaseapp.com",
+      projectId: "trading-app-b2b27",
+      storageBucket: "trading-app-b2b27.firebasestorage.app",
+      messagingSenderId: "664005846808",
+      appId: "1:664005846808:web:9858549ad3a92715bf206d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+
+    function log(msg) {
+      console.log(msg);
+      var time = new Date().toLocaleTimeString();
+      logEl.textContent += '[' + time + '] ' + msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function generateCandles() {
+      try {
+        statusEl.textContent = '⏳ Running...';
+        log('Generator started');
+
+        const marketsSnap = await getDocs(collection(db, 'markets'));
+        const markets = [];
+        marketsSnap.forEach(d => {
+          const data = d.data();
+          if (data.enabled !== false && data.symbol) {
+            markets.push({ id: d.id, ...data });
+          }
+        });
+
+        log('Found ' + markets.length + ' markets');
+
+        const now = Date.now();
+        const alignedStart = Math.floor(now / 60000) * 60000;
+        const candleId = 'live_' + alignedStart;
+
+        let generated = 0;
+
+        for (const market of markets) {
+          try {
+            const liveRef = collection(db, 'markets', market.id, 'liveCandles');
+            const lastSnap = await getDocs(liveRef);
+
+            let lastClose = market.currentPrice || market.basePrice || 50000;
+            let lastTime = 0;
+
+            lastSnap.forEach(d => {
+              const c = d.data();
+              if (c.startTime > lastTime) {
+                lastTime = c.startTime;
+                lastClose = c.close || lastClose;
+              }
+            });
+
+            if (lastTime >= alignedStart) {
+              log(market.symbol + ': exists');
+              continue;
+            }
+
+            const open = lastClose;
+            const movement = (Math.random() - 0.5) * 100;
+            const close = open + movement;
+            const high = Math.max(open, close) + Math.random() * 20;
+            const low = Math.min(open, close) - Math.random() * 20;
+
+            await setDoc(
+              doc(db, 'markets', market.id, 'liveCandles', candleId),
+              {
+                id: candleId,
+                marketId: market.id,
+                startTime: alignedStart,
+                endTime: alignedStart + 60000,
+                open: Number(open.toFixed(2)),
+                high: Number(high.toFixed(2)),
+                low: Number(low.toFixed(2)),
+                close: Number(close.toFixed(2)),
+                direction: close >= open ? 'up' : 'down',
+                behavior: 'normal',
+                size: 'normal',
+                generatedBy: 'cron',
+                updatedAt: Date.now()
+              },
+              { merge: true }
+            );
+
+            await updateDoc(
+              doc(db, 'markets', market.id),
+              {
+                currentPrice: Number(close.toFixed(2)),
+                updatedAt: new Date().toISOString()
+              }
+            );
+
+            log(market.symbol + ': ✅ O:' + open.toFixed(2) + ' C:' + close.toFixed(2));
+            generated++;
+          } catch (marketErr) {
+            log(market.symbol + ': ❌ ' + marketErr.message);
+          }
+        }
+
+        log('Done. Generated ' + generated + ' candles');
+        statusEl.textContent = '✅ Last run: ' + new Date().toLocaleTimeString();
+
+      } catch (err) {
+        log('❌ Global error: ' + err.message);
+        statusEl.textContent = '❌ Error: ' + err.message;
+      }
+    }
+
+    generateCandles();
+    setInterval(generateCandles, 60000);
+
+    window.__generateNow = generateCandles;
+    log('Auto generator active (60s interval)');
+  </script>
+</body>
+</html>
