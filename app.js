@@ -3887,10 +3887,11 @@ console.log('===== PHASE 12 VARIABLES EXPOSED =====');
   setTimeout(rebind, 3000);
   setTimeout(rebind, 6000);
 
-  // Auto-loop
-  setInterval(rebind, 5000);
+  // Auto-loop — store handle so flag check works
+  window.__phase12AutoRebind = setInterval(rebind, 5000);
 
   console.log('[Phase12] ✅ Auto-rebind active');
+  console.log('[Phase12] Flag set: __phase12AutoRebind =', !!window.__phase12AutoRebind);
 })();
 
 console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
