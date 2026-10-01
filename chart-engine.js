@@ -2082,7 +2082,17 @@
       height: this.options.height
     };
   };
+// Preserve scroll position on resize
+    var savedOffset = this.viewport ? this.viewport.offsetX : 0;
+    var savedSpacing = this.viewport ? this.viewport.candleSpacing : 6;
 
+    this._resize();
+
+    // Restore scroll position
+    if (this.viewport) {
+      this.viewport.offsetX = savedOffset;
+      this.viewport.candleSpacing = savedSpacing;
+    }
   // ==========================================================
   // PART 7D: REMOVE CHART (cleanup)
   // ==========================================================
