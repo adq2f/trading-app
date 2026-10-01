@@ -6842,3 +6842,297 @@ console.log('===== ADMIN MASTER HEARTBEAT LOADED =====');
   console.log('[Phase7-9-B] Test: window.testOneBehavior("doji")');
 
 })();
+// ============================================================
+// PHASE 16 — PART 1: AUTO-RUNNER PERSISTENT (Hybrid)
+// Purpose: Page reload holeo Auto-Runner chalu thakbe
+// Storage: localStorage (instant) + Firestore (backup)
+// ============================================================
+
+(function phase16_AutoRunnerPersistent() {
+  if (window.__phase16_Part1_Loaded) {
+    console.log('[Phase16-1] Already loaded');
+    return;
+  }
+  window.__phase16_Part1_Loaded = true;
+
+  console.log('[Phase16-1] Loading Auto-Runner Persistent...');
+
+  // ==========================================================
+  // P1. STORAGE KEYS
+  // ==========================================================
+
+  var LS_KEY = 'qx_autoRunner_state_v1';
+  var FS_DOC = 'autoRunnerState';
+
+  // ==========================================================
+  // P2. GET CURRENT STATE (for save)
+  // ==========================================================
+
+  function getCurrentState() {
+    var state = window.autoRunnerState || {};
+    var behavior = 'normal';
+
+    // Read from dropdown if available
+    var sel = document.getElementById('p79-behavior-select');
+    if (sel && sel.value) behavior = sel.value;
+    else if (window.adminSettings && window.adminSettings.candleBehavior) {
+      behavior = window.adminSettings.candleBehavior;
+    }
+
+    return {
+      active: state.active || false,
+      marketId: state.marketId || null,
+      timeframe: state.timeframe || '1m',
+      behavior: behavior,
+      direction: state.direction || 'auto',
+      size: state.size || 'normal',
+      savedAt: Date.now()
+    };
+  }
+
+  // ==========================================================
+  // P3. SAVE STATE (localStorage + Firestore)
+  // ==========================================================
+
+  async function saveState() {
+    try {
+      var s = getCurrentState();
+
+      // localStorage
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(s));
+      } catch(e) {}
+
+      // Firestore
+      try {
+        if (window.setDoc && window.doc && window.db && window.currentUser) {
+          await window.setDoc(
+            window.doc(window.db, 'settings', FS_DOC),
+            {
+              active: s.active,
+              marketId: s.marketId,
+              timeframe: s.timeframe,
+              behavior: s.behavior,
+              direction: s.direction,
+              size: s.size,
+              adminUid: window.currentUser ? window.currentUser.uid : null,
+              lastUpdate: Date.now(),
+              savedAt: new Date().toISOString()
+            },
+            { merge: true }
+          );
+          console.log('[Phase16-1] State saved to Firestore');
+        }
+      } catch(e) {
+        console.warn('[Phase16-1] Firestore save error:', e.message);
+      }
+
+      console.log('[Phase16-1] State saved:', s);
+    } catch(e) {
+      console.error('[Phase16-1] saveState error:', e.message);
+    }
+  }
+
+  // ==========================================================
+  // P4. LOAD STATE
+  // ==========================================================
+
+  async function loadState() {
+    try {
+      // Priority 1: localStorage (instant)
+      var local = null;
+      try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (raw) local = JSON.parse(raw);
+      } catch(e) {}
+
+      // Priority 2: Firestore (if localStorage empty)
+      var remote = null;
+      if (!local) {
+        try {
+          if (window.getDoc && window.doc && window.db) {
+            var snap = await window.getDoc(
+              window.doc(window.db, 'settings', FS_DOC)
+            );
+            if (snap.exists()) {
+              remote = snap.data();
+            }
+          }
+        } catch(e) {}
+      }
+
+      var state = local || remote;
+      if (!state) return null;
+
+      // Only restore if was active
+      if (!state.active) return null;
+
+      console.log('[Phase16-1] Restoring state:', state);
+      return state;
+
+    } catch(e) {
+      console.error('[Phase16-1] loadState error:', e.message);
+      return null;
+    }
+  }
+
+  // ==========================================================
+  // P5. RESTORE AUTO-RUNNER
+  // ==========================================================
+
+  async function restoreAutoRunner() {
+    try {
+      var state = await loadState();
+      if (!state) {
+        console.log('[Phase16-1] No state to restore');
+        return;
+      }
+
+      if (!state.marketId) {
+        console.log('[Phase16-1] No marketId in state');
+        return;
+      }
+
+      // Wait for startAutoRunner to be ready
+      if (typeof window.startAutoRunner !== 'function') {
+        console.warn('[Phase16-1] startAutoRunner not ready, retrying...');
+        setTimeout(restoreAutoRunner, 2000);
+        return;
+      }
+
+      // Restore dropdown behavior
+      if (state.behavior) {
+        var sel = document.getElementById('p79-behavior-select');
+        if (sel) {
+          sel.value = state.behavior;
+          console.log('[Phase16-1] Behavior restored:', state.behavior);
+        }
+        if (window.adminSettings) {
+          window.adminSettings.candleBehavior = state.behavior;
+        }
+      }
+
+      // Start auto-runner
+      console.log('[Phase16-1] Restarting Auto-Runner:', state.marketId);
+      await window.startAutoRunner(state.marketId, state.timeframe);
+
+      console.log('[Phase16-1] ✅ Auto-Runner restored');
+
+    } catch(e) {
+      console.error('[Phase16-1] restoreAutoRunner error:', e.message);
+    }
+  }
+
+  // ==========================================================
+  // P6. HOOK startAutoRunner (save on start)
+  // ==========================================================
+
+  if (typeof window.startAutoRunner === 'function') {
+    var prevStart = window.startAutoRunner;
+
+    window.startAutoRunner = async function(marketId, timeframe) {
+      console.log('[Phase16-1] startAutoRunner called:', marketId);
+
+      var result = await prevStart.apply(this, arguments);
+
+      // Save state after successful start
+      setTimeout(function() {
+        saveState();
+      }, 500);
+
+      return result;
+    };
+
+    console.log('[Phase16-1] startAutoRunner hooked for save');
+  }
+
+  // ==========================================================
+  // P7. HOOK stopAutoRunner (save on stop)
+  // ==========================================================
+
+  if (typeof window.stopAutoRunner === 'function') {
+    var prevStop = window.stopAutoRunner;
+
+    window.stopAutoRunner = function() {
+      console.log('[Phase16-1] stopAutoRunner called');
+      var result = prevStop.apply(this, arguments);
+
+      setTimeout(function() {
+        saveState();
+      }, 300);
+
+      return result;
+    };
+
+    console.log('[Phase16-1] stopAutoRunner hooked');
+  }
+
+  // ==========================================================
+  // P8. AUTO-RESTORE ON PAGE LOAD
+  // ==========================================================
+
+  // Wait for user login + all systems ready
+  var tries = 0;
+  var checkReady = setInterval(function() {
+    tries++;
+
+    var userReady = window.currentUser;
+    var runnerReady = typeof window.startAutoRunner === 'function';
+    var firestoreReady = window.db && window.doc;
+
+    if (userReady && runnerReady && firestoreReady) {
+      clearInterval(checkReady);
+      console.log('[Phase16-1] Systems ready, checking restore...');
+
+      setTimeout(function() {
+        restoreAutoRunner();
+      }, 2000);
+    } else if (tries >= 30) {
+      clearInterval(checkReady);
+      console.warn('[Phase16-1] Timeout waiting for systems');
+    }
+  }, 1000);
+
+  // ==========================================================
+  // P9. SAVE ON BEHAVIOR CHANGE
+  // ==========================================================
+
+  // Watch dropdown
+  var dropdown = document.getElementById('p79-behavior-select');
+  if (dropdown) {
+    dropdown.addEventListener('change', function() {
+      setTimeout(saveState, 300);
+    });
+  }
+
+  // Watch on other UI changes periodically
+  setInterval(function() {
+    if (window.autoRunnerState && window.autoRunnerState.active) {
+      // Only save occasionally
+      var raw = null;
+      try { raw = localStorage.getItem(LS_KEY); } catch(e) {}
+      if (raw) {
+        try {
+          var saved = JSON.parse(raw);
+          var currentBehavior = getCurrentState().behavior;
+          if (saved.behavior !== currentBehavior) {
+            saveState();
+          }
+        } catch(e) {}
+      }
+    }
+  }, 15000);
+
+  // ==========================================================
+  // P10. EXPOSE
+  // ==========================================================
+
+  window.phase16 = window.phase16 || {};
+  window.phase16.saveAutoRunnerState = saveState;
+  window.phase16.loadAutoRunnerState = loadState;
+  window.phase16.restoreAutoRunner = restoreAutoRunner;
+
+  console.log('[Phase16-1] ✅ Part 1 loaded');
+  console.log('[Phase16-1] Manual test: window.phase16.restoreAutoRunner()');
+
+})();
