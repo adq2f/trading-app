@@ -2664,16 +2664,51 @@ function updateUserChart(candleList) {
 
   // Convert Firestore candles to chart format
   var chartData = candleList.map(function(c) {
+    var t = c.startTime || c.time || 0;
+    if (t > 1e12) t = Math.floor(t / 1000);
+    else if (t > 1e9) t = Math.floor(t);
+    else t = 0;
+    
     return {
-      time: Math.floor((c.startTime || 0) / 1000),
+      time: t,
       open: Number(c.open || 0),
       high: Number(c.high || 0),
       low: Number(c.low || 0),
       close: Number(c.close || 0)
     };
   }).filter(function(c) {
-    return c.time > 0 && c.open > 0 && c.close > 0;
+    return c.time > 0 && c.open > 0 && c.close > 0 && c.high >= c.low;
   });
+
+  // Filter abnormal jumps
+  if (chartData.length > 1) {
+    var filtered = [chartData[0]];
+    for (var i = 1; i < chartData.length; i++) {
+      var prev = filtered[filtered.length - 1];
+      var curr = chartData[i];
+      var pct = Math.abs(curr.close - prev.close) / prev.close;
+      if (pct < 0.2) filtered.push(curr);
+    }
+    chartData = filtered;
+  }
+
+  chartData.sort(function(a, b) { return a.time - b.time; });
+
+  if (chartData.length === 0) return;
+
+  try {
+    window.candleSeries.setData(chartData);
+    var last = chartData[chartData.length - 1];
+    if (last) {
+      window.currentPrice = last.close;
+      window.fsCandleState.lastPrice = last.close;
+      updateUserPriceDisplay(last.close);
+    }
+    console.log('[FS] Chart updated:', chartData.length, 'candles');
+  } catch (err) {
+    console.error('[FS] Chart update error:', err.message);
+  }
+}
 
   if (chartData.length === 0) return;
 
@@ -2829,17 +2864,92 @@ function applyCandlesToChart(candles) {
 
   if (!candles || candles.length === 0) return;
 
+  // Convert + filter + SORT
   var chartData = candles.map(function(c) {
+    // Handle both ms and seconds
+    var t = c.startTime || c.time || 0;
+    if (t > 1e12) t = Math.floor(t / 1000);  // ms -> seconds
+    else if (t > 1e9) t = Math.floor(t);     // already seconds
+    else t = 0;                               // invalid
+    
     return {
-      time: Math.floor((c.startTime || 0) / 1000),
+      time: t,
       open: Number(c.open || 0),
       high: Number(c.high || 0),
       low: Number(c.low || 0),
       close: Number(c.close || 0)
     };
   }).filter(function(c) {
-    return c.time > 0 && !isNaN(c.open) && !isNaN(c.close);
+    return c.time > 0 && 
+           c.open > 0 && 
+           c.close > 0 && 
+           c.high > 0 && 
+           c.low > 0 &&
+           c.high >= c.low;  // Sanity check
   });
+
+  // === CRITICAL FIX: Filter out abnormal price jumps ===
+  if (chartData.length > 1) {
+    var filtered = [chartData[0]];
+    for (var i = 1; i < chartData.length; i++) {
+      var prev = filtered[filtered.length - 1];
+      var curr = chartData[i];
+      var jump = Math.abs(curr.close - prev.close);
+      var pct = jump / prev.close;
+      
+      // Skip candles with >20% jump (data error)
+      if (pct < 0.2) {
+        filtered.push(curr);
+      } else {
+        console.warn('[FS-B] Skip abnormal candle:', 
+          'prev=' + prev.close, 'curr=' + curr.close, 
+          'jump=' + (pct * 100).toFixed(1) + '%');
+      }
+    }
+    chartData = filtered;
+  }
+
+  if (chartData.length === 0) {
+    console.warn('[FS-B] All candles filtered out');
+    return;
+  }
+
+  // Sort by time (ascending)
+  chartData.sort(function(a, b) { return a.time - b.time; });
+
+  // Dedupe by time
+  var seen = {};
+  var unique = [];
+  chartData.forEach(function(c) {
+    if (!seen[c.time]) {
+      seen[c.time] = true;
+      unique.push(c);
+    }
+  });
+
+  if (unique.length === 0) return;
+
+  try {
+    window.candleSeries.setData(unique);
+
+    var last = unique[unique.length - 1];
+    window.currentPrice = last.close;
+    window.fsCandleState.lastPrice = last.close;
+
+    var priceEl = document.getElementById('current-price');
+    if (priceEl) {
+      priceEl.textContent = last.close.toFixed(2);
+      priceEl.style.color = last.close >= last.open ? '#00c853' : '#ff5252';
+    }
+
+    console.log('[FS-B] ✅ Chart updated:', unique.length, 'candles');
+    console.log('[FS-B] Range:', 
+      unique[0].close.toFixed(2), '→', unique[unique.length-1].close.toFixed(2));
+
+  } catch (err) {
+    console.error('[FS-B] Chart apply error:', err.message);
+  }
+}
 
   var seen = {};
   var unique = [];
