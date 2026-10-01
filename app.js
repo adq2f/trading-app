@@ -3949,37 +3949,63 @@ console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
   setTimeout(rebind, 5000);
   setInterval(rebind, 5000);
 })();
-
 // ============================================================
-// FIX 2 — Firestore Auto-Reconnect
+// FIX 2 — Firestore Auto-Reconnect (Fixed)
 // ============================================================
 
-(function firestoreAutoReconnect() {
-  console.log('[PermanentFix] Loading Firestore reconnect...');
+(function firestoreAutoReconnectFixed() {
+  console.log('[PermanentFix] Firestore reconnect (fixed)...');
+
+  var lastCheck = 0;
+  var checkInterval = 30000; // Only check every 30s
 
   setInterval(async function() {
     if (!window.currentUser) return;
 
-    // Check candle listener
-    if (window.fsCandleState && (!window.fsCandleState.listening || !window.fsCandleState.unsubLive)) {
-      if (window.fsCandleState.marketId && typeof window.connectAdminLiveCandles === 'function') {
+    var now = Date.now();
+    if (now - lastCheck < checkInterval) return;
+    lastCheck = now;
+
+    // Candle listener check
+    var candleNeedsRestart = false;
+    if (window.fsCandleState) {
+      if (!window.fsCandleState.listening) candleNeedsRestart = true;
+      if (!window.fsCandleState.unsubLive) candleNeedsRestart = true;
+    }
+
+    if (candleNeedsRestart && window.fsCandleState?.marketId) {
+      if (typeof window.connectAdminLiveCandles === 'function') {
         try {
           window.connectAdminLiveCandles(window.fsCandleState.marketId);
-          console.log('[PermanentFix] Firestore reconnected');
+          console.log('[PermanentFix] Candle listener restarted');
         } catch(e) {}
       }
     }
 
-    // Check trade listener
-    if (window.currentUser && !window.activeTradesUnsub) {
+    // Trade listener check — more careful
+    var tradeListenerExists = false;
+    try {
+      tradeListenerExists = typeof activeTradesUnsub !== 'undefined' && activeTradesUnsub !== null;
+    } catch(e) {
+      tradeListenerExists = false;
+    }
+
+    if (!tradeListenerExists) {
       if (typeof window.loadActiveTrades === 'function') {
         window.loadActiveTrades();
         console.log('[PermanentFix] Trade listener restarted');
       }
     }
 
-    // Check history listener
-    if (window.currentUser && !window.historyUnsub) {
+    // History listener check
+    var historyListenerExists = false;
+    try {
+      historyListenerExists = typeof historyUnsub !== 'undefined' && historyUnsub !== null;
+    } catch(e) {
+      historyListenerExists = false;
+    }
+
+    if (!historyListenerExists) {
       if (typeof window.loadHistory === 'function') {
         window.loadHistory();
         console.log('[PermanentFix] History listener restarted');
@@ -4021,7 +4047,7 @@ console.log('===== PHASE 12 AUTO-REBIND LOADED =====');
         if (trade.type === 'call' && exitPrice > trade.entryPrice) result = 'win';
         else if (trade.type === 'put' && exitPrice < trade.entryPrice) result = 'win';
 
-        var profit = result === 'win' ? trade.amount * 1.85 : 0;
+              var profit = result === 'win' ? trade.amount * 1.85 : 0;
 
         await window.updateDoc(
           window.doc(window.db, 'trades', trade.id),
@@ -4135,11 +4161,9 @@ window.showResultMarker = function(trade, result, profit) {
       return;
     }
 
-    // Get candle data
     var candleData = window.candleSeries.data();
     if (!candleData || candleData.length === 0) return;
 
-    // Find entry candle
     var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
     var closestCandle = null;
     var minDiff = Infinity;
@@ -4154,28 +4178,20 @@ window.showResultMarker = function(trade, result, profit) {
 
     if (!closestCandle) return;
 
-    // Get coordinates
     var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandle.time);
-    if (xPos === null || xPos === undefined) {
-      console.warn('[Phase15] Cannot get X coordinate');
-      return;
-    }
+    if (xPos === null || xPos === undefined) return;
 
-    // Determine Y position based on trade type
     var yPos;
     if (trade.type === 'call') {
-      // Above candle
       yPos = window.candleSeries.priceToCoordinate(closestCandle.high);
       if (yPos !== null) yPos -= 20;
     } else {
-      // Below candle
       yPos = window.candleSeries.priceToCoordinate(closestCandle.low);
       if (yPos !== null) yPos += 20;
     }
 
     if (yPos === null || yPos === undefined) return;
 
-    // Create marker element
     var isWin = (result === 'win');
     var color = isWin ? '#00c853' : '#ff5252';
     var text = isWin 
@@ -4184,7 +4200,6 @@ window.showResultMarker = function(trade, result, profit) {
 
     var container = document.getElementById('qx-tick-container');
     if (!container) {
-      // Create if missing
       var wrapper = document.getElementById('chart-wrapper');
       if (wrapper) {
         container = document.createElement('div');
@@ -4219,18 +4234,15 @@ window.showResultMarker = function(trade, result, profit) {
 
     container.appendChild(marker);
 
-    // Fade in
     setTimeout(function() {
       marker.style.opacity = '1';
     }, 50);
 
-    // Track marker
     window.resultMarkers.push({
       element: marker,
       timestamp: Date.now()
     });
 
-    // Auto-remove after 4s with fade out
     setTimeout(function() {
       marker.style.transition = 'opacity 1s ease-out';
       marker.style.opacity = '0';
@@ -4268,7 +4280,6 @@ window.clearResultMarkers = function() {
 // RM4. HOOK INTO TRADE EXPIRY
 // ============================================================
 
-// Wrap checkExpiredTrades to show marker after expire
 (function hookExpiryForMarkers() {
   if (typeof window.checkExpiredTrades !== 'function') {
     console.warn('[Phase15] checkExpiredTrades not found — will retry');
@@ -4282,16 +4293,10 @@ window.clearResultMarkers = function() {
   var originalCheck = window.checkExpiredTrades;
 
   window.checkExpiredTrades = async function() {
-    // Snapshot current trades BEFORE expire
-    var beforeTrades = (window.activeTradesLocal || []).slice();
-
-    // Call original
     await originalCheck.call(this);
 
-    // Check which trades were expired
     setTimeout(async function() {
       try {
-        // Get recent completed trades
         var now = Date.now();
         var fiveSecAgo = now - 5000;
 
@@ -4307,15 +4312,11 @@ window.clearResultMarkers = function() {
           var t = d.data();
           var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
 
-          // Recently completed (in last 5s)
           if (completedAt > fiveSecAgo && completedAt <= now) {
-            // Check if marker already shown
             if (!window.__shownMarkers) window.__shownMarkers = {};
             if (window.__shownMarkers[d.id]) return;
 
             window.__shownMarkers[d.id] = true;
-
-            // Show marker
             window.showResultMarker(t, t.result, t.profit);
           }
         });
@@ -4336,7 +4337,6 @@ window.clearResultMarkers = function() {
   if (window.__watchdogMarkerHooked) return;
   window.__watchdogMarkerHooked = true;
 
-  // Monitor for trades that complete (from watchdog)
   setInterval(async function() {
     if (!window.currentUser) return;
 
@@ -4378,3 +4378,4 @@ window.showResultMarker = window.showResultMarker;
 window.clearResultMarkers = window.clearResultMarkers;
 
 console.log('===== PHASE 15 — RESULT MARKER LOADED =====');
+console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
