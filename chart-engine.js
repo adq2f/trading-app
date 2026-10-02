@@ -1236,56 +1236,61 @@
     ctx.save();
 
     // ============================================
-    // 1. SHORT horizontal line — Quotex exact
-    //    শুধু entry candle左右 ~40px, পুরো chart না
+    // 1. HORIZONTAL LINE — entry candle থেকে ডানে ~35px
+    //    Quotex exact: line entry candle থেকে শুরু, ডানে যায়
     // ============================================
-    var lineHalf = 22;  // ±22px = মোট 44px
-    var lineL = Math.max(pad.left + 2, x - lineHalf);
-    var lineR = Math.min(pad.left + chartW - 2, x + lineHalf);
+    var lineLen = 35;                              // total length
+    var lineStartX = x;                            // entry candle থেকে
+    var lineEndX = Math.min(pad.left + chartW - 2, x + lineLen);
+
+    // যদি entry candle chart এর একদম ডানে থাকে, বাম দিকে line যাবে
+    if (lineEndX - lineStartX < 10) {
+      lineStartX = Math.max(pad.left + 2, x - lineLen);
+      lineEndX = x;
+    }
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(lineL, Math.round(y) + 0.5);
-    ctx.lineTo(lineR, Math.round(y) + 0.5);
+    ctx.moveTo(Math.round(lineStartX), Math.round(y) + 0.5);
+    ctx.lineTo(Math.round(lineEndX), Math.round(y) + 0.5);
     ctx.stroke();
 
     // ============================================
-    // 2. ENTRY TICK (ছোট ↑↓ arrow — candle এর ভিতরে)
-    //    Quotex এ entry candle এ ছোট arrow/tick থাকে
+    // 2. RIGHT-SIDE TICK (▲ or 🔻) — line এর শেষে
+    //    Quotex exact: entry candle এ না, line এর ডান প্রান্তে
     // ============================================
-    var tickSize = 7;
-    var tickY = isCall ? y + 10 : y - 10; // CALL: নিচে, PUT: উপরে
+    var tickSize = 6;
+    var tickX = lineEndX;
+    var tickY = y;
 
     ctx.fillStyle = color;
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.beginPath();
 
     if (isCall) {
-      // UP arrow — entry এর নিচে, উপরের দিকে tip
-      ctx.moveTo(x, tickY - tickSize);              // tip
-      ctx.lineTo(x - tickSize * 0.7, tickY);        // bottom left
-      ctx.lineTo(x + tickSize * 0.7, tickY);        // bottom right
+      // ▲ UP triangle at line end (BUY)
+      ctx.moveTo(tickX, tickY - tickSize);              // tip top
+      ctx.lineTo(tickX - tickSize * 0.7, tickY + 2);    // bottom left
+      ctx.lineTo(tickX + tickSize * 0.7, tickY + 2);    // bottom right
     } else {
-      // DOWN arrow — entry এর উপরে, নিচের দিকে tip
-      ctx.moveTo(x, tickY + tickSize);              // tip
-      ctx.lineTo(x - tickSize * 0.7, tickY);        // top left
-      ctx.lineTo(x + tickSize * 0.7, tickY);        // top right
+      // 🔻 DOWN triangle at line end (SELL)
+      ctx.moveTo(tickX, tickY + tickSize);              // tip bottom
+      ctx.lineTo(tickX - tickSize * 0.7, tickY - 2);    // top left
+      ctx.lineTo(tickX + tickSize * 0.7, tickY - 2);    // top right
     }
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
 
     // ============================================
-    // 3. SMALL DOTS on next 6 candles (3px, Quotex exact)
-    //    শুধু candle close price এ, entry candle বাদে
+    // 3. SMALL DOTS on next 5 candles (Quotex exact 3px)
     // ============================================
     if (this.candles && this.candles.length > 0) {
       var entryIdx = this._findCandleIndex(entry.time);
       if (entryIdx !== -1) {
-        for (var ci = 1; ci <= 6; ci++) {
+        for (var ci = 1; ci <= 5; ci++) {
           var idx = entryIdx + ci;
           if (idx >= this.candles.length) break;
           var c = this.candles[idx];
@@ -1297,14 +1302,10 @@
           var cy = this._priceToY(c.close);
           if (cy === null) continue;
 
-          // ছোট dot (3px)
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1;
-          ctx.stroke();
         }
       }
     }
