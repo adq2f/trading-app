@@ -1027,7 +1027,6 @@ function renderEntryLine(type, entryPrice, expiresAt) {
       return;
     }
 
-    // Find latest candle time
     var candleData = window.candleSeries ? window.candleSeries.data() : [];
     if (!candleData || candleData.length === 0) return;
     var lastCandle = candleData[candleData.length - 1];
@@ -1038,7 +1037,6 @@ function renderEntryLine(type, entryPrice, expiresAt) {
       if (amtInput) entryAmount = parseFloat(amtInput.value) || 1;
     } catch(e) {}
 
-    // Call chart-engine canvas API (Phase 22)
     window.chartRef.setTradeEntry({
       time: lastCandle.time,
       price: parseFloat(entryPrice),
@@ -1047,7 +1045,7 @@ function renderEntryLine(type, entryPrice, expiresAt) {
     });
 
     window.__activeEntryData = { type: type, entryPrice: entryPrice, expiresAt: expiresAt };
-    console.log('[Entry] ✅ Entry marker shown at', entryPrice);
+    console.log('[Entry] Entry marker shown at', entryPrice);
   } catch(e) {
     console.error('[Entry] Error:', e);
   }
@@ -1074,32 +1072,23 @@ function renderVerticalLines(startTime, endTime) {
   try {
     if (!window.chartRef || typeof window.chartRef.addVerticalLine !== 'function') {
       console.warn('[VLine] chartRef.addVerticalLine not available');
-      refreshVerticalLines();
       return;
     }
 
-    // Clear previous trade vlines
     if (typeof window.chartRef.clearVerticalLines === 'function') {
       window.chartRef.clearVerticalLines();
     }
 
-    // Get latest candle time (for startTime alignment)
-    var candleData = window.candleSeries ? window.candleSeries.data() : [];
-    if (!candleData || candleData.length === 0) return;
-
-    // Convert ISO string to seconds
     var startSec = Math.floor(new Date(startTime).getTime() / 1000);
     var endSec = Math.floor(endTime / 1000);
 
-    // BEGIN line (entry)
     window.chartRef.addVerticalLine({
       time: startSec,
       label: 'BEGIN',
       color: '#4a9eff',
-      expiresAt: endSec * 1000 + 120000  // 2 min after expiry
+      expiresAt: endSec * 1000 + 120000
     });
 
-    // END line (expiry)
     window.chartRef.addVerticalLine({
       time: endSec,
       label: 'END',
@@ -1107,48 +1096,16 @@ function renderVerticalLines(startTime, endTime) {
       expiresAt: endSec * 1000 + 120000
     });
 
-    console.log('[VLine] ✅ BEGIN + END lines added');
+    console.log('[VLine] BEGIN + END lines added');
   } catch(e) {
     console.error('[VLine] Error:', e);
   }
-
-  // Keep HTML version as fallback
-  refreshVerticalLines();
 }
 
 function refreshVerticalLines() {
   try {
-    if (!window.__activeVLines) return;
-    if (!window.chartRef) return;
     var container = document.getElementById("qx-vline-container");
-    if (!container) return;
-    container.innerHTML = "";
-    var startSec = Math.floor(new Date(window.__activeVLines.startTime).getTime() / 1000);
-    var endSec = Math.floor(window.__activeVLines.endTime / 1000);
-    var startX = window.chartRef.timeScale().timeToCoordinate(startSec);
-    var endX = window.chartRef.timeScale().timeToCoordinate(endSec);
-    if (startX !== null && startX !== undefined) {
-      var vStart = document.createElement("div");
-      vStart.className = "qx-vline start";
-      vStart.style.left = startX + "px";
-      container.appendChild(vStart);
-      var labelStart = document.createElement("div");
-      labelStart.className = "qx-vline-label";
-      labelStart.style.left = startX + "px";
-      labelStart.textContent = "Beginning of trade";
-      container.appendChild(labelStart);
-    }
-    if (endX !== null && endX !== undefined) {
-      var vEnd = document.createElement("div");
-      vEnd.className = "qx-vline end";
-      vEnd.style.left = endX + "px";
-      container.appendChild(vEnd);
-      var labelEnd = document.createElement("div");
-      labelEnd.className = "qx-vline-label";
-      labelEnd.style.left = endX + "px";
-      labelEnd.textContent = "End of trade";
-      container.appendChild(labelEnd);
-    }
+    if (container) container.innerHTML = "";
   } catch(e) {}
 }
 
@@ -1160,10 +1117,8 @@ function clearVerticalLines() {
 
 window.refreshVerticalLines = refreshVerticalLines;
 
-// renderTickMark — now handled by canvas (setTradeEntry already draws tick)
 function renderTickMark(type, entryPrice, entryTime) {
-  // No-op: canvas draws tick via setTradeEntry
-  // Kept for backward compatibility
+  // Canvas draws tick via setTradeEntry — no-op
 }
 
 window.__entryPriceLines = [];
@@ -3015,10 +2970,8 @@ window.showResultMarker = function(trade, result, profit) {
     var candleData = window.candleSeries.data();
     if (!candleData || candleData.length === 0) return;
 
-    // Find latest candle for result display
     var lastCandle = candleData[candleData.length - 1];
 
-    // Use chart-engine v7 canvas API (Phase 24)
     if (typeof window.chartRef.addResultMarker === 'function') {
       var isWin = (result === 'win');
       var priceToShow = isWin ? lastCandle.high : lastCandle.low;
@@ -3031,75 +2984,11 @@ window.showResultMarker = function(trade, result, profit) {
         amount: amount
       });
 
-      console.log('[Phase15] ✅ Canvas result marker added');
-      return;
+      console.log('[Phase15] Canvas result marker added');
     }
-
-    // FALLBACK: HTML version (old code)
-    var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
-    var closestCandle = null;
-    var minDiff = Infinity;
-    for (var i = 0; i < candleData.length; i++) {
-      var diff = Math.abs(candleData[i].time - entrySec);
-      if (diff < minDiff) { minDiff = diff; closestCandle = candleData[i]; }
-    }
-    if (!closestCandle) return;
-
-    var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandle.time);
-    if (xPos === null || xPos === undefined) return;
-
-    var yPos;
-    if (trade.type === 'call') {
-      yPos = window.candleSeries.priceToCoordinate(closestCandle.high);
-      if (yPos !== null) yPos -= 20;
-    } else {
-      yPos = window.candleSeries.priceToCoordinate(closestCandle.low);
-      if (yPos !== null) yPos += 20;
-    }
-    if (yPos === null || yPos === undefined) return;
-
-    var isWin = (result === 'win');
-    var color = isWin ? '#00c853' : '#ff5252';
-    var text = isWin
-      ? '+$' + Number(profit || 0).toFixed(2)
-      : '-$' + Number(trade.amount || 0).toFixed(2);
-
-    var container = document.getElementById('qx-tick-container');
-    if (!container) {
-      var wrapper = document.getElementById('chart-wrapper');
-      if (wrapper) {
-        container = document.createElement('div');
-        container.id = 'qx-tick-container';
-        container.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:100;';
-        wrapper.appendChild(container);
-      }
-    }
-    if (!container) return;
-
-    var marker = document.createElement('div');
-    marker.className = 'qx-result-marker ' + result;
-    marker.style.cssText =
-      'position:absolute;left:' + xPos + 'px;top:' + yPos + 'px;' +
-      'transform:translateX(-50%);background:' + color + ';color:#ffffff;' +
-      'font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;' +
-      'box-shadow:0 0 8px ' + color + ';font-family:Inter, sans-serif;' +
-      'white-space:nowrap;z-index:50;pointer-events:none;opacity:0;' +
-      'transition:opacity 0.3s ease-in;';
-    marker.textContent = text;
-    container.appendChild(marker);
-
-    setTimeout(function() { marker.style.opacity = '1'; }, 50);
-    window.resultMarkers.push({ element: marker, timestamp: Date.now() });
-
-    setTimeout(function() {
-      marker.style.transition = 'opacity 1s ease-out';
-      marker.style.opacity = '0';
-      setTimeout(function() {
-        try { marker.remove(); } catch(e) {}
-        window.resultMarkers = window.resultMarkers.filter(function(m) { return m.element !== marker; });
-      }, 1000);
-    }, 4000);
-  } catch(e) {}
+  } catch(e) {
+    console.error('[Phase15] Error:', e);
+  }
 };
 
 window.clearResultMarkers = function() {
