@@ -120,6 +120,11 @@
 
     this._timeRangeSubs = [];
 
+    // Phase 22-24: Trade visual elements
+    this.tradeEntry = null;
+    this.tradeVLines = [];
+    this.tradeResults = [];
+
     this.canvas = document.createElement('canvas');
     this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     this.container.innerHTML = '';
@@ -238,7 +243,10 @@
           self.candles.length + '|' +
           (self.crosshair.active ? '1' : '0') + '|' +
           self.crosshair.x.toFixed(0) + '|' +
-          self.crosshair.y.toFixed(0);
+          self.crosshair.y.toFixed(0) + '|' +
+          (self.tradeEntry ? '1' : '0') + '|' +
+          self.tradeVLines.length + '|' +
+          self.tradeResults.length;
 
         if (stateKey !== lastStateKey) {
           lastStateKey = stateKey;
@@ -281,6 +289,9 @@
     try { this._drawCandles(); } catch(e) {}
     try { if (this.options.showWatermark) this._drawWatermark(); } catch(e) {}
     try { this._drawPriceScale(); } catch(e) {}
+    try { this._drawVerticalLines(); } catch(e) {}
+    try { this._drawTradeEntry(); } catch(e) {}
+    try { this._drawResultMarkers(); } catch(e) {}
     try { this._drawTimeScale(); } catch(e) {}
   };
 
@@ -705,6 +716,286 @@
   };
 
   // ============================================================
+  // PHASE 23: DRAW VERTICAL LINES (Trade Begin/End)
+  // ============================================================
+  QuotexChart.prototype._drawVerticalLines = function() {
+    if (!this.tradeVLines || this.tradeVLines.length === 0) return;
+
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartH = H - pad.top - pad.bottom;
+    var chartTop = pad.top;
+    var chartBottom = pad.top + chartH;
+    var now = Date.now();
+
+    for (var i = 0; i < this.tradeVLines.length; i++) {
+      var v = this.tradeVLines[i];
+      if (!v || typeof v.time !== 'number') continue;
+
+      if (v.expiresAt && now > v.expiresAt) {
+        this.tradeVLines.splice(i, 1);
+        i--;
+        continue;
+      }
+
+      var x = this._timeToX(v.time);
+      if (x === null) continue;
+      if (x < pad.left - 20 || x > W - pad.right + 20) continue;
+
+      ctx.save();
+      ctx.strokeStyle = v.color || COLORS.vlineBlue;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(Math.round(x) + 0.5, chartTop);
+      ctx.lineTo(Math.round(x) + 0.5, chartBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (v.label) {
+        ctx.font = 'bold 10px ' + this.options.fontFamily;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        var labelW = ctx.measureText(v.label).width + 10;
+        var labelH = 16;
+        var labelX = Math.round(x) - labelW / 2;
+        var labelY = chartTop + 2;
+        if (labelX < pad.left + 2) labelX = pad.left + 2;
+        if (labelX + labelW > W - pad.right - 2) labelX = W - pad.right - labelW - 2;
+        ctx.fillStyle = v.color || COLORS.vlineBlue;
+        ctx.fillRect(labelX, labelY, labelW, labelH);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(v.label, labelX + labelW / 2, labelY + 3);
+      }
+
+      ctx.restore();
+    }
+  };
+
+  // ============================================================
+  // PHASE 22: DRAW TRADE ENTRY MARKER
+  // ============================================================
+  QuotexChart.prototype._drawTradeEntry = function() {
+    if (!this.tradeEntry) return;
+
+    var entry = this.tradeEntry;
+    if (!entry.time || typeof entry.price !== 'number') return;
+
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+
+    var x = this._timeToX(entry.time);
+    var y = this._priceToY(entry.price);
+    if (x === null || y === null) return;
+    if (x < pad.left - 20 || x > W - pad.right + 20) return;
+    if (y < pad.top || y > H - pad.bottom) return;
+
+    var isCall = entry.type === 'CALL';
+    var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
+    var arrowChar = isCall ? '\u25B2' : '\u25BC';
+
+    ctx.save();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, Math.round(y) + 0.5);
+    ctx.lineTo(pad.left + chartW, Math.round(y) + 0.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    var arrowSize = 22;
+    var arrowY = isCall ? y - 25 : y + 25;
+
+    ctx.beginPath();
+    ctx.arc(x, arrowY, arrowSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px ' + this.options.fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(arrowChar, x, arrowY + 1);
+
+    if (entry.amount) {
+      var amtText = '$' + entry.amount.toFixed(2);
+      ctx.font = 'bold 11px ' + this.options.fontFamily;
+      var amtW = ctx.measureText(amtText).width + 12;
+      var amtH = 18;
+      var amtX = x - amtW / 2;
+      var amtY = isCall ? arrowY - arrowSize / 2 - amtH - 4 : arrowY + arrowSize / 2 + 4;
+      ctx.fillStyle = color;
+      ctx.fillRect(amtX, amtY, amtW, amtH);
+      ctx.fillStyle = '#ffffff';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(amtText, x, amtY + amtH / 2 + 1);
+    }
+
+    ctx.restore();
+  };
+
+  // ============================================================
+  // PHASE 24: DRAW RESULT MARKERS
+  // ============================================================
+  QuotexChart.prototype._drawResultMarkers = function() {
+    if (!this.tradeResults || this.tradeResults.length === 0) return;
+
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var now = Date.now();
+
+    for (var i = 0; i < this.tradeResults.length; i++) {
+      var r = this.tradeResults[i];
+      if (!r || typeof r.time !== 'number') continue;
+
+      var age = now - r.createdAt;
+      if (age > 5000) {
+        this.tradeResults.splice(i, 1);
+        i--;
+        continue;
+      }
+
+      var alpha = age > 4000 ? 1 - ((age - 4000) / 1000) : 1;
+      if (alpha < 0) alpha = 0;
+
+      var x = this._timeToX(r.time);
+      var y = this._priceToY(r.price);
+      if (x === null || y === null) continue;
+      if (x < pad.left - 30 || x > W - pad.right + 30) continue;
+
+      var isWin = r.result === 'WIN';
+      var color = isWin ? COLORS.resultWin : COLORS.resultLoss;
+      var text = (isWin ? '+' : '-') + '$' + Math.abs(r.amount || 0).toFixed(2);
+
+      var boxY = isWin ? y - 40 : y + 40;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      ctx.font = 'bold 12px ' + this.options.fontFamily;
+      var tw = ctx.measureText(text).width + 16;
+      var th = 22;
+      var tx = x - tw / 2;
+      var ty = boxY - th / 2;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(tx, ty, tw, th);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(tx + 0.5, ty + 0.5, tw - 1, th - 1);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, boxY + 1);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.beginPath();
+      if (isWin) {
+        ctx.moveTo(x, y - 10);
+        ctx.lineTo(x, boxY + th / 2);
+      } else {
+        ctx.moveTo(x, y + 10);
+        ctx.lineTo(x, boxY - th / 2);
+      }
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  };
+
+  // ============================================================
+  // PUBLIC API — Phase 22: Trade Entry
+  // ============================================================
+  QuotexChart.prototype.setTradeEntry = function(entry) {
+    if (!entry || !entry.time || typeof entry.price !== 'number') {
+      this.tradeEntry = null;
+      return;
+    }
+    this.tradeEntry = {
+      time: entry.time,
+      price: entry.price,
+      type: entry.type === 'PUT' ? 'PUT' : 'CALL',
+      amount: entry.amount || 0
+    };
+  };
+
+  QuotexChart.prototype.clearTradeEntry = function() {
+    this.tradeEntry = null;
+  };
+
+  // ============================================================
+  // PUBLIC API — Phase 23: Vertical Lines
+  // ============================================================
+  QuotexChart.prototype.addVerticalLine = function(opts) {
+    if (!opts || typeof opts.time !== 'number') return null;
+    var vline = {
+      time: opts.time,
+      label: opts.label || '',
+      color: opts.color || COLORS.vlineBlue,
+      expiresAt: opts.expiresAt || null
+    };
+    this.tradeVLines.push(vline);
+    return vline;
+  };
+
+  QuotexChart.prototype.removeVerticalLine = function(vline) {
+    if (!vline) return;
+    var idx = this.tradeVLines.indexOf(vline);
+    if (idx > -1) this.tradeVLines.splice(idx, 1);
+  };
+
+  QuotexChart.prototype.clearVerticalLines = function() {
+    this.tradeVLines = [];
+  };
+
+  // ============================================================
+  // PUBLIC API — Phase 24: Result Markers
+  // ============================================================
+  QuotexChart.prototype.addResultMarker = function(opts) {
+    if (!opts || typeof opts.time !== 'number') return null;
+    var marker = {
+      time: opts.time,
+      price: typeof opts.price === 'number' ? opts.price : 0,
+      result: opts.result === 'LOSS' ? 'LOSS' : 'WIN',
+      amount: opts.amount || 0,
+      createdAt: Date.now()
+    };
+    this.tradeResults.push(marker);
+    var self = this;
+    setTimeout(function() {
+      var idx = self.tradeResults.indexOf(marker);
+      if (idx > -1) self.tradeResults.splice(idx, 1);
+    }, 5100);
+    return marker;
+  };
+
+  QuotexChart.prototype.clearResultMarkers = function() {
+    this.tradeResults = [];
+  };
+
+  QuotexChart.prototype.clearAllTradeElements = function() {
+    this.tradeEntry = null;
+    this.tradeVLines = [];
+    this.tradeResults = [];
+  };
+
+  // ============================================================
   // SET DATA (with spacing reset on first load + clamp 4-18)
   // ============================================================
   QuotexChart.prototype.setData = function(data) {
@@ -1124,6 +1415,7 @@
   // DESTROY
   // ============================================================
   QuotexChart.prototype.destroy = function() {
+    this.clearAllTradeElements();
     this._stopRenderLoop();
     if (this._resizeObserver) this._resizeObserver.disconnect();
     if (this.container) this.container.innerHTML = '';
