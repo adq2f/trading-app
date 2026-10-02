@@ -1242,7 +1242,8 @@
     }
   };
 
-/  // ============================================================
+// ============================================================
+  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
