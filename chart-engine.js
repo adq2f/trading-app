@@ -125,6 +125,9 @@
     this.tradeVLines = [];
     this.tradeResults = [];
 
+    // Phase 25: Timeframe for timebar (default 1 minute)
+    this.timeframe = 60000;
+
     this.canvas = document.createElement('canvas');
     this.canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     this.container.innerHTML = '';
@@ -235,6 +238,9 @@
       if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
         lastRenderTime = timestamp;
 
+        // Seconds countdown for timebar (re-renders each second)
+        var secNow = Math.floor(Date.now() / 1000);
+
         var stateKey =
           self.viewport.offsetX.toFixed(2) + '|' +
           self.viewport.candleSpacing.toFixed(2) + '|' +
@@ -246,7 +252,8 @@
           self.crosshair.y.toFixed(0) + '|' +
           (self.tradeEntry ? '1' : '0') + '|' +
           self.tradeVLines.length + '|' +
-          self.tradeResults.length;
+          self.tradeResults.length + '|' +
+          secNow;
 
         if (stateKey !== lastStateKey) {
           lastStateKey = stateKey;
@@ -293,6 +300,8 @@
     try { this._drawTradeEntry(); } catch(e) {}
     try { this._drawResultMarkers(); } catch(e) {}
     try { this._drawTimeScale(); } catch(e) {}
+    try { this._drawTimeBar(); } catch(e) {}
+    try { if (this.options.showCrosshair) this._drawCrosshair(); } catch(e) {}
   };
 
   // ============================================================
@@ -829,18 +838,36 @@
     ctx.textBaseline = 'middle';
     ctx.fillText(arrowChar, x, arrowY + 1);
 
+    // Amount box below arrow (for CALL) or above (for PUT)
     if (entry.amount) {
       var amtText = '$' + entry.amount.toFixed(2);
       ctx.font = 'bold 11px ' + this.options.fontFamily;
-      var amtW = ctx.measureText(amtText).width + 12;
-      var amtH = 18;
+      var amtW = ctx.measureText(amtText).width + 14;
+      var amtH = 20;
       var amtX = x - amtW / 2;
-      var amtY = isCall ? arrowY - arrowSize / 2 - amtH - 4 : arrowY + arrowSize / 2 + 4;
+      var amtY = arrowY + arrowSize / 2 + 6;
+
+      // Background
       ctx.fillStyle = color;
-      ctx.fillRect(amtX, amtY, amtW, amtH);
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(amtX, amtY, amtW, amtH, 3);
+      } else {
+        ctx.rect(amtX, amtY, amtW, amtH);
+      }
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Text
       ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px ' + this.options.fontFamily;
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(amtText, x, amtY + amtH / 2 + 1);
+      ctx.fillText(amtText, x, amtY + amtH / 2 + 0.5);
     }
 
     ctx.restore();
@@ -993,6 +1020,205 @@
     this.tradeEntry = null;
     this.tradeVLines = [];
     this.tradeResults = [];
+  };
+
+  // ============================================================
+  // PHASE 25: BOTTOM TIME BAR (Candle progress indicator)
+  // ============================================================
+  QuotexChart.prototype.setTimeframe = function(tfMs) {
+    this.timeframe = tfMs || 60000;
+  };
+
+  QuotexChart.prototype._drawTimeBar = function() {
+    if (!this.candles || this.candles.length === 0) return;
+    if (!this.timeframe) return;
+
+    var last = this.candles[this.candles.length - 1];
+    if (!last || typeof last.time !== 'number') return;
+
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+
+    // Candle start time in ms
+    var candleStartMs = last.time;
+    if (candleStartMs < 1e10) candleStartMs = candleStartMs * 1000;
+
+    var now = Date.now();
+    var elapsed = now - candleStartMs;
+    if (elapsed < 0) elapsed = 0;
+    if (elapsed > this.timeframe) elapsed = this.timeframe;
+
+    var progress = elapsed / this.timeframe;
+
+    // Progress bar at very bottom
+    var barY = H - 3;
+    var barH = 3;
+
+    // Background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillRect(pad.left, barY, chartW, barH);
+
+    // Progress fill
+    var isGreen = last.close >= last.open;
+    ctx.fillStyle = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+    ctx.fillRect(pad.left, barY, chartW * progress, barH);
+
+    // Countdown text (small, top-left corner of chart)
+    var secondsLeft = Math.ceil((this.timeframe - elapsed) / 1000);
+    if (secondsLeft < 0) secondsLeft = 0;
+    if (secondsLeft > 5999) secondsLeft = 5999;
+
+    var mm = Math.floor(secondsLeft / 60);
+    var ss = secondsLeft % 60;
+    var timeStr = mm + ':' + String(ss).padStart(2, '0');
+
+    ctx.save();
+    ctx.font = 'bold 12px ' + this.options.fontFamily;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    var tw = ctx.measureText(timeStr).width + 12;
+    var th = 20;
+    var tx = pad.left + 6;
+    var ty = pad.top + 4;
+
+    // Background pill
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.85)';
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(tx, ty, tw, th, 4);
+    } else {
+      ctx.rect(tx, ty, tw, th);
+    }
+    ctx.fill();
+
+    // Border with candle color
+    ctx.strokeStyle = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Text
+    ctx.fillStyle = isGreen ? COLORS.candleGreen : COLORS.candleRed;
+    ctx.fillText(timeStr, tx + 6, ty + 4);
+    ctx.restore();
+  };
+
+  // ============================================================
+  // PHASE 26: CROSSHAIR (Dashed + Price/Time Label Box)
+  // ============================================================
+  QuotexChart.prototype._drawCrosshair = function() {
+    if (!this.options.showCrosshair) return;
+    if (!this.crosshair || !this.crosshair.active) return;
+
+    var x = this.crosshair.x;
+    var y = this.crosshair.y;
+    if (x < 0 || y < 0) return;
+
+    var ctx = this.ctx;
+    var pad = this.options.padding;
+    var W = this.options.width;
+    var H = this.options.height;
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+
+    // Only show crosshair inside chart area
+    if (x < pad.left || x > pad.left + chartW) return;
+    if (y < pad.top || y > pad.top + chartH) return;
+
+    ctx.save();
+
+    // Vertical line
+    ctx.strokeStyle = COLORS.crosshair;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x) + 0.5, pad.top);
+    ctx.lineTo(Math.round(x) + 0.5, pad.top + chartH);
+    ctx.stroke();
+
+    // Horizontal line
+    ctx.beginPath();
+    ctx.moveTo(pad.left, Math.round(y) + 0.5);
+    ctx.lineTo(pad.left + chartW, Math.round(y) + 0.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // ---- PRICE LABEL (on right scale) ----
+    var price = this._yToPrice(y);
+    if (price !== null) {
+      var priceText = formatPrice(price, this.options.priceDecimals);
+      ctx.font = 'bold 11px ' + this.options.fontFamily;
+      var pW = ctx.measureText(priceText).width + 12;
+      var pH = 18;
+      var pX = pad.left + chartW + 4;
+      var pY = y - pH / 2;
+
+      // Clamp within chart height
+      if (pY < pad.top) pY = pad.top;
+      if (pY + pH > pad.top + chartH) pY = pad.top + chartH - pH;
+
+      // Background
+      ctx.fillStyle = COLORS.crosshairLabel;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(pX, pY, pW, pH, 3);
+      } else {
+        ctx.rect(pX, pY, pW, pH);
+      }
+      ctx.fill();
+
+      // Text
+      ctx.fillStyle = COLORS.crosshairLabelText;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(priceText, pX + 6, pY + pH / 2 + 0.5);
+    }
+
+    // ---- TIME LABEL (on bottom scale) ----
+    var time = this._xToTime(x);
+    if (time !== null) {
+      var t = time;
+      if (t < 1e10) t = t * 1000;
+      var d = new Date(t);
+      if (!isNaN(d.getTime())) {
+        var hh = String(d.getHours()).padStart(2, '0');
+        var mm = String(d.getMinutes()).padStart(2, '0');
+        var timeText = hh + ':' + mm;
+
+        ctx.font = 'bold 11px ' + this.options.fontFamily;
+        var tW = ctx.measureText(timeText).width + 12;
+        var tH = 18;
+        var tX = x - tW / 2;
+        var tY = pad.top + chartH + 3;
+
+        // Clamp within chart width
+        if (tX < pad.left) tX = pad.left;
+        if (tX + tW > pad.left + chartW) tX = pad.left + chartW - tW;
+
+        // Background
+        ctx.fillStyle = COLORS.crosshairLabel;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(tX, tY, tW, tH, 3);
+        } else {
+          ctx.rect(tX, tY, tW, tH);
+        }
+        ctx.fill();
+
+        // Text
+        ctx.fillStyle = COLORS.crosshairLabelText;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timeText, tX + tW / 2, tY + tH / 2 + 0.5);
+      }
+    }
+
+    ctx.restore();
   };
 
   // ============================================================
