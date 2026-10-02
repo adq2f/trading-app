@@ -1,5 +1,5 @@
 // ============================================================
-// QUOTEX CLONE - CHART ENGINE v5 (COMPLETE — ALL FEATURES)
+// QUOTEX CLONE - CHART ENGINE v6 (COMPLETE — QUOTEX ZOOM RANGE)
 // Custom Canvas 2D Chart (Quotex-exact)
 // ============================================================
 
@@ -9,7 +9,7 @@
     return;
   }
 
-  console.log('[ChartEngine] Loading v5...');
+  console.log('[ChartEngine] Loading v6...');
 
   // ============================================================
   // COLORS (Quotex exact)
@@ -64,8 +64,8 @@
     priceDecimals: 2,
     visibleCandleCount: 60,
     rightOffsetCandles: 8,
-    minCandleSpacing: 3,
-    maxCandleSpacing: 60
+    minCandleSpacing: 4,
+    maxCandleSpacing: 18
   };
 
   function mergeOptions(target, source) {
@@ -177,7 +177,6 @@
   QuotexChart.prototype._bindEvents = function() {
     var self = this;
 
-    // Resize observer
     if (window.ResizeObserver) {
       this._resizeObserver = new ResizeObserver(function() {
         self._resize();
@@ -189,7 +188,6 @@
       });
     }
 
-    // Interaction state
     this._interaction = {
       isPanning: false,
       isPinching: false,
@@ -205,23 +203,20 @@
 
     var canvas = this.canvas;
 
-    // Touch
     canvas.addEventListener('touchstart', function(e) { self._onTouchStart(e); }, { passive: false });
     canvas.addEventListener('touchmove', function(e) { self._onTouchMove(e); }, { passive: false });
     canvas.addEventListener('touchend', function(e) { self._onTouchEnd(e); }, { passive: false });
 
-    // Mouse
     canvas.addEventListener('mousedown', function(e) { self._onMouseDown(e); });
     canvas.addEventListener('mousemove', function(e) { self._onMouseMove(e); });
     canvas.addEventListener('mouseup', function(e) { self._onMouseUp(e); });
     canvas.addEventListener('mouseleave', function(e) { self._onMouseUp(e); });
 
-    // Wheel
     canvas.addEventListener('wheel', function(e) { self._onWheel(e); }, { passive: false });
   };
 
   // ============================================================
-  // RENDER LOOP (throttled 60fps + state key)
+  // RENDER LOOP
   // ============================================================
   QuotexChart.prototype._startRenderLoop = function() {
     var self = this;
@@ -279,23 +274,13 @@
 
     if (W <= 0 || H <= 0) return;
 
-    // Background
     ctx.fillStyle = COLORS.background;
     ctx.fillRect(0, 0, W, H);
 
-    // Grid
     try { if (this.options.showGrid) this._drawGrid(); } catch(e) {}
-
-    // Candles
     try { this._drawCandles(); } catch(e) {}
-
-    // Watermark
     try { if (this.options.showWatermark) this._drawWatermark(); } catch(e) {}
-
-    // Price scale
     try { this._drawPriceScale(); } catch(e) {}
-
-    // Time scale
     try { this._drawTimeScale(); } catch(e) {}
   };
 
@@ -430,11 +415,9 @@
 
     var range = max - min;
 
-    // 20% padding top + 20% bottom
     this.viewport.minPrice = min - range * 0.20;
     this.viewport.maxPrice = max + range * 0.20;
 
-    // Invalidate grid cache if price range changed
     var prevMin = this._gridCacheMinPrice;
     var prevMax = this._gridCacheMaxPrice;
     if (prevMin !== null && prevMin !== undefined) {
@@ -546,7 +529,6 @@
       var bodyBorder = isGreen ? COLORS.candleGreenBorder : COLORS.candleRedBorder;
       var wickColor = isGreen ? COLORS.candleGreenWick : COLORS.candleRedWick;
 
-      // Wick
       ctx.strokeStyle = wickColor;
       ctx.lineWidth = this.options.wickWidth;
       ctx.beginPath();
@@ -554,7 +536,6 @@
       ctx.lineTo(Math.round(xCenter) + 0.5, Math.round(lowY));
       ctx.stroke();
 
-      // Body
       var bodyTop = Math.min(openY, closeY);
       var bodyBottom = Math.max(openY, closeY);
       var bodyHeight = bodyBottom - bodyTop;
@@ -562,11 +543,9 @@
 
       var bodyLeft = xCenter - candleW / 2;
 
-      // Fill
       ctx.fillStyle = bodyColor;
       ctx.fillRect(Math.round(bodyLeft), Math.round(bodyTop), Math.round(candleW), Math.round(bodyHeight));
 
-      // Border
       ctx.strokeStyle = bodyBorder;
       ctx.lineWidth = 1;
       ctx.strokeRect(Math.round(bodyLeft) + 0.5, Math.round(bodyTop) + 0.5, Math.round(candleW) - 1, Math.round(bodyHeight) - 1);
@@ -604,7 +583,6 @@
       ctx.fillText(formatPrice(price, this.options.priceDecimals), pad.left + chartW + 8, y);
     }
 
-    // Current price highlight
     if (this.candles.length > 0) {
       var last = this.candles[this.candles.length - 1];
       if (!last || typeof last.close !== 'number') return;
@@ -639,7 +617,7 @@
   };
 
   // ============================================================
-  // DRAW TIME SCALE (with overlap prevention + timestamp fix)
+  // DRAW TIME SCALE
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -656,10 +634,10 @@
     if (spacing <= 0) return;
 
     var labelEvery = 5;
-    if (spacing < 5) labelEvery = 8;
-    if (spacing < 3) labelEvery = 12;
+    if (spacing < 5) labelEvery = 6;
+    if (spacing < 4) labelEvery = 8;
     if (spacing > 12) labelEvery = 3;
-    if (spacing > 20) labelEvery = 2;
+    if (spacing > 15) labelEvery = 2;
 
     var timeY = pad.top + chartH + 12;
 
@@ -699,7 +677,6 @@
       lastLabelX = xCenter;
     }
 
-    // Current time highlight
     if (vis.length > 0) {
       var lastCandle = vis[vis.length - 1];
       if (!lastCandle || typeof lastCandle.time !== 'number') return;
@@ -728,10 +705,12 @@
   };
 
   // ============================================================
-  // SET DATA
+  // SET DATA (with spacing reset on first load + clamp 4-18)
   // ============================================================
   QuotexChart.prototype.setData = function(data) {
     if (!Array.isArray(data)) return;
+
+    var wasFirstLoad = this.candles.length === 0;
 
     this.candles = data.filter(function(c) {
       return c && typeof c.time === 'number' &&
@@ -740,6 +719,15 @@
              typeof c.low === 'number' &&
              typeof c.close === 'number';
     });
+
+    // Reset spacing on first load
+    if (wasFirstLoad) {
+      this.viewport.candleSpacing = this.options.candleSpacing; // 6
+    }
+
+    // Clamp spacing to valid range (4-18)
+    if (this.viewport.candleSpacing < 4) this.viewport.candleSpacing = 4;
+    if (this.viewport.candleSpacing > 18) this.viewport.candleSpacing = 18;
 
     if (this.candles.length > this.options.visibleCandleCount) {
       this.viewport.offsetX = this.candles.length - this.options.visibleCandleCount;
@@ -750,7 +738,7 @@
     this._autoScale();
     this._notifyTimeRange();
 
-    console.log('[ChartEngine] setData:', this.candles.length, 'candles');
+    console.log('[ChartEngine] setData:', this.candles.length, 'candles, spacing:', this.viewport.candleSpacing.toFixed(2));
   };
 
   // ============================================================
@@ -994,7 +982,7 @@
   };
 
   // ============================================================
-  // WHEEL ZOOM
+  // WHEEL ZOOM (Range 4-18)
   // ============================================================
   QuotexChart.prototype._onWheel = function(e) {
     e.preventDefault();
@@ -1003,8 +991,8 @@
     var currentSpacing = this.viewport.candleSpacing;
     var newSpacing = currentSpacing * (1 + delta);
 
-    if (newSpacing < 3) newSpacing = 3;
-    if (newSpacing > 60) newSpacing = 60;
+    if (newSpacing < 4) newSpacing = 4;
+    if (newSpacing > 18) newSpacing = 18;
 
     var rect = this.canvas.getBoundingClientRect();
     var mouseX = e.clientX - rect.left;
@@ -1039,11 +1027,11 @@
   };
 
   // ============================================================
-  // ZOOM (Range: 3-60)
+  // ZOOM (Range: 4-18 — Quotex exact)
   // ============================================================
   QuotexChart.prototype._applyZoom = function(newSpacing, anchorX) {
-    if (newSpacing < 3) newSpacing = 3;
-    if (newSpacing > 60) newSpacing = 60;
+    if (newSpacing < 4) newSpacing = 4;
+    if (newSpacing > 18) newSpacing = 18;
 
     var oldSpacing = this.viewport.candleSpacing;
     if (Math.abs(newSpacing - oldSpacing) < 0.1) return;
@@ -1095,7 +1083,7 @@
   };
 
   // ============================================================
-  // FIT CONTENT
+  // FIT CONTENT (Range 4-18)
   // ============================================================
   QuotexChart.prototype.fitContent = function() {
     if (this.candles.length === 0) return;
@@ -1106,8 +1094,8 @@
     var targetCount = Math.min(this.candles.length, Math.max(20, Math.floor(chartW / 6)));
     var spacing = chartW / targetCount;
 
-    if (spacing < 3) spacing = 3;
-    if (spacing > 60) spacing = 60;
+    if (spacing < 4) spacing = 4;
+    if (spacing > 18) spacing = 18;
 
     this.viewport.candleSpacing = spacing;
     this.viewport.offsetX = Math.max(0, this.candles.length - targetCount + this.options.rightOffsetCandles);
@@ -1299,7 +1287,8 @@
   // ============================================================
   window.QuotexChart = QuotexChart;
 
-  console.log('[ChartEngine] v5 loaded successfully');
+  console.log('[ChartEngine] v6 loaded successfully');
+  console.log('[ChartEngine] Zoom range: 4-18 (Quotex exact)');
   console.log('[ChartEngine] All features complete');
 
   // ============================================================
