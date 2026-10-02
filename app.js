@@ -1084,14 +1084,14 @@ function renderVerticalLines(startTime, endTime) {
 
     window.chartRef.addVerticalLine({
       time: startSec,
-      label: 'Beginning of trade',
+      label: '',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
     window.chartRef.addVerticalLine({
       time: endSec,
-      label: 'End of trade',
+      label: '',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
@@ -1275,6 +1275,18 @@ async function checkExpiredTrades() {
   for (var i = 0; i < activeTradesLocal.length; i++) {
     var trade = activeTradesLocal[i];
     if (trade.expiresAt <= now && trade.status === "pending") {
+      // CRITICAL: Clear ALL markers IMMEDIATELY
+      try {
+        if (window.chartRef) {
+          if (typeof window.chartRef.clearTradeEntry === 'function') {
+            window.chartRef.clearTradeEntry();
+          }
+          if (typeof window.chartRef.clearVerticalLines === 'function') {
+            window.chartRef.clearVerticalLines();
+          }
+        }
+      } catch(e) { console.error('Clear markers err:', e); }
+
       var exitPrice = currentPrice;
       var entryPrice = trade.entryPrice;
       var result = "loss";
