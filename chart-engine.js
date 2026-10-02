@@ -779,7 +779,7 @@
   };
 
 // ============================================================
-  // PART 3: DRAW TIME SCALE (bottom — Quotex exact)
+  // PART 3: TIME SCALE (QUOTEX EXACT — CANDLE LOCKED)
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -793,19 +793,11 @@
     if (range.end <= range.start) return;
 
     var spacing = this.viewport.candleSpacing;
+    var offsetX = this.viewport.offsetX;
     if (spacing <= 0) return;
 
-    // Dynamic label density
-    var labelWidth = 50;
-    var labelEvery = Math.max(1, Math.ceil(labelWidth / spacing));
-
-    var timeY = pad.top + chartH + 14;
-    var offsetX = this.viewport.offsetX;
-
-    var lastLabelX = -100;
-
     // ============================================
-    // Bottom horizontal border line (Quotex frame)
+    // Bottom border line
     // ============================================
     ctx.strokeStyle = '#1a2332';
     ctx.lineWidth = 1;
@@ -816,24 +808,42 @@
     ctx.stroke();
 
     // ============================================
-    // Time labels — candle এর সাথে lock
+    // Dynamic label interval
     // ============================================
+    var minLabelWidth = 50;
+    var labelEvery = Math.max(1, Math.ceil(minLabelWidth / spacing));
+
+    // Force alignment: labels কে "round" candle index এ snap করুন
+    // যাতে zoom change এ same candle এ label থাকে
+    var alignOffset = Math.floor(offsetX);
+    var startSnap = Math.ceil((range.start - alignOffset) / labelEvery) * labelEvery + alignOffset;
+    if (startSnap < range.start) startSnap += labelEvery;
+
+    var timeY = pad.top + chartH + 14;
+
     ctx.font = this.options.fontSizeTime + 'px ' + this.options.fontFamily;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    for (var i = range.start; i < range.end; i++) {
-      if ((i - range.start) % labelEvery !== 0) continue;
+    var lastLabelX = -1000;
 
+    // ============================================
+    // Time labels — EXACT same formula as candle
+    // ============================================
+    for (var i = startSnap; i < range.end; i += labelEvery) {
       var c = this.candles[i];
       if (!c || typeof c.time !== 'number') continue;
 
+      // ⭐ CRITICAL: Same formula as candle drawing
       var relativeIdx = i - offsetX;
       var xCenter = pad.left + (relativeIdx + 0.5) * spacing;
 
-      if (xCenter < pad.left - 10) continue;
-      if (xCenter > pad.left + chartW - 15) continue;
-      if (xCenter - lastLabelX < labelWidth) continue;
+      // Boundary check
+      if (xCenter < pad.left - 5) continue;
+      if (xCenter > pad.left + chartW + 5) continue;
+
+      // Overlap check
+      if (xCenter - lastLabelX < minLabelWidth) continue;
 
       var t = c.time;
       if (t < 1e10) t = t * 1000;
@@ -843,7 +853,6 @@
       var hh = String(d.getHours()).padStart(2, '0');
       var mm = String(d.getMinutes()).padStart(2, '0');
 
-      // Regular label — light grey
       ctx.fillStyle = COLORS.textSecondary;
       ctx.fillText(hh + ':' + mm, xCenter, timeY);
 
@@ -851,18 +860,19 @@
     }
 
     // ============================================
-    // Last candle highlighted time (candle এর সাথে lock)
+    // Last candle time — EXACT position (candle এর সাথে lock)
     // ============================================
     if (this.candles.length > 0) {
       var lastIdx = this.candles.length - 1;
       var lastCandle = this.candles[lastIdx];
       if (!lastCandle || typeof lastCandle.time !== 'number') return;
 
+      // ⭐ CRITICAL: Exact same formula
       var relativeLastIdx = lastIdx - offsetX;
       var lastX = pad.left + (relativeLastIdx + 0.5) * spacing;
 
-      // Screen এর ভিতরে থাকলে দেখাও
-      if (lastX > pad.left && lastX < pad.left + chartW) {
+      // Screen boundary check
+      if (lastX > pad.left - 5 && lastX < pad.left + chartW + 5) {
         var t2 = lastCandle.time;
         if (t2 < 1e10) t2 = t2 * 1000;
         var d2 = new Date(t2);
@@ -872,10 +882,10 @@
         var mm2 = String(d2.getMinutes()).padStart(2, '0');
         var timeStr = hh2 + ':' + mm2;
 
-        // Dark box with green border (Quotex exact)
         var boxW = 48;
         var boxH = 16;
 
+        // Dark box with green border (Quotex exact)
         ctx.fillStyle = '#0d1117';
         ctx.fillRect(lastX - boxW / 2, timeY - boxH / 2, boxW, boxH);
 
@@ -889,7 +899,6 @@
       }
     }
   };
-
   // ============================================================
   // PART 3: DRAW REAL BD CLOCK (TOP-LEFT — HH:MM:SS)
   // ============================================================
@@ -1233,8 +1242,8 @@
     }
   };
 
-// ============================================================
-  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT)
+/  // ============================================================
+  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     if (!this.tradeEntry) return;
@@ -1259,110 +1268,74 @@
     ctx.save();
 
     // ============================================
-    // 1. HORIZONTAL LINE — entry circle থেকে ডান দিক
-    //    (chart এর শেষ পর্যন্ত)
+    // 1. SHORT horizontal line — entry circle左右 মোট ~80px
+    //    (Quotex exact: 40px left + 40px right)
     // ============================================
-    var lineStartX = entryX;
-    var lineEndX = pad.left + chartW - 2;
+    var lineHalf = 40;
+    var lineL = Math.max(pad.left + 2, entryX - lineHalf);
+    var lineR = Math.min(pad.left + chartW - 2, entryX + lineHalf);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(Math.round(lineStartX), Math.round(y) + 0.5);
-    ctx.lineTo(Math.round(lineEndX), Math.round(y) + 0.5);
+    ctx.moveTo(Math.round(lineL), Math.round(y) + 0.5);
+    ctx.lineTo(Math.round(lineR), Math.round(y) + 0.5);
     ctx.stroke();
 
     // ============================================
-    // 2. DOT SERIES — entry candle থেকে বাম দিকে (past 20 candles)
-    //    Quotex: প্রতিটা candle এ একটা dot, trade পুরনো হলে
-    //    বাম দিকে grow করে
+    // 2. ENTRY CIRCLE — white ring + colored center
+    //    (Quotex exact: big white circle, colored inner dot)
     // ============================================
-    if (this.candles && this.candles.length > 0) {
-      var entryIdx = this._findCandleIndex(entry.time);
-      if (entryIdx !== -1) {
-        // Next 5 candles এ dots (ডানে)
-        for (var ci = 1; ci <= 5; ci++) {
-          var idx = entryIdx + ci;
-          if (idx >= this.candles.length) break;
-          var c = this.candles[idx];
-          if (!c) continue;
-
-          var cx = this._timeToX(c.time);
-          if (cx === null) continue;
-          if (cx < pad.left || cx > pad.left + chartW) continue;
-
-          var cy = this._priceToY(entry.price); // Same y (line এ)
-          if (cy === null) continue;
-
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Previous 20 candles এ dots (বামে) — এটাই left side grow করে
-        for (var pi = 1; pi <= 20; pi++) {
-          var pidx = entryIdx - pi;
-          if (pidx < 0) break;
-          var pc = this.candles[pidx];
-          if (!pc) continue;
-
-          var pcx = this._timeToX(pc.time);
-          if (pcx === null) continue;
-          if (pcx < pad.left || pcx > pad.left + chartW) continue;
-
-          var pcy = this._priceToY(entry.price);
-          if (pcy === null) continue;
-
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(pcx, pcy, 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    // ============================================
-    // 3. ENTRY CIRCLE — white ring + colored center
-    //    Quotex exact (big circle at entry candle)
-    // ============================================
-    var ringOuter = 6;
-    var ringInner = 3.5;
-
-    // White outer ring
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(entryX, y, ringOuter, 0, Math.PI * 2);
+    ctx.arc(entryX, y, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Colored inner dot
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(entryX, y, ringInner, 0, Math.PI * 2);
+    ctx.arc(entryX, y, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
     // ============================================
-    // 4. PRICE BOX at right end — Line এর ডান প্রান্তে
-    //    Quotex: নীল/green box with white number
+    // 3. ↑ / ↓ ICON — dot এর ঠিক ডান পাশে (high quality)
+    //    Quotex exact: small circle with arrow inside
     // ============================================
-    var priceText = formatPrice(entry.price, this.options.priceDecimals);
-    ctx.font = 'bold 11px ' + this.options.fontFamily;
-    var textW = ctx.measureText(priceText).width;
-    var boxW = textW + 12;
-    var boxH = 18;
-    var boxX = pad.left + chartW + 2;
-    var boxY = y - boxH / 2;
+    var iconX = entryX + 14;
+    var iconY = y;
+    var iconR = 8;
 
-    // Box background — Quotex blue
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(boxX, boxY, boxW, boxH);
-
-    // White text
+    // Icon background circle (white)
     ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(priceText, boxX + boxW / 2, y + 0.5);
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Icon colored border
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Arrow inside icon
+    var arrowSize = 4;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+
+    if (isCall) {
+      // ↑ UP arrow (CALL)
+      ctx.moveTo(iconX, iconY - arrowSize);                    // tip
+      ctx.lineTo(iconX - arrowSize * 0.7, iconY + arrowSize * 0.5);
+      ctx.lineTo(iconX + arrowSize * 0.7, iconY + arrowSize * 0.5);
+    } else {
+      // ↓ DOWN arrow (PUT)
+      ctx.moveTo(iconX, iconY + arrowSize);                    // tip
+      ctx.lineTo(iconX - arrowSize * 0.7, iconY - arrowSize * 0.5);
+      ctx.lineTo(iconX + arrowSize * 0.7, iconY - arrowSize * 0.5);
+    }
+    ctx.closePath();
+    ctx.fill();
 
     ctx.restore();
   };
