@@ -772,16 +772,24 @@
 
   ctx.save();
 
-  // 1. Horizontal line from left edge to entry candle
+  // ============================================================
+  // SHORT horizontal line — শুধু candle左右 40px
+  // ============================================================
+  var lineHalfWidth = 40;
+  var lineLeft = Math.max(pad.left + 4, x - lineHalfWidth);
+  var lineRight = Math.min(pad.left + chartW - 4, x + lineHalfWidth);
+
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
   ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(pad.left, Math.round(y) + 0.5);
-  ctx.lineTo(Math.round(x), Math.round(y) + 0.5);
+  ctx.moveTo(lineLeft, Math.round(y) + 0.5);
+  ctx.lineTo(lineRight, Math.round(y) + 0.5);
   ctx.stroke();
 
-  // 2. Circle AT entry candle
+  // ============================================================
+  // Circle at entry candle
+  // ============================================================
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -790,7 +798,9 @@
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // 3. Circle series on next candles
+  // ============================================================
+  // Circle series on next 6 candles
+  // ============================================================
   if (this.candles && this.candles.length > 0) {
     var entryIdx = this._findCandleIndex(entry.time);
     if (entryIdx !== -1) {
