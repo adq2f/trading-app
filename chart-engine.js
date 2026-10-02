@@ -1210,8 +1210,8 @@
     }
   };
 
-  // ============================================================
-  // PART 4: TRADE ENTRY MARKER
+// ============================================================
+  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     if (!this.tradeEntry) return;
@@ -1235,10 +1235,13 @@
 
     ctx.save();
 
-    // 1. Short horizontal line — candle左右 50px (Quotex exact)
-    var lineHalfWidth = 50;
-    var lineL = Math.max(pad.left + 2, x - lineHalfWidth);
-    var lineR = Math.min(pad.left + chartW - 2, x + lineHalfWidth);
+    // ============================================
+    // 1. SHORT horizontal line — Quotex exact
+    //    শুধু entry candle左右 ~40px, পুরো chart না
+    // ============================================
+    var lineHalf = 22;  // ±22px = মোট 44px
+    var lineL = Math.max(pad.left + 2, x - lineHalf);
+    var lineR = Math.min(pad.left + chartW - 2, x + lineHalf);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
@@ -1248,29 +1251,37 @@
     ctx.lineTo(lineR, Math.round(y) + 0.5);
     ctx.stroke();
 
-    // 2. ARROW (↑ for CALL, ↓ for PUT) — Quotex exact
-    var arrowSize = 10;
+    // ============================================
+    // 2. ENTRY TICK (ছোট ↑↓ arrow — candle এর ভিতরে)
+    //    Quotex এ entry candle এ ছোট arrow/tick থাকে
+    // ============================================
+    var tickSize = 7;
+    var tickY = isCall ? y + 10 : y - 10; // CALL: নিচে, PUT: উপরে
 
     ctx.fillStyle = color;
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
+
     if (isCall) {
-      // UP arrow ↑
-      ctx.moveTo(x, y - arrowSize);
-      ctx.lineTo(x - arrowSize * 0.7, y + 3);
-      ctx.lineTo(x + arrowSize * 0.7, y + 3);
+      // UP arrow — entry এর নিচে, উপরের দিকে tip
+      ctx.moveTo(x, tickY - tickSize);              // tip
+      ctx.lineTo(x - tickSize * 0.7, tickY);        // bottom left
+      ctx.lineTo(x + tickSize * 0.7, tickY);        // bottom right
     } else {
-      // DOWN arrow ↓
-      ctx.moveTo(x, y + arrowSize);
-      ctx.lineTo(x - arrowSize * 0.7, y - 3);
-      ctx.lineTo(x + arrowSize * 0.7, y - 3);
+      // DOWN arrow — entry এর উপরে, নিচের দিকে tip
+      ctx.moveTo(x, tickY + tickSize);              // tip
+      ctx.lineTo(x - tickSize * 0.7, tickY);        // top left
+      ctx.lineTo(x + tickSize * 0.7, tickY);        // top right
     }
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // 3. Small dot series (3.5px — Quotex exact)
+    // ============================================
+    // 3. SMALL DOTS on next 6 candles (3px, Quotex exact)
+    //    শুধু candle close price এ, entry candle বাদে
+    // ============================================
     if (this.candles && this.candles.length > 0) {
       var entryIdx = this._findCandleIndex(entry.time);
       if (entryIdx !== -1) {
@@ -1286,9 +1297,10 @@
           var cy = this._priceToY(c.close);
           if (cy === null) continue;
 
+          // ছোট dot (3px)
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1;
@@ -1299,7 +1311,6 @@
 
     ctx.restore();
   };
-
   // ============================================================
   // PART 4: RESULT MARKERS (WIN/LOSS)
   // ============================================================
