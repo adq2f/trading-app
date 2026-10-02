@@ -708,36 +708,37 @@
   // SET DATA (with spacing reset on first load + clamp 4-18)
   // ============================================================
   QuotexChart.prototype.setData = function(data) {
-    if (!Array.isArray(data)) return;
+  if (!Array.isArray(data)) return;
 
-    var wasFirstLoad = this.candles.length === 0;
+  this.candles = data.filter(function(c) {
+    return c && typeof c.time === 'number' &&
+           typeof c.open === 'number' &&
+           typeof c.high === 'number' &&
+           typeof c.low === 'number' &&
+           typeof c.close === 'number';
+  });
 
-    this.candles = data.filter(function(c) {
-      return c && typeof c.time === 'number' &&
-             typeof c.open === 'number' &&
-             typeof c.high === 'number' &&
-             typeof c.low === 'number' &&
-             typeof c.close === 'number';
-    });
+  // Always reset spacing to default (6) on every setData
+  // This ensures chart always loads at Quotex default zoom
+  if (this.candles.length > 0) {
+    this.viewport.candleSpacing = this.options.candleSpacing; // 6
+  }
 
-// Always reset spacing on setData (default 6)
-this.viewport.candleSpacing = this.options.candleSpacing; // 6
+  // Clamp spacing to valid range
+  if (this.viewport.candleSpacing < 4) this.viewport.candleSpacing = 4;
+  if (this.viewport.candleSpacing > 18) this.viewport.candleSpacing = 18;
 
-    // Clamp spacing to valid range (4-18)
-    if (this.viewport.candleSpacing < 4) this.viewport.candleSpacing = 4;
-    if (this.viewport.candleSpacing > 18) this.viewport.candleSpacing = 18;
+  if (this.candles.length > this.options.visibleCandleCount) {
+    this.viewport.offsetX = this.candles.length - this.options.visibleCandleCount;
+  } else {
+    this.viewport.offsetX = 0;
+  }
 
-    if (this.candles.length > this.options.visibleCandleCount) {
-      this.viewport.offsetX = this.candles.length - this.options.visibleCandleCount;
-    } else {
-      this.viewport.offsetX = 0;
-    }
+  this._autoScale();
+  this._notifyTimeRange();
 
-    this._autoScale();
-    this._notifyTimeRange();
-
-    console.log('[ChartEngine] setData:', this.candles.length, 'candles, spacing:', this.viewport.candleSpacing.toFixed(2));
-  };
+  console.log('[ChartEngine] setData:', this.candles.length, 'candles, spacing:', this.viewport.candleSpacing.toFixed(2));
+};
 
   // ============================================================
   // UPDATE
