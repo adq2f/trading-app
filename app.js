@@ -1,8 +1,11 @@
-// ============================================
-// QUOTEX CLONE — app.js v27 (CLEAN)
-// ============================================
+// ============================================================
+// QUOTEX CLONE — app.js v30 (COMPLETE)
+// Part 1/3: Guards + Firebase + DOM + Auth + Chart + Firestore
+// ============================================================
 
+// ============================================================
 // SAFE TEXT GUARD
+// ============================================================
 (function safeTextGuard() {
   if (window.__safeTextGuard) return;
   window.__safeTextGuard = true;
@@ -18,7 +21,9 @@
   console.log("[SAFE-GUARD] Active");
 })();
 
+// ============================================================
 // GLOBAL NULL-GUARD
+// ============================================================
 (function() {
   if (window.__globalNullSafe) return;
   window.__globalNullSafe = true;
@@ -29,10 +34,11 @@
       return {
         addEventListener: function() {}, removeEventListener: function() {},
         classList: { add: function() {}, remove: function() {}, toggle: function() {}, contains: function() { return false; } },
-        style: {}, dataset: {},
-        setAttribute: function() {}, getAttribute: function() { return null; },
+        style: {}, dataset: {}, setAttribute: function() {},
+        getAttribute: function() { return null; },
         appendChild: function() {}, removeChild: function() {},
-        querySelector: function() { return null; }, querySelectorAll: function() { return []; },
+        querySelector: function() { return null; },
+        querySelectorAll: function() { return []; },
         innerHTML: '', textContent: '', value: '', onclick: null,
         remove: function() {}, focus: function() {}, blur: function() {},
         _isNullGuard: true
@@ -43,7 +49,9 @@
   console.log('[NULL-GUARD] Active');
 })();
 
+// ============================================================
 // IMPORTS
+// ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -54,7 +62,9 @@ import {
   addDoc, query, where, onSnapshot, orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// ============================================================
 // SAFE TEXT REPLACEMENT
+// ============================================================
 (function safeTextReplacement() {
   if (window.__safeTextReplacement) return;
   window.__safeTextReplacement = true;
@@ -84,7 +94,9 @@ import {
   } catch(e) {}
 })();
 
+// ============================================================
 // FIREBASE CONFIG
+// ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDSHI9UELxtQe0jrApkjg_F46LwKuG-vns",
   authDomain: "trading-app-b2b27.firebaseapp.com",
@@ -98,7 +110,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// ============================================================
 // DOM ELEMENTS
+// ============================================================
 const loginPage = document.getElementById("login-page");
 const dashboardPage = document.getElementById("dashboard-page");
 const emailInput = document.getElementById("email");
@@ -151,7 +165,9 @@ const activeTradesList = document.getElementById("active-trades-list");
 const historyList = document.getElementById("history-list");
 const activeCount = document.getElementById("active-count");
 
+// ============================================================
 // GLOBALS
+// ============================================================
 let currentUser = null;
 window.currentUser = null;
 let userBalance = 0;
@@ -177,15 +193,19 @@ let drawings = [];
 let isDrawing = false;
 let drawStartPoint = null;
 
+// Chart refs
 window.chartRef = null;
 window.chart = null;
 
+// Expose selection vars
 window.selectedTime = 60;
 window.selectedTimeframe = "1m";
 window.selectedAsset = "BTCUSDT";
 window.accountType = "demo";
 
+// ============================================================
 // SOUNDS
+// ============================================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -254,7 +274,9 @@ function animateBalanceChange(amount) {
   }, 2000);
 }
 
+// ============================================================
 // AUTH EVENTS
+// ============================================================
 signupBtn.addEventListener("click", async () => {
   var email = emailInput.value.trim();
   var password = passwordInput.value;
@@ -289,6 +311,9 @@ loginBtn.addEventListener("click", async () => {
   }
 });
 
+// ============================================================
+// AUTH STATE
+// ============================================================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
@@ -302,6 +327,7 @@ onAuthStateChanged(auth, async (user) => {
       if (userDoc.exists()) {
         var data = userDoc.data();
         accountType = data.accountType || "demo";
+        window.accountType = accountType;
         userBalance = accountType === "demo" ? (data.demoBalance ?? data.balance ?? 1000) : (data.realBalance ?? 0);
         window.userBalance = userBalance;
         safeSetTextById("balance", userBalance.toFixed(2));
@@ -312,14 +338,12 @@ onAuthStateChanged(auth, async (user) => {
     if (typeof loadActiveTrades === "function") loadActiveTrades();
     if (typeof loadHistory === "function") loadHistory();
 
-    // Force Firestore init
     setTimeout(function() {
       if (typeof window.initAdminCandleConsumer === 'function') {
         window.initAdminCandleConsumer();
       }
     }, 1000);
 
-    // Force button bind
     setTimeout(function() {
       if (typeof window.bindTradeButtons === 'function') {
         window.bindTradeButtons();
@@ -343,7 +367,9 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// ============================================================
 // EXPOSE FIREBASE
+// ============================================================
 window.db = db;
 window.auth = auth;
 window.getDocs = getDocs;
@@ -359,9 +385,9 @@ window.getDoc = getDoc;
 
 console.log("===== PART 1 LOADED =====");
 
-// ============================================
+// ============================================================
 // INIT CHART
-// ============================================
+// ============================================================
 function initChart() {
   console.log('>>> initChart() START');
   if (!chartEl) { console.error('[CHART] tv-chart element not found'); return; }
@@ -424,6 +450,8 @@ function initChart() {
     });
     window.candleSeries = candleSeries;
 
+    // Hide HTML overlays (canvas draws everything)
+    try { var oldWm = chartEl.querySelector('.qx-chart-watermark'); if (oldWm) oldWm.remove(); } catch(e) {}
     try { var pd = document.getElementById("qx-price-dot"); if (pd) pd.style.display = "none"; } catch(e) {}
     try { var hl = document.getElementById('qx-time-labels'); if (hl) hl.style.display = 'none'; } catch(e) {}
     try { var el = document.getElementById('qx-entry-line-container'); if (el) el.style.display = 'none'; } catch(e) {}
@@ -433,6 +461,8 @@ function initChart() {
     try {
       realChart.timeScale().subscribeVisibleTimeRangeChange(function() {
         if (typeof redrawDrawings === "function") redrawDrawings();
+        if (typeof updateEntryLine === "function") updateEntryLine();
+        if (typeof refreshVerticalLines === "function") refreshVerticalLines();
       });
     } catch(e) {}
 
@@ -443,11 +473,19 @@ function initChart() {
     window.__chartInitDone = true;
     console.log('[CHART] ✅ Init complete');
 
+    // Trigger Firestore consumer
+    if (typeof window.initAdminCandleConsumer === 'function') {
+      setTimeout(function() { window.initAdminCandleConsumer(); }, 500);
+    }
+
   } catch(err) {
     console.error('[CHART] ❌ FATAL ERROR:', err);
   }
 }
 
+// ============================================================
+// TIMEFRAME HELPERS
+// ============================================================
 function convertTimeframe(tf) {
   var map = {
     "5s": "5s", "10s": "10s", "15s": "15s", "30s": "30s",
@@ -458,22 +496,94 @@ function convertTimeframe(tf) {
   return map[tf] || "1m";
 }
 
+function tfToMs(tf) {
+  var map = {
+    '5s': 5000, '10s': 10000, '15s': 15000, '30s': 30000,
+    '1m': 60000, '2m': 120000, '3m': 180000, '5m': 300000,
+    '10m': 600000, '15m': 900000, '30m': 1800000,
+    '1h': 3600000, '4h': 14400000, '1d': 86400000
+  };
+  return map[tf] || 60000;
+}
+
+// ============================================================
+// LOAD CANDLES (Firestore via Admin)
+// ============================================================
 async function loadCandles() {
   console.log("[Candles] Loading via Firestore:", selectedAsset, selectedTimeframe);
   if (typeof window.switchToAdminMarket === 'function') {
-    await window.switchToAdminMarket(window.selectedAsset || 'BTCUSDT');
+    await window.switchToAdminMarket(window.selectedAsset || selectedAsset || 'BTCUSDT');
   }
 }
 
+// ============================================================
+// LIVE PRICE (Binance WS — disabled by default)
+// ============================================================
 function startLivePrice() {
-  // Binance disabled
   if (window.USE_BINANCE !== true) return;
+  stopLivePrice();
+  var interval = convertTimeframe(selectedTimeframe);
+  var streamName = selectedAsset.toLowerCase() + "@kline_" + interval;
+  var url = "wss://stream.binance.com:9443/ws/" + streamName;
+
+  try {
+    livePriceWS = new WebSocket(url);
+    livePriceWS.onmessage = function(event) {
+      try {
+        var msg = JSON.parse(event.data);
+        if (!msg.k) return;
+        var k = msg.k;
+        var price = parseFloat(k.c);
+        prevPrice = currentPrice;
+        currentPrice = price;
+        window.currentPrice = currentPrice;
+        if (currentPriceEl) currentPriceEl.textContent = currentPrice.toFixed(2);
+        if (candleSeries) {
+          candleSeries.update({
+            time: Math.floor(k.t / 1000),
+            open: parseFloat(k.o), high: parseFloat(k.h),
+            low: parseFloat(k.l), close: parseFloat(k.c)
+          });
+        }
+      } catch (err) {}
+    };
+    livePriceWS.onerror = function() {};
+    livePriceWS.onclose = function() {
+      setTimeout(function() {
+        if (currentUser && window.USE_BINANCE === true) startLivePrice();
+      }, 3000);
+    };
+  } catch (e) {}
 }
 
 function stopLivePrice() {
   if (livePriceWS) { try { livePriceWS.close(); } catch(e) {} livePriceWS = null; }
 }
 
+// ============================================================
+// TIME LABELS (HTML overlay — for Quotex style bottom labels)
+// ============================================================
+function startTimeLabelsUpdater() {
+  if (window.__timeLabelsInterval) return;
+  window.__timeLabelsInterval = setInterval(function() {
+    updateTimeLabels();
+  }, 5000);
+  setTimeout(updateTimeLabels, 1000);
+}
+
+function updateTimeLabels() {
+  try {
+    var labelsEl = document.getElementById("qx-time-labels");
+    if (!labelsEl) return;
+    if (!window.chartRef || !window.candleSeries) return;
+    // Canvas draws time labels — HTML overlay disabled
+    labelsEl.innerHTML = "";
+  } catch(e) {}
+}
+
+// ============================================================
+// CANDLE COUNTDOWN
+// ============================================================
 function updateCandleCountdown() {
   try {
     if (!window.candleSeries) return;
@@ -484,18 +594,35 @@ function updateCandleCountdown() {
     var interval = convertTimeframe(selectedTimeframe);
     var intervalSec = 60;
     if (interval.indexOf("s") !== -1) intervalSec = parseInt(interval);
+    else if (interval === "2m") intervalSec = 120;
+    else if (interval === "3m") intervalSec = 180;
     else if (interval === "5m") intervalSec = 300;
+    else if (interval === "10m") intervalSec = 600;
     else if (interval === "15m") intervalSec = 900;
+    else if (interval === "30m") intervalSec = 1800;
     else if (interval === "1h") intervalSec = 3600;
+    else if (interval === "4h") intervalSec = 14400;
+    else if (interval === "1d") intervalSec = 86400;
 
     var nowSec = Math.floor(Date.now() / 1000);
-    var remaining = Math.max(0, candleStartSec + intervalSec - nowSec);
+    var nextCandleSec = candleStartSec + intervalSec;
+    var remaining = Math.max(0, nextCandleSec - nowSec);
+
     var mm = Math.floor(remaining / 60);
     var ss = remaining % 60;
     var countdownStr = String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
 
     var cdEl = document.getElementById("candle-countdown");
     if (cdEl) cdEl.textContent = countdownStr;
+
+    var rangeEl = document.getElementById("candle-time-range");
+    if (rangeEl) {
+      var startD = new Date(candleStartSec * 1000);
+      var endD = new Date(nextCandleSec * 1000);
+      var startStr = String(startD.getHours()).padStart(2, "0") + ":" + String(startD.getMinutes()).padStart(2, "0");
+      var endStr = String(endD.getHours()).padStart(2, "0") + ":" + String(endD.getMinutes()).padStart(2, "0");
+      rangeEl.textContent = startStr + " - " + endStr;
+    }
 
     var openEl = document.getElementById("drawer-open");
     var highEl = document.getElementById("drawer-high");
@@ -508,18 +635,26 @@ function updateCandleCountdown() {
   } catch(e) {}
 }
 
+// ============================================================
+// EXPOSE PART 2
+// ============================================================
 window.initChart = initChart;
 window.loadCandles = loadCandles;
 window.startLivePrice = startLivePrice;
 window.stopLivePrice = stopLivePrice;
+window.updateTimeLabels = updateTimeLabels;
 window.updateCandleCountdown = updateCandleCountdown;
 window.convertTimeframe = convertTimeframe;
+window.tfToMs = tfToMs;
 
-console.log("===== PART 2 LOADED =====");
+console.log("===== PART 1/3 LOADED =====");
+// ============================================================
+// PART 2/3: Drawing + Trade Logic + Markers + Popups
+// ============================================================
 
-// ============================================
+// ============================================================
 // DRAWING SYSTEM
-// ============================================
+// ============================================================
 var drawingCtx = null;
 
 function initDrawingSystem() {
@@ -533,6 +668,13 @@ function initDrawingSystem() {
   drawingCanvas.addEventListener("mousedown", handleDrawStart);
   drawingCanvas.addEventListener("mousemove", handleDrawMove);
   drawingCanvas.addEventListener("mouseup", handleDrawEnd);
+
+  try {
+    chart.timeScale().subscribeVisibleLogicalRangeChange(function() {
+      redrawDrawings();
+      updateEntryLine();
+    });
+  } catch(e) {}
 }
 
 function resizeDrawingCanvas() {
@@ -626,7 +768,9 @@ function saveDrawing(drawing) { drawings.push(drawing); redrawDrawings(); }
 
 function clearAllDrawings() {
   drawings = [];
-  if (drawingCtx && drawingCanvas) drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+  if (drawingCtx && drawingCanvas) {
+    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+  }
 }
 
 function redrawDrawings() {
@@ -649,10 +793,13 @@ function drawShape(drawing) {
   var points = drawing.points;
   var text = drawing.text;
   if (!points || points.length === 0) return;
+
   var color = "#2196f3";
   drawingCtx.strokeStyle = color;
   drawingCtx.fillStyle = color;
   drawingCtx.lineWidth = 1.5;
+  drawingCtx.font = "12px Arial";
+  drawingCtx.textBaseline = "middle";
 
   if (tool === "HorizontalLine") {
     var p = dataToPixel(points[0].time, points[0].price);
@@ -685,10 +832,33 @@ function drawShape(drawing) {
       drawingCtx.stroke();
     } else if (tool === "Rectangle") {
       drawingCtx.strokeRect(p1.x, p1.y, p22.x - p1.x, p22.y - p1.y);
+    } else if (tool === "FibRetracement") {
+      drawFibonacci(p1, p22);
     }
   }
 }
 
+function drawFibonacci(p1, p2) {
+  var levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  var colors = ["#6b7a90", "#ff5252", "#ffb300", "#00c853", "#2196f3", "#9c27b0", "#6b7a90"];
+  var height = p2.y - p1.y;
+  var leftX = Math.min(p1.x, p2.x);
+  var rightX = Math.max(p1.x, p2.x);
+  levels.forEach(function(level, i) {
+    var y = p1.y + height * level;
+    drawingCtx.strokeStyle = colors[i];
+    drawingCtx.lineWidth = 1;
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(leftX, y);
+    drawingCtx.lineTo(rightX, y);
+    drawingCtx.stroke();
+    drawingCtx.fillStyle = colors[i];
+    drawingCtx.font = "10px Arial";
+    drawingCtx.fillText((level * 100).toFixed(1) + "%", rightX + 4, y);
+  });
+}
+
+// Drawing tool buttons
 document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   btn.addEventListener("click", function() {
     var tool = btn.dataset.tool;
@@ -703,13 +873,16 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   });
 });
 
+// ============================================================
 // DRAWER TOGGLE
+// ============================================================
 (function initDrawer() {
   var toggleBtn = document.getElementById("drawer-toggle");
   var drawer = document.getElementById("qx-drawer");
   var overlay = document.getElementById("drawer-overlay");
   var closeBtn = document.getElementById("drawer-close");
   if (!drawer) return;
+
   function openDrawer() {
     drawer.classList.remove("hidden");
     if (overlay) overlay.classList.remove("hidden");
@@ -722,15 +895,19 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   if (toggleBtn) toggleBtn.addEventListener("click", openDrawer);
   if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
   if (overlay) overlay.addEventListener("click", closeDrawer);
+  console.log("[Drawer] Initialized");
 })();
 
-// DRAWING PANEL
+// ============================================================
+// DRAWING PANEL TOGGLE
+// ============================================================
 (function initDrawingPanel() {
   var toggleBtn = document.getElementById("drawing-toggle");
   var panel = document.getElementById("drawing-panel");
   var overlay = document.getElementById("drawing-overlay");
   var closeBtn = document.getElementById("drawing-panel-close");
   if (!panel) return;
+
   function openPanel() {
     panel.classList.remove("hidden");
     if (overlay) overlay.classList.remove("hidden");
@@ -742,9 +919,12 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   if (toggleBtn) toggleBtn.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
   if (overlay) overlay.addEventListener("click", closePanel);
+  console.log("[DrawingPanel] Initialized");
 })();
 
-// TIMEFRAME MODAL
+// ============================================================
+// TIMEFRAME MODAL TOGGLE
+// ============================================================
 (function initTimeframeModal() {
   var badge = document.getElementById("tf-badge");
   var modal = document.getElementById("tf-modal");
@@ -752,8 +932,10 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   var closeBtn = document.getElementById("tf-close");
   var activeLabel = document.getElementById("qx-tf-active");
   if (!modal) return;
+
   function openModal() { modal.classList.remove("hidden"); }
   function closeModal() { modal.classList.add("hidden"); }
+
   if (badge) badge.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (overlay) overlay.addEventListener("click", closeModal);
@@ -767,12 +949,16 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
       window.selectedTimeframe = tf;
       if (activeLabel) activeLabel.textContent = tf;
       closeModal();
+      console.log("[TF] Changed to:", tf);
       if (typeof loadCandles === "function") await loadCandles();
     });
   });
+  console.log("[TimeframeModal] Initialized");
 })();
 
+// ============================================================
 // BOTTOM NAV
+// ============================================================
 (function initBottomNav() {
   var navBtns = document.querySelectorAll(".qx-nav-btn");
   navBtns.forEach(function(btn) {
@@ -797,18 +983,35 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
       }
     });
   });
+  console.log("[BottomNav] Initialized");
 })();
 
+// ============================================================
+// CHART MENU BUTTON
+// ============================================================
+(function initChartMenuBtn() {
+  var btn = document.getElementById("chart-menu-btn");
+  if (!btn) return;
+  btn.addEventListener("click", function() {
+    var drawer = document.getElementById("qx-drawer");
+    var overlay = document.getElementById("drawer-overlay");
+    if (drawer) drawer.classList.remove("hidden");
+    if (overlay) overlay.classList.remove("hidden");
+    updateCandleCountdown();
+  });
+})();
+
+// ============================================================
+// EXPOSE DRAWING
+// ============================================================
 window.initDrawingSystem = initDrawingSystem;
 window.resizeDrawingCanvas = resizeDrawingCanvas;
 window.redrawDrawings = redrawDrawings;
 window.clearAllDrawings = clearAllDrawings;
 
-console.log("===== PART 3 LOADED =====");
-
-// ============================================
+// ============================================================
 // ENTRY LINE / VLINE / MARKERS
-// ============================================
+// ============================================================
 window.__activeEntryData = null;
 window.__activePriceLine = null;
 
@@ -848,12 +1051,22 @@ function refreshVerticalLines() {
       vStart.className = "qx-vline start";
       vStart.style.left = startX + "px";
       container.appendChild(vStart);
+      var labelStart = document.createElement("div");
+      labelStart.className = "qx-vline-label";
+      labelStart.style.left = startX + "px";
+      labelStart.textContent = "Beginning of trade";
+      container.appendChild(labelStart);
     }
     if (endX !== null && endX !== undefined) {
       var vEnd = document.createElement("div");
       vEnd.className = "qx-vline end";
       vEnd.style.left = endX + "px";
       container.appendChild(vEnd);
+      var labelEnd = document.createElement("div");
+      labelEnd.className = "qx-vline-label";
+      labelEnd.style.left = endX + "px";
+      labelEnd.textContent = "End of trade";
+      container.appendChild(labelEnd);
     }
   } catch(e) {}
 }
@@ -866,9 +1079,7 @@ function clearVerticalLines() {
 
 window.refreshVerticalLines = refreshVerticalLines;
 
-function renderTickMark(type, entryPrice, entryTime) {
-  renderAllMarkers();
-}
+function renderTickMark(type, entryPrice, entryTime) { renderAllMarkers(); }
 
 window.__entryPriceLines = [];
 
@@ -878,8 +1089,15 @@ function renderAllMarkers() {
     if (!container) return;
     container.innerHTML = "";
     if (window.candleSeries && window.candleSeries.setMarkers) window.candleSeries.setMarkers([]);
+    if (window.__entryPriceLines && window.__entryPriceLines.length > 0) {
+      window.__entryPriceLines.forEach(function(pl) {
+        try { window.candleSeries.removePriceLine(pl); } catch(e) {}
+      });
+    }
+    window.__entryPriceLines = [];
+
     var trades = window.activeTradesLocal || [];
-    if (trades.length === 0) return;
+    if (trades.length === 0) { console.log("[Marker] No active trades"); return; }
     if (!window.chartRef || !window.candleSeries) return;
     var candleData = window.candleSeries.data();
     if (!candleData || candleData.length === 0) return;
@@ -898,22 +1116,35 @@ function renderAllMarkers() {
       var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandleTime);
       var yPos = window.candleSeries.priceToCoordinate(trade.entryPrice);
       if (xPos === null || yPos === null) return;
-      var color = trade.type === "call" ? "#00c853" : "#ff5252";
+      var isCall = trade.type === "call";
+      var color = isCall ? "#00c853" : "#ff5252";
+
       var line = document.createElement("div");
-      line.style.cssText = "position:absolute;left:" + (xPos - 15) + "px;top:" + (yPos - 1.5) + "px;width:30px;height:3px;background:" + color + ";border-radius:2px;z-index:40;pointer-events:none;";
+      line.className = "qx-entry-mark " + trade.type;
+      line.style.cssText = "position:absolute;left:" + (xPos - 15) + "px;top:" + (yPos - 1.5) + "px;width:30px;height:3px;background:" + color + ";border-radius:2px;box-shadow:0 0 6px " + color + ";z-index:40;pointer-events:none;";
       container.appendChild(line);
+
+      var tickSize = 12;
+      var tick = document.createElement("div");
+      tick.style.cssText = "position:absolute;left:" + (xPos + 15 - tickSize/2) + "px;top:" + (yPos - tickSize/2) + "px;width:" + tickSize + "px;height:" + tickSize + "px;border-radius:50%;background:" + color + ";border:2px solid #ffffff;box-shadow:0 0 8px " + color + ";color:#ffffff;font-size:8px;font-weight:900;text-align:center;line-height:" + (tickSize-4) + "px;font-family:Inter,sans-serif;z-index:41;pointer-events:none;";
+      tick.textContent = "\u2713";
+      container.appendChild(tick);
     });
+    console.log("[Marker] ✅ Rendered " + trades.length + " markers");
   } catch(e) {}
 }
 
 function clearTickMark() {
-  var container = document.getElementById("qx-tick-container");
-  if (container) container.innerHTML = "";
+  try {
+    if (window.candleSeries && window.candleSeries.setMarkers) window.candleSeries.setMarkers([]);
+    var container = document.getElementById("qx-tick-container");
+    if (container) container.innerHTML = "";
+  } catch(e) {}
 }
 
-// ============================================
+// ============================================================
 // PLACE TRADE
-// ============================================
+// ============================================================
 async function placeTrade(type) {
   if (!currentUser) return;
   var now = Date.now();
@@ -995,7 +1226,9 @@ function bindTradeButtons() {
 bindTradeButtons();
 setTimeout(bindTradeButtons, 1500);
 
-// CHECK EXPIRED
+// ============================================================
+// CHECK EXPIRED TRADES
+// ============================================================
 async function checkExpiredTrades() {
   if (!currentUser) return;
   var now = Date.now();
@@ -1030,18 +1263,30 @@ async function checkExpiredTrades() {
           animateBalanceChange(profit);
           showResultFlash("win");
           playSound("win");
+          var tm1 = document.getElementById("trade-message");
+          if (tm1) { tm1.style.color = "#00c853"; tm1.textContent = "WIN +$" + profit.toFixed(2); }
         } else {
           showResultFlash("loss");
           playSound("loss");
+          var tm2 = document.getElementById("trade-message");
+          if (tm2) { tm2.style.color = "#ff5252"; tm2.textContent = "LOSS -$" + trade.amount.toFixed(2); }
         }
+        setTimeout(function() {
+          var tm3 = document.getElementById("trade-message");
+          if (tm3) tm3.textContent = "";
+        }, 3500);
       } catch (error) { console.error("Trade expire error:", error); }
     }
   }
 }
 
+// ============================================================
+// UPDATE BIG TIMER
+// ============================================================
 function updateBigTimer() {
   var timerEl = document.getElementById("trade-timer-display");
   var topTimer = document.getElementById("countdown-time");
+
   if (activeTradesLocal.length === 0) {
     var time = selectedTime || 60;
     var mm = Math.floor(time / 60);
@@ -1052,6 +1297,7 @@ function updateBigTimer() {
     if (topTimer) topTimer.textContent = str;
     return;
   }
+
   var soonest = activeTradesLocal[0].expiresAt;
   for (var i = 1; i < activeTradesLocal.length; i++) {
     if (activeTradesLocal[i].expiresAt < soonest) soonest = activeTradesLocal[i].expiresAt;
@@ -1064,18 +1310,24 @@ function updateBigTimer() {
   if (topTimer) topTimer.textContent = timerStr;
   var topTimerWrap = document.getElementById("top-countdown-timer");
   if (topTimerWrap) topTimerWrap.classList.remove("hidden");
+  updateEntryLine();
 }
 
+// ============================================================
+// LOAD ACTIVE TRADES
+// ============================================================
 function loadActiveTrades() {
   if (!currentUser) return;
   var q = query(collection(db, "trades"),
     where("userId", "==", currentUser.uid),
     where("status", "==", "pending"));
   if (activeTradesUnsub) { try { activeTradesUnsub(); } catch(e) {} }
+
   activeTradesUnsub = onSnapshot(q, function(snapshot) {
     activeTradesLocal = [];
     window.activeTradesLocal = activeTradesLocal;
     if (activeTradesList) activeTradesList.innerHTML = "";
+
     if (snapshot.empty) {
       if (activeTradesList) activeTradesList.innerHTML = '<p class="qx-empty">No active trades</p>';
       if (activeCount) activeCount.textContent = "0";
@@ -1083,6 +1335,7 @@ function loadActiveTrades() {
       if (badge) badge.textContent = "0";
       return;
     }
+
     snapshot.forEach(function(docSnap) {
       var trade = Object.assign({ id: docSnap.id }, docSnap.data());
       activeTradesLocal.push(trade);
@@ -1100,9 +1353,11 @@ function loadActiveTrades() {
         '<div class="qx-tc-amount">$' + Number(trade.amount).toFixed(2) + '</div></div>';
       if (activeTradesList) activeTradesList.appendChild(card);
     });
+
     if (activeCount) activeCount.textContent = activeTradesLocal.length;
     var badge2 = document.getElementById("trades-count-badge");
     if (badge2) badge2.textContent = activeTradesLocal.length;
+
     var latest = activeTradesLocal[activeTradesLocal.length - 1];
     if (latest && latest.status === "pending") {
       renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
@@ -1113,41 +1368,77 @@ function loadActiveTrades() {
   });
 }
 
+// ============================================================
+// LOAD HISTORY
+// ============================================================
 function loadHistory() {
   if (!currentUser) return;
   var q = query(collection(db, "trades"),
     where("userId", "==", currentUser.uid),
     where("status", "==", "completed"));
   if (historyUnsub) { try { historyUnsub(); } catch(e) {} }
+
   historyUnsub = onSnapshot(q, function(snapshot) {
     if (historyList) historyList.innerHTML = "";
+    var drawerHistory = document.getElementById("drawer-history");
+    if (drawerHistory) drawerHistory.innerHTML = "";
+
     if (snapshot.empty) {
       if (historyList) historyList.innerHTML = '<p class="qx-empty">No trade history yet</p>';
+      if (drawerHistory) drawerHistory.innerHTML = '<p class="qx-empty">No trades yet</p>';
       return;
     }
+
     var trades = [];
     snapshot.forEach(function(docSnap) {
       trades.push(Object.assign({ id: docSnap.id }, docSnap.data()));
     });
     trades.sort(function(a, b) { return new Date(b.completedAt || 0) - new Date(a.completedAt || 0); });
+
+    // Main list (30)
     trades.slice(0, 30).forEach(function(trade) {
       var card = document.createElement("div");
       card.className = "qx-trade-card " + (trade.result || "");
+      var entryPrice = Number(trade.entryPrice || 0).toFixed(2);
       var pl = trade.result === "win"
         ? "+$" + Number(trade.profit || 0).toFixed(2)
         : "-$" + Number(trade.amount || 0).toFixed(2);
       card.innerHTML =
         '<div class="qx-tc-left"><div class="qx-tc-symbol">' + (trade.asset || "BTC/USDT") +
-        '<span class="qx-tc-type-badge ' + trade.type + '">' + trade.type.toUpperCase() + '</span></div></div>' +
+        '<span class="qx-tc-type-badge ' + trade.type + '">' + trade.type.toUpperCase() + '</span></div>' +
+        '<div class="qx-tc-time">Entry: $' + entryPrice + '</div></div>' +
         '<div class="qx-tc-right"><div class="qx-tc-pl ' + trade.result + '">' + pl + '</div></div>';
       if (historyList) historyList.appendChild(card);
     });
+
+    // Drawer history (10)
+    if (drawerHistory) {
+      trades.slice(0, 10).forEach(function(trade) {
+        var item = document.createElement("div");
+        item.className = "qx-dh-item";
+        var d = new Date(trade.completedAt || trade.createdAt || Date.now());
+        var hh = String(d.getHours()).padStart(2, "0");
+        var mm = String(d.getMinutes()).padStart(2, "0");
+        var pl = trade.result === "win"
+          ? "+$" + Number(trade.profit || 0).toFixed(2)
+          : "-$" + Number(trade.amount || 0).toFixed(2);
+        item.innerHTML =
+          '<div class="qx-dh-left"><div class="qx-dh-type ' + trade.type + '">' + trade.type.toUpperCase() + '</div>' +
+          '<div class="qx-dh-time">' + hh + ":" + mm + '</div></div>' +
+          '<div class="qx-dh-pl ' + trade.result + '">' + pl + '</div>';
+        drawerHistory.appendChild(item);
+      });
+    }
   });
 }
 
+// ============================================================
+// UPDATE LOOP (every 1s)
+// ============================================================
 setInterval(function() {
   if (currentUser && activeTradesLocal.length > 0) {
     updateBigTimer();
+    updateEntryLine();
     updateCandleCountdown();
   }
   var timers = document.querySelectorAll(".qx-tc-timer[data-expires]");
@@ -1161,6 +1452,9 @@ setInterval(function() {
   if (currentUser) updateCandleCountdown();
 }, 1000);
 
+// ============================================================
+// EXPOSE TRADE
+// ============================================================
 window.placeTrade = placeTrade;
 window.bindTradeButtons = bindTradeButtons;
 window.updateBigTimer = updateBigTimer;
@@ -1175,11 +1469,9 @@ window.clearVerticalLines = clearVerticalLines;
 window.renderTickMark = renderTickMark;
 window.clearTickMark = clearTickMark;
 
-console.log("===== PART 4 LOADED =====");
-
-// ============================================
-// POPUPS + CHAT
-// ============================================
+// ============================================================
+// POPUPS + CHAT + MORE MENU
+// ============================================================
 function openPopup(popup, overlay) {
   if (!popup) return;
   popup.classList.remove("hidden");
@@ -1191,6 +1483,7 @@ function closePopup(popup) {
   popup.classList.add("hidden");
 }
 
+// Balance chip
 (function initBalanceChip() {
   var chip = document.getElementById("balance-chip");
   if (!chip) return;
@@ -1226,6 +1519,7 @@ function updateAccountOptionState() {
   });
 }
 
+// Balance popup + edit + account switch
 (function initQuotexBalancePopup() {
   document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
     opt.addEventListener("click", function(e) {
@@ -1235,6 +1529,38 @@ function updateAccountOptionState() {
       updateAccountOptionState();
     });
   });
+
+  // Edit button
+  document.querySelectorAll(".qx-acc-edit").forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var type = btn.dataset.edit;
+      if (type !== "demo") return;
+      var editBox = document.getElementById("qx-balance-edit-box");
+      var editInput = document.getElementById("qx-balance-edit-input");
+      if (!editBox || !editInput) return;
+      editBox.classList.remove("hidden");
+      if (currentUser) {
+        getDoc(doc(db, "users", currentUser.uid)).then(function(userDoc) {
+          if (userDoc.exists()) {
+            var data = userDoc.data();
+            var currentVal = data.demoBalance ?? data.balance ?? 1000;
+            editInput.value = Number(currentVal).toFixed(2);
+            setTimeout(function() { editInput.focus(); }, 100);
+          }
+        });
+      }
+    });
+  });
+
+  var cancelBtn = document.getElementById("qx-balance-edit-cancel");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", function() {
+      var editBox = document.getElementById("qx-balance-edit-box");
+      if (editBox) editBox.classList.add("hidden");
+    });
+  }
 
   var saveBtn = document.getElementById("qx-balance-edit-save");
   if (saveBtn) {
@@ -1262,10 +1588,33 @@ function updateAccountOptionState() {
   var popup = document.getElementById("balance-popup");
   if (closeBtn && popup) closeBtn.addEventListener("click", function() { popup.classList.add("hidden"); });
   if (overlay && popup) overlay.addEventListener("click", function() { popup.classList.add("hidden"); });
+
+  var depBtn = document.getElementById("balance-popup-deposit");
+  var wdBtn = document.getElementById("balance-popup-withdraw");
+  if (depBtn && popup) {
+    depBtn.addEventListener("click", function() {
+      popup.classList.add("hidden");
+      var dp = document.getElementById("deposit-popup");
+      var dv = document.getElementById("deposit-popup-overlay");
+      if (dp) openPopup(dp, dv);
+    });
+  }
+  if (wdBtn && popup) {
+    wdBtn.addEventListener("click", function() {
+      popup.classList.add("hidden");
+      var wp = document.getElementById("withdraw-popup");
+      var wv = document.getElementById("withdraw-popup-overlay");
+      if (wp) openPopup(wp, wv);
+    });
+  }
 })();
 
 async function switchAccount(type) {
   accountType = type;
+  window.accountType = type;
+  document.querySelectorAll(".acc-btn-popup").forEach(function(b) {
+    b.classList.toggle("active", b.dataset.acc === type);
+  });
   if (!currentUser) return;
   try {
     var userRef = doc(db, "users", currentUser.uid);
@@ -1279,9 +1628,23 @@ async function switchAccount(type) {
     await updateDoc(userRef, { accountType: type });
     var badge = document.getElementById("qx-account-type");
     if (badge) badge.textContent = type === "demo" ? "DEMO" : "LIVE";
-  } catch (err) { console.error("Switch account error:", err); }
+  } catch (err) {}
+  var ap = document.getElementById("account-popup");
+  if (ap) ap.classList.add("hidden");
 }
 
+(function initAccountPopup() {
+  var closeBtn = document.getElementById("account-popup-close");
+  var overlay = document.getElementById("account-popup-overlay");
+  var popup = document.getElementById("account-popup");
+  if (closeBtn && popup) closeBtn.addEventListener("click", function() { popup.classList.add("hidden"); });
+  if (overlay && popup) overlay.addEventListener("click", function() { popup.classList.add("hidden"); });
+  document.querySelectorAll(".acc-btn-popup").forEach(function(btn) {
+    btn.addEventListener("click", function() { switchAccount(btn.dataset.acc); });
+  });
+})();
+
+// Deposit
 (function initDeposit() {
   var btn = document.getElementById("deposit-btn");
   var closeBtn = document.getElementById("deposit-popup-close");
@@ -1290,7 +1653,6 @@ async function switchAccount(type) {
   if (btn && popup) btn.addEventListener("click", function() { openPopup(popup, overlay); });
   if (closeBtn && popup) closeBtn.addEventListener("click", function() { popup.classList.add("hidden"); });
   if (overlay && popup) overlay.addEventListener("click", function() { popup.classList.add("hidden"); });
-
   var submit = document.getElementById("deposit-submit");
   if (submit) {
     submit.addEventListener("click", async function() {
@@ -1306,21 +1668,22 @@ async function switchAccount(type) {
           amount: amount, txid: txid, method: "manual",
           status: "pending", createdAt: new Date().toISOString()
         });
-        msg.style.color = "#00c853";
-        msg.textContent = "Request sent!";
+        msg.style.color = "#00c853"; msg.textContent = "Request sent!";
+        document.getElementById("deposit-amount").value = "";
+        document.getElementById("deposit-txid").value = "";
         setTimeout(function() { popup.classList.add("hidden"); msg.textContent = ""; }, 1500);
       } catch (err) { msg.style.color = "#ff5252"; msg.textContent = err.message; }
     });
   }
 })();
 
+// Withdraw
 (function initWithdraw() {
   var closeBtn = document.getElementById("withdraw-popup-close");
   var overlay = document.getElementById("withdraw-popup-overlay");
   var popup = document.getElementById("withdraw-popup");
   if (closeBtn && popup) closeBtn.addEventListener("click", function() { popup.classList.add("hidden"); });
   if (overlay && popup) overlay.addEventListener("click", function() { popup.classList.add("hidden"); });
-
   var submit = document.getElementById("withdraw-submit");
   if (submit) {
     submit.addEventListener("click", async function() {
@@ -1330,7 +1693,7 @@ async function switchAccount(type) {
       var number = document.getElementById("withdraw-number").value.trim();
       var msg = document.getElementById("withdraw-message");
       if (!amount || amount < 1) { msg.style.color = "#ff5252"; msg.textContent = "Minimum $1"; return; }
-      if (amount > userBalance) { msg.style.color = "#ff5252"; msg.textContent = "Insufficient"; return; }
+      if (amount > userBalance) { msg.style.color = "#ff5252"; msg.textContent = "Insufficient balance"; return; }
       if (!number) { msg.style.color = "#ff5252"; msg.textContent = "Enter number"; return; }
       try {
         await addDoc(collection(db, "withdrawals"), {
@@ -1338,14 +1701,16 @@ async function switchAccount(type) {
           amount: amount, method: method, number: number,
           status: "pending", createdAt: new Date().toISOString()
         });
-        msg.style.color = "#00c853";
-        msg.textContent = "Request sent!";
+        msg.style.color = "#00c853"; msg.textContent = "Request sent!";
+        document.getElementById("withdraw-amount").value = "";
+        document.getElementById("withdraw-number").value = "";
         setTimeout(function() { popup.classList.add("hidden"); msg.textContent = ""; }, 1500);
       } catch (err) { msg.style.color = "#ff5252"; msg.textContent = err.message; }
     });
   }
 })();
 
+// Notification bell
 (function initNotif() {
   var btn = document.getElementById("notif-btn");
   if (!btn) return;
@@ -1355,6 +1720,7 @@ async function switchAccount(type) {
   });
 })();
 
+// Bonus banner
 (function initBonusClose() {
   var closeBtn = document.getElementById("bonus-close");
   var banner = document.getElementById("bonus-banner");
@@ -1366,6 +1732,7 @@ async function switchAccount(type) {
   try { if (localStorage.getItem("bonusBannerClosed") === "1") banner.classList.add("hidden"); } catch(e) {}
 })();
 
+// User Chat
 window.userChatUnsub = null;
 
 function openUserChat() {
@@ -1426,6 +1793,7 @@ function startUserChatListener() {
   if (overlay) overlay.addEventListener("click", closeUserChat);
 })();
 
+// More menu
 (function initMoreMenu() {
   var closeBtn = document.getElementById("more-menu-close");
   var overlay = document.getElementById("more-menu-overlay");
@@ -1446,8 +1814,15 @@ function startUserChatListener() {
         var wp = document.getElementById("withdraw-popup");
         var wv = document.getElementById("withdraw-popup-overlay");
         if (wp) openPopup(wp, wv);
+      } else if (action === "referral") {
+        var rp = document.getElementById("referral-popup");
+        var rv = document.getElementById("referral-popup-overlay");
+        if (rp) openPopup(rp, rv);
       } else if (action === "chat") {
         openUserChat();
+      } else if (action === "trades") {
+        var ts = document.querySelector(".qx-trades-section");
+        if (ts) ts.scrollIntoView({ behavior: "smooth" });
       } else if (action === "logout") {
         signOut(auth);
       }
@@ -1455,6 +1830,19 @@ function startUserChatListener() {
   });
 })();
 
+// Placeholder popups
+(function initPlaceholderPopups() {
+  ["tournament-popup", "referral-popup"].forEach(function(id) {
+    var popup = document.getElementById(id);
+    if (!popup) return;
+    var closeBtn = popup.querySelector(".popup-close");
+    var overlay = popup.querySelector(".popup-overlay");
+    if (closeBtn) closeBtn.addEventListener("click", function() { popup.classList.add("hidden"); });
+    if (overlay) overlay.addEventListener("click", function() { popup.classList.add("hidden"); });
+  });
+})();
+
+// Trades tabs
 (function initTradesTabs() {
   var tabs = document.querySelectorAll(".qx-trades-tab");
   var activePane = document.getElementById("qx-trades-active-pane");
@@ -1470,6 +1858,7 @@ function startUserChatListener() {
   });
 })();
 
+// Investment buttons
 (function initInvestmentButtons() {
   document.querySelectorAll(".qx-inc-btn").forEach(function(btn) {
     btn.addEventListener("click", function() {
@@ -1483,12 +1872,14 @@ function startUserChatListener() {
   });
 })();
 
+// Pending toggle
 (function initPendingToggle() {
   var btn = document.getElementById("pending-toggle");
   if (!btn) return;
   btn.addEventListener("click", function() { btn.classList.toggle("active"); });
 })();
 
+// Asset select
 (function initAssetSelect() {
   var sel = document.getElementById("asset-select");
   if (!sel) return;
@@ -1496,42 +1887,82 @@ function startUserChatListener() {
     selectedAsset = sel.value;
     window.selectedAsset = sel.value;
     if (typeof loadCandles === "function") await loadCandles();
+    if (typeof startLivePrice === "function" && currentUser) startLivePrice();
   });
 })();
 
+// Auto-fix balance text
+setInterval(function() {
+  try {
+    var bal = document.getElementById("balance");
+    if (bal && window.userBalance !== undefined) {
+      var expected = Number(window.userBalance).toFixed(2);
+      if (bal.textContent === "" || bal.textContent === "0" || bal.textContent === "0.00") {
+        bal.textContent = expected;
+      }
+    }
+  } catch(e) {}
+}, 500);
+
+// Expose popups
 window.switchAccount = switchAccount;
 window.openUserChat = openUserChat;
 window.closeUserChat = closeUserChat;
 window.openPopup = openPopup;
 window.closePopup = closePopup;
 
-console.log("===== PART 5 LOADED =====");
+console.log("===== PART 2/3 LOADED =====");
+// ============================================================
+// PART 3/3: Firestore Consumer + Fallback Master + Phase 12 + Phase 15 + Permanent Fixes
+// ============================================================
 
+// ============================================================
+// AUTO REFRESH MARKERS
+// ============================================================
 setInterval(function() {
   try {
     if (!window.candleSeries) return;
     var trades = window.activeTradesLocal || [];
     var pendingCount = 0;
+    var lastCount = window.__lastPendingCount || 0;
     for (var i = 0; i < trades.length; i++) {
       if (trades[i].status === "pending") pendingCount++;
     }
-    if (pendingCount > 0) renderAllMarkers();
+    if (pendingCount !== lastCount || pendingCount > 0) {
+      window.__lastPendingCount = pendingCount;
+      renderAllMarkers();
+    }
+    if (pendingCount === 0 && lastCount > 0) {
+      window.__lastPendingCount = 0;
+      clearTickMark();
+    }
   } catch(e) {}
 }, 1500);
 
-console.log("===== AUTO MARKER LOADED =====");
-
 // ============================================================
-// FIRESTORE CANDLE CONSUMER
+// BINANCE FLAG
 // ============================================================
 window.USE_BINANCE = false;
-console.log('[BIN-C] Binance flag: DISABLED');
+console.log('[BIN-C] Binance flag: DISABLED (using Firestore)');
 
+// ============================================================
+// FIRESTORE CANDLE CONSUMER STATE
+// ============================================================
 window.fsCandleState = {
-  listening: false, marketId: null, unsubLive: null, unsubMarket: null,
-  candles: [], lastCandleTime: 0, lastPrice: 0
+  listening: false,
+  marketId: null,
+  unsubLive: null,
+  unsubMarket: null,
+  candles: [],
+  lastCandleTime: 0,
+  lastPrice: 0
 };
 
+console.log('[FS] Step 2A loaded');
+
+// ============================================================
+// UPDATE USER PRICE DISPLAY
+// ============================================================
 function updateUserPriceDisplay(price) {
   try {
     var priceEl = document.getElementById('current-price');
@@ -1540,14 +1971,21 @@ function updateUserPriceDisplay(price) {
       priceEl.style.color = '#e6edf3';
     }
     window.currentPrice = price;
+    currentPrice = price;
   } catch(e) {}
 }
 
+window.updateUserPriceDisplay = updateUserPriceDisplay;
+
+// ============================================================
+// RESOLVE MARKET ID
+// ============================================================
 window.marketCache = window.marketCache || {};
 
 window.resolveMarketId = async function(symbol) {
   if (!symbol) return null;
   if (window.marketCache[symbol]) return window.marketCache[symbol];
+
   try {
     var snap = await window.getDocs(window.collection(window.db, 'markets'));
     var foundId = null;
@@ -1558,6 +1996,8 @@ window.resolveMarketId = async function(symbol) {
     if (foundId) {
       window.marketCache[symbol] = foundId;
       console.log('[FS-B] Resolved:', symbol, '->', foundId);
+    } else {
+      console.warn('[FS-B] No market found for symbol:', symbol);
     }
     return foundId;
   } catch (err) {
@@ -1566,21 +2006,30 @@ window.resolveMarketId = async function(symbol) {
   }
 };
 
+// ============================================================
+// LOAD HISTORICAL CANDLES
+// ============================================================
 window.loadAdminHistoricalCandles = async function(marketId) {
   if (!marketId) return [];
   try {
-    var snap = await window.getDocs(window.collection(window.db, 'markets', marketId, 'liveCandles'));
-    if (snap.empty) return [];
+    var snap = await window.getDocs(
+      window.collection(window.db, 'markets', marketId, 'liveCandles')
+    );
+    if (snap.empty) { console.log('[FS-B] No historical candles yet'); return []; }
+
     var candles = [];
     snap.forEach(function(d) {
       var c = d.data();
       candles.push({
         time: Math.floor((c.startTime || 0) / 1000),
-        open: Number(c.open || 0), high: Number(c.high || 0),
-        low: Number(c.low || 0), close: Number(c.close || 0)
+        open: Number(c.open || 0),
+        high: Number(c.high || 0),
+        low: Number(c.low || 0),
+        close: Number(c.close || 0)
       });
     });
     candles.sort(function(a, b) { return a.time - b.time; });
+    console.log('[FS-B] Historical candles loaded:', candles.length);
     return candles;
   } catch (err) {
     console.error('[FS-B] Historical load error:', err.message);
@@ -1588,12 +2037,18 @@ window.loadAdminHistoricalCandles = async function(marketId) {
   }
 };
 
+// ============================================================
+// CONNECT LIVE CANDLES
+// ============================================================
 window.connectAdminLiveCandles = function(marketId) {
   if (!marketId) return;
   var state = window.fsCandleState;
   if (state.unsubLive) { try { state.unsubLive(); } catch(e) {} }
+
   state.marketId = marketId;
   state.listening = true;
+  console.log('[FS-B] Connecting live candles:', marketId);
+
   try {
     var liveRef = window.collection(window.db, 'markets', marketId, 'liveCandles');
     state.unsubLive = window.onSnapshot(liveRef, function(snap) {
@@ -1607,14 +2062,16 @@ window.connectAdminLiveCandles = function(marketId) {
       all.sort(function(a, b) { return (a.startTime || 0) - (b.startTime || 0); });
       var recent = all.slice(-200);
       applyCandlesToChart(recent);
-    }, function(err) { console.error('[FS-B] Live listen error:', err.message); });
+    }, function(err) {
+      console.error('[FS-B] Live listen error:', err.message);
+    });
   } catch (err) {
     console.error('[FS-B] Connect error:', err.message);
   }
 };
 
 // ============================================================
-// CLEAN applyCandlesToChart — FIXED order
+// APPLY CANDLES TO CHART — FIXED ORDER (setData FIRST, restore AFTER)
 // ============================================================
 function applyCandlesToChart(candles) {
   if (!window.candleSeries) {
@@ -1630,8 +2087,10 @@ function applyCandlesToChart(candles) {
     else t = 0;
     return {
       time: t,
-      open: Number(c.open || 0), high: Number(c.high || 0),
-      low: Number(c.low || 0), close: Number(c.close || 0)
+      open: Number(c.open || 0),
+      high: Number(c.high || 0),
+      low: Number(c.low || 0),
+      close: Number(c.close || 0)
     };
   }).filter(function(c) {
     return c.time > 0 && c.open > 0 && c.close > 0 && c.high >= c.low;
@@ -1653,24 +2112,28 @@ function applyCandlesToChart(candles) {
   if (unique.length === 0) return;
 
   try {
-    // Save viewport BEFORE
+    // Step 1: Save viewport BEFORE
     var savedOffset = 0;
     var savedSpacing = 6;
     var wasAtEnd = true;
+
     if (window.chartRef && window.chartRef.candles.length > 0) {
       savedOffset = window.chartRef.viewport.offsetX;
       savedSpacing = window.chartRef.viewport.candleSpacing;
+
       var pad = window.chartRef.options.padding;
       var chartW = window.chartRef.options.width - pad.left - pad.right;
       var maxVisible = Math.ceil(chartW / savedSpacing);
-      var maxOffset = Math.max(0, window.chartRef.candles.length - maxVisible + window.chartRef.options.rightOffsetCandles);
+      var maxOffset = Math.max(0,
+        window.chartRef.candles.length - maxVisible + window.chartRef.options.rightOffsetCandles
+      );
       wasAtEnd = Math.abs(savedOffset - maxOffset) < 5;
     }
 
-    // SET DATA
+    // Step 2: SET DATA
     window.candleSeries.setData(unique);
 
-    // RESTORE VIEWPORT
+    // Step 3: RESTORE VIEWPORT
     if (window.chartRef) {
       if (wasAtEnd) {
         window.chartRef.scrollToRealTime();
@@ -1683,6 +2146,7 @@ function applyCandlesToChart(candles) {
 
     var last = unique[unique.length - 1];
     window.currentPrice = last.close;
+    currentPrice = last.close;
     window.fsCandleState.lastPrice = last.close;
 
     var priceEl = document.getElementById('current-price');
@@ -1692,23 +2156,42 @@ function applyCandlesToChart(candles) {
     }
 
     console.log('[FS-B] ✅ Chart updated:', unique.length, 'candles');
+
   } catch (err) {
     console.error('[FS-B] Chart apply error:', err.message);
   }
 }
 
+window.applyCandlesToChart = applyCandlesToChart;
+
+// ============================================================
+// SWITCH TO ADMIN MARKET
+// ============================================================
 window.switchToAdminMarket = async function(symbol) {
   if (!symbol) return;
   console.log('[FS-B] Switching to:', symbol);
+
   var marketId = await window.resolveMarketId(symbol);
-  if (!marketId) { console.warn('[FS-B] Market not found:', symbol); return; }
-  if (window.fsCandleState.unsubLive) { try { window.fsCandleState.unsubLive(); } catch(e) {} }
+  if (!marketId) {
+    console.warn('[FS-B] Market not found:', symbol);
+    return;
+  }
+
+  if (window.fsCandleState.unsubLive) {
+    try { window.fsCandleState.unsubLive(); } catch(e) {}
+    window.fsCandleState.unsubLive = null;
+  }
+
   var historical = await window.loadAdminHistoricalCandles(marketId);
   if (historical.length > 0) applyCandlesToChart(historical);
+
   window.connectAdminLiveCandles(marketId);
   console.log('[FS-B] Connected:', symbol, '(' + marketId + ')');
 };
 
+// ============================================================
+// INIT ADMIN CANDLE CONSUMER
+// ============================================================
 window.initAdminCandleConsumer = async function() {
   console.log('[FS-B] Initial load...');
   var sel = document.getElementById('asset-select');
@@ -1716,8 +2199,12 @@ window.initAdminCandleConsumer = async function() {
   await window.switchToAdminMarket(symbol);
 };
 
+// ============================================================
+// WAIT FOR CHART + USER THEN INIT
+// ============================================================
 (function hookAuthForFS() {
-  var tries = 0, maxTries = 30;
+  var tries = 0;
+  var maxTries = 30;
   var checkInterval = setInterval(function() {
     tries++;
     if (window.candleSeries && window.currentUser) {
@@ -1726,13 +2213,16 @@ window.initAdminCandleConsumer = async function() {
       window.initAdminCandleConsumer();
     } else if (tries >= maxTries) {
       clearInterval(checkInterval);
+      console.warn('[FS-B] Timeout waiting for chart/user');
     }
   }, 1000);
 })();
 
 console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
 
-// Override loadCandles for Firestore
+// ============================================================
+// PATCH loadCandles
+// ============================================================
 (function patchLoadCandles() {
   var origLoadCandles = window.loadCandles;
   window.loadCandles = async function() {
@@ -1747,16 +2237,23 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
   };
 })();
 
-// Override startLivePrice
+// ============================================================
+// PATCH startLivePrice
+// ============================================================
 (function patchStartLivePrice() {
   var origStartLivePrice = window.startLivePrice;
   window.startLivePrice = function() {
-    if (!window.USE_BINANCE) return;
+    if (!window.USE_BINANCE) {
+      console.log('[BIN-C] Binance WS disabled — using Firestore');
+      return;
+    }
     return origStartLivePrice.apply(this, arguments);
   };
 })();
 
-// Fix asset select
+// ============================================================
+// PATCH ASSET SELECT (Firestore path)
+// ============================================================
 (function patchAssetSelect() {
   var sel = document.getElementById('asset-select');
   if (!sel) return;
@@ -1771,12 +2268,16 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
       if (typeof window.loadCandles === 'function') await window.loadCandles();
       if (typeof window.startLivePrice === 'function') window.startLivePrice();
     } else {
-      if (typeof window.switchToAdminMarket === 'function') await window.switchToAdminMarket(symbol);
+      if (typeof window.switchToAdminMarket === 'function') {
+        await window.switchToAdminMarket(symbol);
+      }
     }
   });
 })();
 
-// Fix timeframe switch
+// ============================================================
+// PATCH TIMEFRAME SWITCH
+// ============================================================
 (function patchTimeframeSwitch() {
   var originalItems = document.querySelectorAll('.qx-tf-item');
   originalItems.forEach(function(btn) {
@@ -1792,12 +2293,787 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
       selectedTimeframe = tf;
       var label = document.getElementById('qx-tf-active');
       if (label) label.textContent = tf;
+      console.log('[BIN-C] Timeframe changed:', tf);
       if (!window.USE_BINANCE) {
         var symbol = window.selectedAsset || 'BTCUSDT';
-        if (typeof window.switchToAdminMarket === 'function') await window.switchToAdminMarket(symbol);
+        if (typeof window.switchToAdminMarket === 'function') {
+          await window.switchToAdminMarket(symbol);
+        }
       }
     });
   });
 })();
 
-console.log('===== app.js COMPLETE =====');
+// ============================================================
+// USER FALLBACK MASTER STATE
+// ============================================================
+window.userMasterState = {
+  isMaster: false,
+  masterCheckInterval: null,
+  masterHeartbeatTimer: null,
+  candleTimer: null,
+  lastAdminHeartbeat: 0,
+  lastCheck: 0
+};
+
+// ============================================================
+// CHECK ADMIN STATUS
+// ============================================================
+async function checkAdminStatus() {
+  try {
+    var docSnap = await window.getDoc(
+      window.doc(window.db, 'settings', 'candleMaster')
+    );
+    if (!docSnap.exists()) return { online: false, masterId: null };
+
+    var data = docSnap.data();
+    var heartbeat = data.heartbeat || 0;
+    var age = Date.now() - heartbeat;
+    var isAdminOnline = (data.masterType === 'admin') && (age < 30000);
+    var isCronOnline = (data.masterType === 'cron') && (age < 30000);
+
+    window.userMasterState.lastAdminHeartbeat = heartbeat;
+
+    return {
+      online: isAdminOnline || isCronOnline,
+      masterId: data.masterId,
+      masterType: data.masterType,
+      age: age
+    };
+  } catch (err) {
+    console.error('[UserMaster] Check error:', err.message);
+    return { online: false, masterId: null };
+  }
+}
+
+// ============================================================
+// USER BECOMES MASTER (Fallback)
+// ============================================================
+async function becomeUserMaster() {
+  if (window.userMasterState.isMaster) return;
+
+  try {
+    var status = await checkAdminStatus();
+    if (status.online) {
+      console.log('[UserMaster] Admin/Cron is online, skipping');
+      return;
+    }
+
+    await window.setDoc(
+      window.doc(window.db, 'settings', 'candleMaster'),
+      {
+        masterId: window.currentUser.uid,
+        masterType: 'user',
+        masterEmail: window.currentUser.email,
+        heartbeat: Date.now(),
+        declaredAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+
+    window.userMasterState.isMaster = true;
+    console.log('[UserMaster] User became fallback master');
+
+    startUserHeartbeat();
+    startUserCandleEngine();
+
+  } catch (err) {
+    console.error('[UserMaster] Become master error:', err.message);
+  }
+}
+
+// ============================================================
+// USER HEARTBEAT
+// ============================================================
+function startUserHeartbeat() {
+  if (window.userMasterState.masterHeartbeatTimer) {
+    clearInterval(window.userMasterState.masterHeartbeatTimer);
+  }
+
+  window.userMasterState.masterHeartbeatTimer = setInterval(async function() {
+    if (!window.userMasterState.isMaster) return;
+    try {
+      await window.updateDoc(
+        window.doc(window.db, 'settings', 'candleMaster'),
+        { heartbeat: Date.now(), masterType: 'user' }
+      );
+    } catch (err) {}
+  }, 10000);
+
+  console.log('[UserMaster] User heartbeat started (every 10s)');
+}
+
+// ============================================================
+// USER CANDLE ENGINE
+// ============================================================
+function startUserCandleEngine() {
+  if (window.userMasterState.candleTimer) {
+    clearInterval(window.userMasterState.candleTimer);
+  }
+
+  var marketId = window.fsCandleState?.marketId;
+  if (!marketId) {
+    console.warn('[UserMaster] No market selected for candle engine');
+    return;
+  }
+
+  console.log('[UserMaster] Starting candle engine for:', marketId);
+
+  window.userMasterState.candleTimer = setInterval(async function() {
+    if (!window.userMasterState.isMaster) {
+      stopUserCandleEngine();
+      return;
+    }
+    var status = await checkAdminStatus();
+    if (status.online && (status.masterType === 'admin' || status.masterType === 'cron')) {
+      console.log('[UserMaster] Admin/Cron came back online — stepping down');
+      stepDownUserMaster();
+      return;
+    }
+    await generateUserCandle();
+  }, 60000);
+}
+
+// ============================================================
+// GENERATE USER CANDLE
+// ============================================================
+async function generateUserCandle() {
+  var marketId = window.fsCandleState?.marketId;
+  if (!marketId) return;
+
+  try {
+    var marketDoc = await window.getDoc(window.doc(window.db, 'markets', marketId));
+    if (!marketDoc.exists()) return;
+
+    var market = marketDoc.data();
+    var currentPriceVal = market.currentPrice || market.basePrice || 50000;
+    var basePrice = market.basePrice || 50000;
+
+    var now = Date.now();
+    var alignedStart = Math.floor(now / 60000) * 60000;
+
+    // Realistic movement
+    var volatilityPct = 0.0005 + Math.random() * 0.001;
+    var direction = Math.random() - 0.5;
+    var open = currentPriceVal;
+    var movement = open * volatilityPct * direction * 2;
+    var close = open + movement;
+    var wickSize = Math.abs(movement) * (0.5 + Math.random() * 1.5);
+    var high = Math.max(open, close) + wickSize * Math.random();
+    var low = Math.min(open, close) - wickSize * Math.random();
+
+    var liveCandleId = 'live_' + alignedStart;
+
+    await window.setDoc(
+      window.doc(window.db, 'markets', marketId, 'liveCandles', liveCandleId),
+      {
+        id: liveCandleId,
+        marketId: marketId,
+        startTime: alignedStart,
+        endTime: alignedStart + 60000,
+        open: Number(open.toFixed(2)),
+        high: Number(high.toFixed(2)),
+        low: Number(low.toFixed(2)),
+        close: Number(close.toFixed(2)),
+        direction: close >= open ? 'up' : 'down',
+        behavior: 'normal',
+        size: 'normal',
+        generatedBy: 'fallback',
+        updatedAt: Date.now()
+      },
+      { merge: true }
+    );
+
+    await window.updateDoc(
+      window.doc(window.db, 'markets', marketId),
+      { currentPrice: Number(close.toFixed(2)), updatedAt: new Date().toISOString() }
+    );
+
+    console.log('[UserMaster] Candle generated:', alignedStart, open.toFixed(2), '→', close.toFixed(2));
+  } catch (err) {
+    console.error('[UserMaster] Candle generation error:', err.message);
+  }
+}
+
+// ============================================================
+// STOP USER ENGINE
+// ============================================================
+function stopUserCandleEngine() {
+  if (window.userMasterState.candleTimer) {
+    clearInterval(window.userMasterState.candleTimer);
+    window.userMasterState.candleTimer = null;
+  }
+  console.log('[UserMaster] Candle engine stopped');
+}
+
+// ============================================================
+// STEP DOWN
+// ============================================================
+async function stepDownUserMaster() {
+  stopUserCandleEngine();
+  if (window.userMasterState.masterHeartbeatTimer) {
+    clearInterval(window.userMasterState.masterHeartbeatTimer);
+    window.userMasterState.masterHeartbeatTimer = null;
+  }
+  window.userMasterState.isMaster = false;
+
+  try {
+    var status = await checkAdminStatus();
+    if (status.masterType !== 'admin' && status.masterType !== 'cron') {
+      await window.updateDoc(
+        window.doc(window.db, 'settings', 'candleMaster'),
+        { masterType: null, masterId: null }
+      );
+    }
+  } catch (e) {}
+
+  console.log('[UserMaster] Stepped down');
+}
+
+// ============================================================
+// MASTER CHECK (loop)
+// ============================================================
+function startUserMasterCheck() {
+  if (window.userMasterState.masterCheckInterval) {
+    clearInterval(window.userMasterState.masterCheckInterval);
+  }
+
+  window.userMasterState.masterCheckInterval = setInterval(async function() {
+    if (!window.currentUser) return;
+    if (window.userMasterState.isMaster) return;
+
+    var status = await checkAdminStatus();
+
+    // If both admin AND cron offline for 30s+, become master
+    if (!status.online && status.masterType !== 'user') {
+      console.log('[UserMaster] Admin & Cron offline — attempting to become master');
+      await becomeUserMaster();
+    }
+  }, 15000);
+
+  console.log('[UserMaster] Master check started (every 15s)');
+}
+
+// ============================================================
+// HOOK ON USER LOGIN
+// ============================================================
+(function hookUserLogin() {
+  var tries = 0;
+  var maxTries = 30;
+
+  var check = setInterval(function() {
+    tries++;
+    if (window.currentUser && window.fsCandleState?.marketId) {
+      clearInterval(check);
+      console.log('[UserMaster] User ready - starting master check');
+      startUserMasterCheck();
+    } else if (tries >= maxTries) {
+      clearInterval(check);
+    }
+  }, 1000);
+})();
+
+window.userMasterState = window.userMasterState;
+window.checkAdminStatus = checkAdminStatus;
+window.becomeUserMaster = becomeUserMaster;
+window.stepDownUserMaster = stepDownUserMaster;
+window.generateUserCandle = generateUserCandle;
+window.startUserMasterCheck = startUserMasterCheck;
+
+console.log('===== USER FALLBACK MASTER LOADED =====');
+
+// ============================================================
+// PHASE 12: TRADE ALIGNMENT
+// ============================================================
+
+function calcAlignedExpire(nowMs, durationSec, timeframe) {
+  var tfMs = tfToMs(timeframe);
+  var durationMs = durationSec * 1000;
+  var rawExpire = nowMs + durationMs;
+  var alignedExpire = Math.ceil(rawExpire / tfMs) * tfMs;
+  var candleEndTime = Math.ceil(nowMs / tfMs) * tfMs;
+  var waitTime = candleEndTime - nowMs;
+  var totalWait = alignedExpire - nowMs;
+
+  return {
+    alignedExpire: alignedExpire,
+    candleEndTime: candleEndTime,
+    waitTime: waitTime,
+    totalWait: totalWait,
+    tfMs: tfMs
+  };
+}
+
+// Override placeTrade with Phase 12 alignment
+var originalPlaceTrade = window.placeTrade;
+
+window.placeTrade = async function(type) {
+  if (!currentUser) return;
+  var now = Date.now();
+  if (now - lastTradeTime < 500) return;
+  lastTradeTime = now;
+
+  var amountInput = document.getElementById('trade-amount');
+  var amount = amountInput ? parseFloat(amountInput.value) : 1;
+
+  function showMsg(text, color) {
+    try {
+      var msgEl = document.getElementById('trade-message');
+      if (msgEl) { msgEl.style.color = color || '#ff5252'; msgEl.textContent = text; }
+    } catch(e) {}
+  }
+
+  if (!amount || amount < 1) { showMsg('Minimum $1 required'); return; }
+  if (amount > userBalance) { showMsg('Insufficient balance'); return; }
+
+  playSound('click');
+
+  var entryPrice = currentPrice;
+  var entryTime = new Date().toISOString();
+  var timeframe = window.selectedTimeframe || '1m';
+  var duration = window.selectedTime || 60;
+  var alignment = calcAlignedExpire(now, duration, timeframe);
+
+  try {
+    var newBalance = userBalance - amount;
+    var balanceField = accountType === 'demo' ? 'demoBalance' : 'realBalance';
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      [balanceField]: newBalance,
+      balance: newBalance
+    });
+    userBalance = newBalance;
+    window.userBalance = newBalance;
+    safeSetTextById('balance', userBalance.toFixed(2));
+    animateBalanceChange(-amount);
+
+    await addDoc(collection(db, 'trades'), {
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      type: type,
+      amount: amount,
+      entryPrice: entryPrice,
+      entryTime: entryTime,
+      expiresAt: alignment.alignedExpire,
+      candleEndTime: alignment.candleEndTime,
+      waitTime: alignment.waitTime,
+      totalWait: alignment.totalWait,
+      timeframe: timeframe,
+      duration: duration,
+      asset: selectedAsset,
+      accountType: accountType,
+      status: 'pending',
+      result: null,
+      profit: 0,
+      phase: 'waiting',
+      createdAt: entryTime
+    });
+
+    showMsg(type.toUpperCase() + ' $' + amount + ' placed (' + Math.round(alignment.totalWait / 1000) + 's)',
+      type === 'call' ? '#00c853' : '#ff5252');
+
+    if (typeof renderEntryLine === 'function') renderEntryLine(type, entryPrice, alignment.alignedExpire);
+    if (typeof renderVerticalLines === 'function') renderVerticalLines(entryTime, alignment.alignedExpire);
+    if (typeof renderTickMark === 'function') renderTickMark(type, entryPrice, entryTime);
+
+    setTimeout(function() {
+      var tm = document.getElementById('trade-message');
+      if (tm) tm.textContent = '';
+    }, 2000);
+
+    console.log('[PA-Phase12] Trade placed:', {
+      type: type,
+      amount: amount,
+      entryPrice: entryPrice,
+      alignedExpire: new Date(alignment.alignedExpire).toLocaleTimeString(),
+      totalWait: alignment.totalWait + 'ms'
+    });
+
+  } catch (error) {
+    showMsg(error.message);
+    console.error('[PA-Phase12] Trade error:', error);
+  }
+};
+
+function getTradePhase(trade) {
+  var now = Date.now();
+  if (trade.status === 'completed') return 'completed';
+  if (!trade.candleEndTime) return 'active';
+  if (now < trade.candleEndTime) return 'waiting';
+  if (now < trade.expiresAt) return 'active';
+  return 'expiring';
+}
+
+async function updateTradePhase(trade) {
+  var newPhase = getTradePhase(trade);
+  if (trade.phase !== newPhase) {
+    try {
+      await updateDoc(doc(db, 'trades', trade.id), {
+        phase: newPhase,
+        phaseUpdatedAt: new Date().toISOString()
+      });
+      trade.phase = newPhase;
+    } catch (err) {}
+  }
+  return newPhase;
+}
+
+async function updateAllTradePhases() {
+  if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+  for (var i = 0; i < window.activeTradesLocal.length; i++) {
+    var trade = window.activeTradesLocal[i];
+    if (trade.status === 'pending') await updateTradePhase(trade);
+  }
+}
+
+setInterval(function() {
+  if (currentUser) updateAllTradePhases();
+}, 1000);
+
+window.placeTrade = window.placeTrade;
+window.calcAlignedExpire = calcAlignedExpire;
+window.getTradePhase = getTradePhase;
+window.updateTradePhase = updateTradePhase;
+
+console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
+
+// ============================================================
+// PHASE 12 AUTO-REBIND (Permanent)
+// ============================================================
+(function phase12PermanentRebind() {
+  console.log('[PermanentFix] Loading Phase 12 rebind...');
+
+  function rebind() {
+    var callBtnEl = document.querySelector('#call-btn');
+    var putBtnEl = document.querySelector('#put-btn');
+
+    if (callBtnEl && callBtnEl.getAttribute('data-phase12-bound') !== '1') {
+      callBtnEl.setAttribute('data-phase12-bound', '1');
+      var nc = callBtnEl.cloneNode(true);
+      nc.setAttribute('data-phase12-bound', '1');
+      callBtnEl.parentNode.replaceChild(nc, callBtnEl);
+
+      nc.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') window.placeTrade('call');
+      }, true);
+    }
+
+    if (putBtnEl && putBtnEl.getAttribute('data-phase12-bound') !== '1') {
+      putBtnEl.setAttribute('data-phase12-bound', '1');
+      var np = putBtnEl.cloneNode(true);
+      np.setAttribute('data-phase12-bound', '1');
+      putBtnEl.parentNode.replaceChild(np, putBtnEl);
+
+      np.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.placeTrade === 'function') window.placeTrade('put');
+      }, true);
+    }
+  }
+
+  rebind();
+  setTimeout(rebind, 2000);
+  setTimeout(rebind, 5000);
+  setInterval(rebind, 5000);
+})();
+
+// ============================================================
+// FIX 2 — Firestore Auto-Reconnect
+// ============================================================
+(function firestoreAutoReconnectFixed() {
+  console.log('[PermanentFix] Firestore reconnect active');
+
+  var lastCheck = 0;
+  var checkInterval = 30000;
+
+  setInterval(async function() {
+    if (!window.currentUser) return;
+    var now = Date.now();
+    if (now - lastCheck < checkInterval) return;
+    lastCheck = now;
+
+    var candleNeedsRestart = false;
+    if (window.fsCandleState) {
+      if (!window.fsCandleState.listening) candleNeedsRestart = true;
+      if (!window.fsCandleState.unsubLive) candleNeedsRestart = true;
+    }
+    if (candleNeedsRestart && window.fsCandleState?.marketId) {
+      if (typeof window.connectAdminLiveCandles === 'function') {
+        try { window.connectAdminLiveCandles(window.fsCandleState.marketId); } catch(e) {}
+      }
+    }
+
+    var tradeListenerExists = false;
+    try { tradeListenerExists = typeof activeTradesUnsub !== 'undefined' && activeTradesUnsub !== null; } catch(e) {}
+    if (!tradeListenerExists && typeof window.loadActiveTrades === 'function') {
+      window.loadActiveTrades();
+    }
+
+    var historyListenerExists = false;
+    try { historyListenerExists = typeof historyUnsub !== 'undefined' && historyUnsub !== null; } catch(e) {}
+    if (!historyListenerExists && typeof window.loadHistory === 'function') {
+      window.loadHistory();
+    }
+  }, 15000);
+})();
+
+// ============================================================
+// FIX 3 — Trade Expiry Watchdog
+// ============================================================
+(function tradeExpiryWatchdog() {
+  console.log('[PermanentFix] Loading expiry watchdog...');
+
+  setInterval(async function() {
+    if (!window.currentUser) return;
+    if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
+
+    var now = Date.now();
+    var expired = [];
+    for (var i = 0; i < window.activeTradesLocal.length; i++) {
+      var t = window.activeTradesLocal[i];
+      if (t.status === 'pending' && t.expiresAt <= now) expired.push(t);
+    }
+    if (expired.length === 0) return;
+
+    console.log('[PermanentFix] Found', expired.length, 'expired trades');
+
+    for (var j = 0; j < expired.length; j++) {
+      var trade = expired[j];
+      try {
+        var result = 'loss';
+        var exitPrice = window.currentPrice;
+        if (trade.type === 'call' && exitPrice > trade.entryPrice) result = 'win';
+        else if (trade.type === 'put' && exitPrice < trade.entryPrice) result = 'win';
+        var profit = result === 'win' ? trade.amount * 1.85 : 0;
+
+        await window.updateDoc(
+          window.doc(window.db, 'trades', trade.id),
+          {
+            status: 'completed',
+            result: result,
+            exitPrice: exitPrice,
+            profit: profit,
+            completedAt: new Date().toISOString(),
+            phase: 'completed'
+          }
+        );
+
+        if (result === 'win') {
+          var userRef = window.doc(window.db, 'users', window.currentUser.uid);
+          var uDoc = await window.getDoc(userRef);
+          if (uDoc.exists()) {
+            var uData = uDoc.data();
+            var field = trade.accountType === 'real' ? 'realBalance' : 'demoBalance';
+            var curBal = uData[field] || 0;
+            var newBal = curBal + profit;
+            await window.updateDoc(userRef, {
+              [field]: newBal,
+              balance: newBal
+            });
+            window.userBalance = newBal;
+            userBalance = newBal;
+            var balEl = document.querySelector('#balance');
+            if (balEl) balEl.textContent = newBal.toFixed(2);
+          }
+        }
+      } catch(e) {}
+    }
+  }, 5000);
+})();
+
+// ============================================================
+// FIX 4 — Timer Stuck Fix
+// ============================================================
+(function timerStuckFix() {
+  setInterval(function() {
+    if (!window.currentUser) return;
+    var timerEls = [
+      document.querySelector('#trade-timer-display'),
+      document.querySelector('#countdown-time')
+    ];
+    var anyStuck = false;
+    timerEls.forEach(function(el) {
+      if (el && el.textContent === '00:00') anyStuck = true;
+    });
+    if (anyStuck && (!window.activeTradesLocal || window.activeTradesLocal.length === 0)) {
+      var dur = window.selectedTime || 60;
+      var mm = Math.floor(dur / 60);
+      var ss = dur % 60;
+      var str = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+      timerEls.forEach(function(el) { if (el) el.textContent = str; });
+      var bigTimer = document.querySelector('#big-timer');
+      if (bigTimer) bigTimer.classList.add('hidden');
+      var topWrap = document.querySelector('#top-countdown-timer');
+      if (topWrap) topWrap.classList.add('hidden');
+    }
+  }, 2000);
+})();
+
+console.log('===== ALL PERMANENT FIXES LOADED =====');
+
+// ============================================================
+// PHASE 15 — RESULT MARKER
+// ============================================================
+window.resultMarkers = [];
+window.resultMarkerTimeout = null;
+
+window.showResultMarker = function(trade, result, profit) {
+  try {
+    console.log('[Phase15] showResultMarker:', trade.id?.slice(0,8), result, profit);
+    if (!window.chartRef || !window.candleSeries) return;
+    if (!trade.entryTime || !trade.entryPrice) return;
+
+    var candleData = window.candleSeries.data();
+    if (!candleData || candleData.length === 0) return;
+
+    var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
+    var closestCandle = null;
+    var minDiff = Infinity;
+    for (var i = 0; i < candleData.length; i++) {
+      var diff = Math.abs(candleData[i].time - entrySec);
+      if (diff < minDiff) { minDiff = diff; closestCandle = candleData[i]; }
+    }
+    if (!closestCandle) return;
+
+    var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandle.time);
+    if (xPos === null || xPos === undefined) return;
+
+    var yPos;
+    if (trade.type === 'call') {
+      yPos = window.candleSeries.priceToCoordinate(closestCandle.high);
+      if (yPos !== null) yPos -= 20;
+    } else {
+      yPos = window.candleSeries.priceToCoordinate(closestCandle.low);
+      if (yPos !== null) yPos += 20;
+    }
+    if (yPos === null || yPos === undefined) return;
+
+    var isWin = (result === 'win');
+    var color = isWin ? '#00c853' : '#ff5252';
+    var text = isWin
+      ? '+$' + Number(profit || 0).toFixed(2)
+      : '-$' + Number(trade.amount || 0).toFixed(2);
+
+    var container = document.getElementById('qx-tick-container');
+    if (!container) {
+      var wrapper = document.getElementById('chart-wrapper');
+      if (wrapper) {
+        container = document.createElement('div');
+        container.id = 'qx-tick-container';
+        container.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:100;';
+        wrapper.appendChild(container);
+      }
+    }
+    if (!container) return;
+
+    var marker = document.createElement('div');
+    marker.className = 'qx-result-marker ' + result;
+    marker.style.cssText =
+      'position:absolute;left:' + xPos + 'px;top:' + yPos + 'px;' +
+      'transform:translateX(-50%);background:' + color + ';color:#ffffff;' +
+      'font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;' +
+      'box-shadow:0 0 8px ' + color + ';font-family:Inter, sans-serif;' +
+      'white-space:nowrap;z-index:50;pointer-events:none;opacity:0;' +
+      'transition:opacity 0.3s ease-in;';
+    marker.textContent = text;
+    container.appendChild(marker);
+
+    setTimeout(function() { marker.style.opacity = '1'; }, 50);
+    window.resultMarkers.push({ element: marker, timestamp: Date.now() });
+
+    setTimeout(function() {
+      marker.style.transition = 'opacity 1s ease-out';
+      marker.style.opacity = '0';
+      setTimeout(function() {
+        try { marker.remove(); } catch(e) {}
+        window.resultMarkers = window.resultMarkers.filter(function(m) { return m.element !== marker; });
+      }, 1000);
+    }, 4000);
+  } catch(e) {}
+};
+
+window.clearResultMarkers = function() {
+  try {
+    window.resultMarkers.forEach(function(m) { try { m.element.remove(); } catch(e) {} });
+    window.resultMarkers = [];
+  } catch(e) {}
+};
+
+// Hook into checkExpiredTrades
+(function hookExpiryForMarkers() {
+  if (typeof window.checkExpiredTrades !== 'function') {
+    setTimeout(hookExpiryForMarkers, 2000);
+    return;
+  }
+  if (window.__resultMarkerHooked) return;
+  window.__resultMarkerHooked = true;
+
+  var originalCheck = window.checkExpiredTrades;
+  window.checkExpiredTrades = async function() {
+    await originalCheck.call(this);
+    setTimeout(async function() {
+      try {
+        var now = Date.now();
+        var fiveSecAgo = now - 5000;
+        var snap = await window.getDocs(
+          window.query(
+            window.collection(window.db, 'trades'),
+            window.where('userId', '==', window.currentUser?.uid),
+            window.where('status', '==', 'completed')
+          )
+        );
+        snap.forEach(function(d) {
+          var t = d.data();
+          var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
+          if (completedAt > fiveSecAgo && completedAt <= now) {
+            if (!window.__shownMarkers) window.__shownMarkers = {};
+            if (window.__shownMarkers[d.id]) return;
+            window.__shownMarkers[d.id] = true;
+            window.showResultMarker(t, t.result, t.profit);
+          }
+        });
+      } catch(e) {}
+    }, 500);
+  };
+})();
+
+// Watchdog hook for markers
+(function hookWatchdogForMarkers() {
+  if (window.__watchdogMarkerHooked) return;
+  window.__watchdogMarkerHooked = true;
+
+  setInterval(async function() {
+    if (!window.currentUser) return;
+    try {
+      var now = Date.now();
+      var fiveSecAgo = now - 5000;
+      var snap = await window.getDocs(
+        window.query(
+          window.collection(window.db, 'trades'),
+          window.where('userId', '==', window.currentUser.uid),
+          window.where('status', '==', 'completed')
+        )
+      );
+      snap.forEach(function(d) {
+        var t = d.data();
+        var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
+        if (completedAt > fiveSecAgo && completedAt <= now) {
+          if (!window.__shownMarkers) window.__shownMarkers = {};
+          if (window.__shownMarkers[d.id]) return;
+          window.__shownMarkers[d.id] = true;
+          window.showResultMarker(t, t.result, t.profit);
+        }
+      });
+    } catch(e) {}
+  }, 2000);
+})();
+
+window.showResultMarker = window.showResultMarker;
+window.clearResultMarkers = window.clearResultMarkers;
+
+console.log('===== PHASE 15 — RESULT MARKER LOADED =====');
+console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
