@@ -1016,7 +1016,42 @@ window.__activeEntryData = null;
 window.__activePriceLine = null;
 
 function updateEntryLine() { return; }
-function renderEntryLine(type, entryPrice, expiresAt) { return; }
+
+// ============================================================
+// renderEntryLine — calls chart-engine v7 API
+// ============================================================
+function renderEntryLine(type, entryPrice, expiresAt) {
+  try {
+    if (!window.chartRef || typeof window.chartRef.setTradeEntry !== 'function') {
+      console.warn('[Entry] chartRef.setTradeEntry not available');
+      return;
+    }
+
+    // Find latest candle time
+    var candleData = window.candleSeries ? window.candleSeries.data() : [];
+    if (!candleData || candleData.length === 0) return;
+    var lastCandle = candleData[candleData.length - 1];
+
+    var entryAmount = 1;
+    try {
+      var amtInput = document.getElementById('trade-amount');
+      if (amtInput) entryAmount = parseFloat(amtInput.value) || 1;
+    } catch(e) {}
+
+    // Call chart-engine canvas API (Phase 22)
+    window.chartRef.setTradeEntry({
+      time: lastCandle.time,
+      price: parseFloat(entryPrice),
+      type: type === 'call' ? 'CALL' : 'PUT',
+      amount: entryAmount
+    });
+
+    window.__activeEntryData = { type: type, entryPrice: entryPrice, expiresAt: expiresAt };
+    console.log('[Entry] ✅ Entry marker shown at', entryPrice);
+  } catch(e) {
+    console.error('[Entry] Error:', e);
+  }
+}
 
 function clearEntryLine() {
   window.__activeEntryData = null;
@@ -1030,8 +1065,54 @@ function clearEntryLine() {
 
 window.__activeVLines = null;
 
+// ============================================================
+// renderVerticalLines — calls chart-engine v7 API
+// ============================================================
 function renderVerticalLines(startTime, endTime) {
   window.__activeVLines = { startTime: startTime, endTime: endTime };
+
+  try {
+    if (!window.chartRef || typeof window.chartRef.addVerticalLine !== 'function') {
+      console.warn('[VLine] chartRef.addVerticalLine not available');
+      refreshVerticalLines();
+      return;
+    }
+
+    // Clear previous trade vlines
+    if (typeof window.chartRef.clearVerticalLines === 'function') {
+      window.chartRef.clearVerticalLines();
+    }
+
+    // Get latest candle time (for startTime alignment)
+    var candleData = window.candleSeries ? window.candleSeries.data() : [];
+    if (!candleData || candleData.length === 0) return;
+
+    // Convert ISO string to seconds
+    var startSec = Math.floor(new Date(startTime).getTime() / 1000);
+    var endSec = Math.floor(endTime / 1000);
+
+    // BEGIN line (entry)
+    window.chartRef.addVerticalLine({
+      time: startSec,
+      label: 'BEGIN',
+      color: '#4a9eff',
+      expiresAt: endSec * 1000 + 120000  // 2 min after expiry
+    });
+
+    // END line (expiry)
+    window.chartRef.addVerticalLine({
+      time: endSec,
+      label: 'END',
+      color: '#ffb300',
+      expiresAt: endSec * 1000 + 120000
+    });
+
+    console.log('[VLine] ✅ BEGIN + END lines added');
+  } catch(e) {
+    console.error('[VLine] Error:', e);
+  }
+
+  // Keep HTML version as fallback
   refreshVerticalLines();
 }
 
@@ -1079,7 +1160,11 @@ function clearVerticalLines() {
 
 window.refreshVerticalLines = refreshVerticalLines;
 
-function renderTickMark(type, entryPrice, entryTime) { renderAllMarkers(); }
+// renderTickMark — now handled by canvas (setTradeEntry already draws tick)
+function renderTickMark(type, entryPrice, entryTime) {
+  // No-op: canvas draws tick via setTradeEntry
+  // Kept for backward compatibility
+}
 
 window.__entryPriceLines = [];
 
@@ -2923,13 +3008,34 @@ window.resultMarkerTimeout = null;
 
 window.showResultMarker = function(trade, result, profit) {
   try {
-    console.log('[Phase15] showResultMarker:', trade.id?.slice(0,8), result, profit);
+    console.log('[Phase15] showResultMarker:', trade.id ? trade.id.slice(0,8) : '?', result, profit);
     if (!window.chartRef || !window.candleSeries) return;
     if (!trade.entryTime || !trade.entryPrice) return;
 
     var candleData = window.candleSeries.data();
     if (!candleData || candleData.length === 0) return;
 
+    // Find latest candle for result display
+    var lastCandle = candleData[candleData.length - 1];
+
+    // Use chart-engine v7 canvas API (Phase 24)
+    if (typeof window.chartRef.addResultMarker === 'function') {
+      var isWin = (result === 'win');
+      var priceToShow = isWin ? lastCandle.high : lastCandle.low;
+      var amount = isWin ? Number(profit || 0) : Number(trade.amount || 0);
+
+      window.chartRef.addResultMarker({
+        time: lastCandle.time,
+        price: priceToShow,
+        result: isWin ? 'WIN' : 'LOSS',
+        amount: amount
+      });
+
+      console.log('[Phase15] ✅ Canvas result marker added');
+      return;
+    }
+
+    // FALLBACK: HTML version (old code)
     var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
     var closestCandle = null;
     var minDiff = Infinity;
@@ -3015,6 +3121,20 @@ window.clearResultMarkers = function() {
   var originalCheck = window.checkExpiredTrades;
   window.checkExpiredTrades = async function() {
     await originalCheck.call(this);
+
+    // Clear canvas entry marker when trade expires
+    try {
+      if (window.chartRef && typeof window.chartRef.clearTradeEntry === 'function') {
+        window.chartRef.clearTradeEntry();
+      }
+    } catch(e) {}
+
+    // Clear canvas entry marker when trade expires
+    try {
+      if (window.chartRef && typeof window.chartRef.clearTradeEntry === 'function') {
+        window.chartRef.clearTradeEntry();
+      }
+    } catch(e) {}
     setTimeout(async function() {
       try {
         var now = Date.now();
