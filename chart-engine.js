@@ -779,7 +779,7 @@
   };
 
 // ============================================================
-  // PART 3: TIME SCALE (QUOTEX EXACT — CANDLE LOCKED)
+  // PART 3: TIME SCALE (QUOTEX EXACT — PERFECT CANDLE LOCK)
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -797,7 +797,7 @@
     if (spacing <= 0) return;
 
     // ============================================
-    // Bottom border line
+    // Bottom border line (Quotex frame)
     // ============================================
     ctx.strokeStyle = '#1a2332';
     ctx.lineWidth = 1;
@@ -813,11 +813,10 @@
     var minLabelWidth = 50;
     var labelEvery = Math.max(1, Math.ceil(minLabelWidth / spacing));
 
-    // Force alignment: labels কে "round" candle index এ snap করুন
-    // যাতে zoom change এ same candle এ label থাকে
-    var alignOffset = Math.floor(offsetX);
-    var startSnap = Math.ceil((range.start - alignOffset) / labelEvery) * labelEvery + alignOffset;
-    if (startSnap < range.start) startSnap += labelEvery;
+    // ⭐ CRITICAL: NO Math.floor on offsetX — use EXACT value
+    //    এতে scroll এর মধ্যে label candle এর সাথে perfectly lock থাকবে
+    var startIdx = Math.ceil(offsetX / labelEvery) * labelEvery;
+    if (startIdx < range.start) startIdx = range.start;
 
     var timeY = pad.top + chartH + 14;
 
@@ -828,13 +827,13 @@
     var lastLabelX = -1000;
 
     // ============================================
-    // Time labels — EXACT same formula as candle
+    // Time labels — EXACT same formula as candles (fractional offsetX)
     // ============================================
-    for (var i = startSnap; i < range.end; i += labelEvery) {
+    for (var i = startIdx; i < range.end; i += labelEvery) {
       var c = this.candles[i];
       if (!c || typeof c.time !== 'number') continue;
 
-      // ⭐ CRITICAL: Same formula as candle drawing
+      // ⭐ Same formula as candle drawing — NO extra snapping
       var relativeIdx = i - offsetX;
       var xCenter = pad.left + (relativeIdx + 0.5) * spacing;
 
@@ -860,14 +859,14 @@
     }
 
     // ============================================
-    // Last candle time — EXACT position (candle এর সাথে lock)
+    // Last candle time — EXACT same formula (perfect lock)
     // ============================================
     if (this.candles.length > 0) {
       var lastIdx = this.candles.length - 1;
       var lastCandle = this.candles[lastIdx];
       if (!lastCandle || typeof lastCandle.time !== 'number') return;
 
-      // ⭐ CRITICAL: Exact same formula
+      // ⭐ Exact same formula
       var relativeLastIdx = lastIdx - offsetX;
       var lastX = pad.left + (relativeLastIdx + 0.5) * spacing;
 
