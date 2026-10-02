@@ -698,59 +698,54 @@
   // PHASE 23: VERTICAL LINES (SHORT — 60px from top)
   // ============================================================
   QuotexChart.prototype._drawVerticalLines = function() {
-    if (!this.tradeVLines || this.tradeVLines.length === 0) return;
+  if (!this.tradeVLines || this.tradeVLines.length === 0) return;
 
-    var ctx = this.ctx;
-    var pad = this.options.padding;
-    var W = this.options.width;
-    var chartTop = pad.top;
-    var now = Date.now();
+  var ctx = this.ctx;
+  var pad = this.options.padding;
+  var W = this.options.width;
+  var H = this.options.height;
+  var chartTop = pad.top;
+  var chartBottom = H - pad.bottom;
+  var now = Date.now();
 
-    for (var i = 0; i < this.tradeVLines.length; i++) {
-      var v = this.tradeVLines[i];
-      if (!v || typeof v.time !== 'number') continue;
+  for (var i = 0; i < this.tradeVLines.length; i++) {
+    var v = this.tradeVLines[i];
+    if (!v || typeof v.time !== 'number') continue;
 
-      if (v.expiresAt && now > v.expiresAt) {
-        this.tradeVLines.splice(i, 1);
-        i--;
-        continue;
-      }
-
-      var x = this._timeToX(v.time);
-      if (x === null) continue;
-      if (x < pad.left - 20 || x > W - pad.right + 20) continue;
-
-      ctx.save();
-      ctx.strokeStyle = v.color || COLORS.vlineBlue;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 3]);
-      ctx.globalAlpha = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(Math.round(x) + 0.5, chartTop);
-      ctx.lineTo(Math.round(x) + 0.5, chartTop + 60);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
-
-      if (v.label) {
-        ctx.font = 'bold 9px ' + this.options.fontFamily;
-        var lw = ctx.measureText(v.label).width + 8;
-        var lh = 14;
-        var lx = Math.round(x) - lw / 2;
-        var ly = chartTop + 2;
-        if (lx < pad.left + 2) lx = pad.left + 2;
-        if (lx + lw > W - pad.right - 2) lx = W - pad.right - lw - 2;
-
-        ctx.fillStyle = v.color || COLORS.vlineBlue;
-        ctx.fillRect(lx, ly, lw, lh);
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(v.label, lx + lw / 2, ly + lh / 2 + 0.5);
-      }
-      ctx.restore();
+    if (v.expiresAt && now > v.expiresAt) {
+      this.tradeVLines.splice(i, 1);
+      i--;
+      continue;
     }
-  };
+
+    var x = this._timeToX(v.time);
+    if (x === null) continue;
+    if (x < pad.left - 20 || x > W - pad.right + 20) continue;
+
+    ctx.save();
+
+    ctx.strokeStyle = '#7b8ba3';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(x) + 0.5, chartTop);
+    ctx.lineTo(Math.round(x) + 0.5, chartBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    if (v.label) {
+      ctx.font = '12px ' + this.options.fontFamily;
+      ctx.fillStyle = 'rgba(123, 139, 163, 0.9)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(v.label, x, chartTop + 6);
+    }
+
+    ctx.restore();
+  }
+};
 
   // ============================================================
   // PHASE 22: TRADE ENTRY MARKER (SHORT LINE — Quotex exact)
@@ -777,59 +772,50 @@
 
   ctx.save();
 
-  // ============================================================
-  // 1. SHORT horizontal line (candle এর左右 40px — Quotex exact)
-  // ============================================================
-  var halfW = 40;
-  var lineL = Math.max(pad.left + 4, x - halfW);
-  var lineR = Math.min(pad.left + chartW - 4, x + halfW);
-
+  // 1. Horizontal line from left edge to entry candle
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.setLineDash([]);
-  ctx.globalAlpha = 0.95;
   ctx.beginPath();
-  ctx.moveTo(lineL, Math.round(y) + 0.5);
-  ctx.lineTo(lineR, Math.round(y) + 0.5);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  // ============================================================
-  // 2. Arrow (তীর) candle এর উপরে বা নিচে
-  // ============================================================
-  var stemLen = 18;
-  var arrowY = isCall ? y - stemLen : y + stemLen;
-
-  // Vertical stem (tick থেকে line পর্যন্ত)
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(Math.round(x) + 0.5, Math.round(y));
-  ctx.lineTo(Math.round(x) + 0.5, Math.round(arrowY));
+  ctx.moveTo(pad.left, Math.round(y) + 0.5);
+  ctx.lineTo(Math.round(x), Math.round(y) + 0.5);
   ctx.stroke();
 
-  // Arrow head (তীরের মাথা)
-  var aSize = 8;
+  // 2. Circle AT entry candle
   ctx.fillStyle = color;
   ctx.beginPath();
-  if (isCall) {
-    // UP arrow ▲
-    ctx.moveTo(x, arrowY - aSize);
-    ctx.lineTo(x - aSize * 0.8, arrowY + 2);
-    ctx.lineTo(x + aSize * 0.8, arrowY + 2);
-  } else {
-    // DOWN arrow ▼
-    ctx.moveTo(x, arrowY + aSize);
-    ctx.lineTo(x - aSize * 0.8, arrowY - 2);
-    ctx.lineTo(x + aSize * 0.8, arrowY - 2);
-  }
-  ctx.closePath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
   ctx.fill();
-
-  // White border (Quotex এ সাদা outline)
   ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  // 3. Circle series on next candles
+  if (this.candles && this.candles.length > 0) {
+    var entryIdx = this._findCandleIndex(entry.time);
+    if (entryIdx !== -1) {
+      for (var ci = 1; ci <= 6; ci++) {
+        var idx = entryIdx + ci;
+        if (idx >= this.candles.length) break;
+        var c = this.candles[idx];
+        if (!c) continue;
+
+        var cx = this._timeToX(c.time);
+        if (cx === null || cx < pad.left || cx > pad.left + chartW + 10) continue;
+
+        var cy = this._priceToY(c.close);
+        if (cy === null) continue;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+  }
 
   ctx.restore();
 };
