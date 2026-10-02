@@ -795,13 +795,9 @@
     var spacing = this.viewport.candleSpacing;
     if (spacing <= 0) return;
 
-    var labelEvery = 5;
-    if (spacing < 5) labelEvery = 6;
-    if (spacing < 4) labelEvery = 8;
-    if (spacing < 3) labelEvery = 10;
-    if (spacing > 12) labelEvery = 3;
-    if (spacing > 20) labelEvery = 2;
-    if (spacing > 30) labelEvery = 1;
+    // Dynamic label density (based on actual pixel width)
+    var labelWidth = 44;
+    var labelEvery = Math.max(1, Math.ceil(labelWidth / spacing));
 
     var timeY = pad.top + chartH + 12;
     var offsetX = this.viewport.offsetX;
@@ -824,7 +820,7 @@
 
       if (xCenter < pad.left - 10) continue;
       if (xCenter > pad.left + chartW - 15) continue;
-      if (xCenter - lastLabelX < 40) continue;
+      if (xCenter - lastLabelX < 50) continue;
 
       var t = c.time;
       if (t < 1e10) t = t * 1000;
@@ -1239,25 +1235,42 @@
 
     ctx.save();
 
-    // 1. Horizontal line — LEFT edge to entry candle
+    // 1. Short horizontal line — candle左右 50px (Quotex exact)
+    var lineHalfWidth = 50;
+    var lineL = Math.max(pad.left + 2, x - lineHalfWidth);
+    var lineR = Math.min(pad.left + chartW - 2, x + lineHalfWidth);
+
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(pad.left, Math.round(y) + 0.5);
-    ctx.lineTo(Math.round(x), Math.round(y) + 0.5);
+    ctx.moveTo(lineL, Math.round(y) + 0.5);
+    ctx.lineTo(lineR, Math.round(y) + 0.5);
     ctx.stroke();
 
-    // 2. Circle AT entry candle
+    // 2. ARROW (↑ for CALL, ↓ for PUT) — Quotex exact
+    var arrowSize = 10;
+
     ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (isCall) {
+      // UP arrow ↑
+      ctx.moveTo(x, y - arrowSize);
+      ctx.lineTo(x - arrowSize * 0.7, y + 3);
+      ctx.lineTo(x + arrowSize * 0.7, y + 3);
+    } else {
+      // DOWN arrow ↓
+      ctx.moveTo(x, y + arrowSize);
+      ctx.lineTo(x - arrowSize * 0.7, y - 3);
+      ctx.lineTo(x + arrowSize * 0.7, y - 3);
+    }
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
 
-    // 3. Circle series (next 6 candles)
+    // 3. Small dot series (3.5px — Quotex exact)
     if (this.candles && this.candles.length > 0) {
       var entryIdx = this._findCandleIndex(entry.time);
       if (entryIdx !== -1) {
@@ -1275,10 +1288,10 @@
 
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 1;
           ctx.stroke();
         }
       }
