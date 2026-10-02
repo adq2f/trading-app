@@ -1084,19 +1084,19 @@ function renderVerticalLines(startTime, endTime) {
 
     window.chartRef.addVerticalLine({
       time: startSec,
-      label: 'BEGIN',
-      color: '#4a9eff',
+      label: 'Beginning of trade',
+      color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
     window.chartRef.addVerticalLine({
       time: endSec,
-      label: 'END',
-      color: '#ffb300',
+      label: 'End of trade',
+      color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
-    console.log('[VLine] BEGIN + END lines added');
+    console.log('[VLine] Beginning + End lines added');
   } catch(e) {
     console.error('[VLine] Error:', e);
   }
