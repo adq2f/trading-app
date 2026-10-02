@@ -797,6 +797,7 @@
     var W = this.options.width;
     var H = this.options.height;
     var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
 
     var x = this._timeToX(entry.time);
     var y = this._priceToY(entry.price);
@@ -806,14 +807,16 @@
 
     var isCall = entry.type === 'CALL';
     var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
-    var arrowChar = isCall ? '\u25B2' : '\u25BC';
 
     ctx.save();
 
+    // ============================================================
+    // 1. HORIZONTAL DASHED LINE (full chart width)
+    // ============================================================
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.globalAlpha = 0.6;
+    ctx.setLineDash([4, 4]);
+    ctx.globalAlpha = 0.7;
     ctx.beginPath();
     ctx.moveTo(pad.left, Math.round(y) + 0.5);
     ctx.lineTo(pad.left + chartW, Math.round(y) + 0.5);
@@ -821,31 +824,58 @@
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
 
-    var arrowSize = 22;
-    var arrowY = isCall ? y - 25 : y + 25;
+    // ============================================================
+    // 2. SHORT VERTICAL LINE (candle → tick direction)
+    //    For CALL: line goes UP from price to candle
+    //    For PUT:  line goes DOWN from price to candle
+    // ============================================================
+    var tickY = isCall ? y - 14 : y + 14;
+    var lineEndY = isCall ? y - 8 : y + 8;
 
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x, arrowY, arrowSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.moveTo(Math.round(x) + 0.5, Math.round(y) + 0.5);
+    ctx.lineTo(Math.round(x) + 0.5, Math.round(lineEndY) + 0.5);
     ctx.stroke();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px ' + this.options.fontFamily;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(arrowChar, x, arrowY + 1);
+    // ============================================================
+    // 3. TICK MARK (✓ / ▲ / ▼ — Quotex exact)
+    // ============================================================
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
 
-    // Amount box below arrow (for CALL) or above (for PUT)
+    if (isCall) {
+      // UP triangle ▲
+      ctx.beginPath();
+      ctx.moveTo(x, tickY - 6);       // top
+      ctx.lineTo(x - 6, tickY + 4);   // bottom-left
+      ctx.lineTo(x + 6, tickY + 4);   // bottom-right
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // DOWN triangle ▼
+      ctx.beginPath();
+      ctx.moveTo(x, tickY + 6);       // bottom
+      ctx.lineTo(x - 6, tickY - 4);   // top-left
+      ctx.lineTo(x + 6, tickY - 4);   // top-right
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // ============================================================
+    // 4. AMOUNT BOX (small, right below/above tick)
+    // ============================================================
     if (entry.amount) {
       var amtText = '$' + entry.amount.toFixed(2);
-      ctx.font = 'bold 11px ' + this.options.fontFamily;
-      var amtW = ctx.measureText(amtText).width + 14;
-      var amtH = 20;
-      var amtX = x - amtW / 2;
-      var amtY = arrowY + arrowSize / 2 + 6;
+      ctx.font = 'bold 10px ' + this.options.fontFamily;
+      var amtW = ctx.measureText(amtText).width + 10;
+      var amtH = 16;
+      var amtX = x + 12;                        // right side of tick
+      var amtY = isCall ? tickY - amtH / 2 : tickY - amtH / 2;
 
       // Background
       ctx.fillStyle = color;
@@ -864,10 +894,40 @@
 
       // Text
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px ' + this.options.fontFamily;
-      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px ' + this.options.fontFamily;
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(amtText, x, amtY + amtH / 2 + 0.5);
+      ctx.fillText(amtText, amtX + 5, amtY + amtH / 2 + 0.5);
+    }
+
+    // ============================================================
+    // 5. ENTRY PRICE LABEL (small text at end of line)
+    // ============================================================
+    if (entry.price) {
+      var priceText = formatPrice(entry.price, this.options.priceDecimals);
+      ctx.font = 'bold 10px ' + this.options.fontFamily;
+      var pW = ctx.measureText(priceText).width + 10;
+      var pH = 16;
+      var pX = pad.left + 4;                     // left edge of chart
+      var pY = isCall ? y - pH - 2 : y + 2;
+
+      // Background
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(pX, pY, pW, pH, 3);
+      } else {
+        ctx.rect(pX, pY, pW, pH);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Text
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(priceText, pX + 5, pY + pH / 2 + 0.5);
     }
 
     ctx.restore();
