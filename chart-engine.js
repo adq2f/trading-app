@@ -756,94 +756,83 @@
   // PHASE 22: TRADE ENTRY MARKER (SHORT LINE — Quotex exact)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
-    if (!this.tradeEntry) return;
+  if (!this.tradeEntry) return;
 
-    var entry = this.tradeEntry;
-    if (!entry.time || typeof entry.price !== 'number') return;
+  var entry = this.tradeEntry;
+  if (!entry.time || typeof entry.price !== 'number') return;
 
-    var ctx = this.ctx;
-    var pad = this.options.padding;
-    var W = this.options.width;
-    var H = this.options.height;
-    var chartW = W - pad.left - pad.right;
+  var ctx = this.ctx;
+  var pad = this.options.padding;
+  var W = this.options.width;
+  var H = this.options.height;
+  var chartW = W - pad.left - pad.right;
 
-    var x = this._timeToX(entry.time);
-    var y = this._priceToY(entry.price);
-    if (x === null || y === null) return;
-    if (x < pad.left - 20 || x > W - pad.right + 20) return;
-    if (y < pad.top || y > H - pad.bottom) return;
+  var x = this._timeToX(entry.time);
+  var y = this._priceToY(entry.price);
+  if (x === null || y === null) return;
+  if (y < pad.top || y > H - pad.bottom) return;
 
-    var isCall = entry.type === 'CALL';
-    var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
+  var isCall = entry.type === 'CALL';
+  var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
 
-    ctx.save();
+  ctx.save();
 
-    // 1. SHORT horizontal dashed line (40px each side)
-    var halfW = 40;
-    var lineL = Math.max(pad.left + 4, x - halfW);
-    var lineR = Math.min(pad.left + chartW - 4, x + halfW);
+  // ============================================================
+  // 1. SHORT horizontal line (candle এর左右 40px — Quotex exact)
+  // ============================================================
+  var halfW = 40;
+  var lineL = Math.max(pad.left + 4, x - halfW);
+  var lineR = Math.min(pad.left + chartW - 4, x + halfW);
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.globalAlpha = 0.9;
-    ctx.beginPath();
-    ctx.moveTo(lineL, Math.round(y) + 0.5);
-    ctx.lineTo(lineR, Math.round(y) + 0.5);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 0.95;
+  ctx.beginPath();
+  ctx.moveTo(lineL, Math.round(y) + 0.5);
+  ctx.lineTo(lineR, Math.round(y) + 0.5);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 
-    // 2. Short vertical stem
-    var stemLen = 15;
-    var arrowY = isCall ? y - stemLen : y + stemLen;
+  // ============================================================
+  // 2. Arrow (তীর) candle এর উপরে বা নিচে
+  // ============================================================
+  var stemLen = 18;
+  var arrowY = isCall ? y - stemLen : y + stemLen;
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(Math.round(x) + 0.5, Math.round(y));
-    ctx.lineTo(Math.round(x) + 0.5, Math.round(arrowY));
-    ctx.stroke();
+  // Vertical stem (tick থেকে line পর্যন্ত)
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(Math.round(x) + 0.5, Math.round(y));
+  ctx.lineTo(Math.round(x) + 0.5, Math.round(arrowY));
+  ctx.stroke();
 
-    // 3. Small triangle
-    var aSize = 7;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    if (isCall) {
-      ctx.moveTo(x, arrowY - aSize);
-      ctx.lineTo(x - aSize * 0.7, arrowY);
-      ctx.lineTo(x + aSize * 0.7, arrowY);
-    } else {
-      ctx.moveTo(x, arrowY + aSize);
-      ctx.lineTo(x - aSize * 0.7, arrowY);
-      ctx.lineTo(x + aSize * 0.7, arrowY);
-    }
-    ctx.closePath();
-    ctx.fill();
+  // Arrow head (তীরের মাথা)
+  var aSize = 8;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  if (isCall) {
+    // UP arrow ▲
+    ctx.moveTo(x, arrowY - aSize);
+    ctx.lineTo(x - aSize * 0.8, arrowY + 2);
+    ctx.lineTo(x + aSize * 0.8, arrowY + 2);
+  } else {
+    // DOWN arrow ▼
+    ctx.moveTo(x, arrowY + aSize);
+    ctx.lineTo(x - aSize * 0.8, arrowY - 2);
+    ctx.lineTo(x + aSize * 0.8, arrowY - 2);
+  }
+  ctx.closePath();
+  ctx.fill();
 
-    // 4. Amount box
-    if (entry.amount) {
-      var amtText = '$' + entry.amount.toFixed(2);
-      ctx.font = 'bold 10px ' + this.options.fontFamily;
-      var amtW = ctx.measureText(amtText).width + 10;
-      var amtH = 16;
-      var amtX = x + 12;
-      var amtY = arrowY - amtH / 2;
+  // White border (Quotex এ সাদা outline)
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-      ctx.fillStyle = color;
-      ctx.fillRect(amtX, amtY, amtW, amtH);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(amtX + 0.5, amtY + 0.5, amtW - 1, amtH - 1);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(amtText, amtX + 5, amtY + amtH / 2 + 0.5);
-    }
-
-    ctx.restore();
-  };
+  ctx.restore();
+};
 
   // ============================================================
   // PHASE 24: RESULT MARKERS
