@@ -720,10 +720,8 @@
              typeof c.close === 'number';
     });
 
-    // Reset spacing on first load
-    if (wasFirstLoad) {
-      this.viewport.candleSpacing = this.options.candleSpacing; // 6
-    }
+// Always reset spacing on setData (default 6)
+this.viewport.candleSpacing = this.options.candleSpacing; // 6
 
     // Clamp spacing to valid range (4-18)
     if (this.viewport.candleSpacing < 4) this.viewport.candleSpacing = 4;
