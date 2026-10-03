@@ -338,6 +338,25 @@ onAuthStateChanged(auth, async (user) => {
     if (typeof loadActiveTrades === "function") loadActiveTrades();
     if (typeof loadHistory === "function") loadHistory();
 
+    // ⭐ Reload হলে chart init হওয়ার পর marker restore
+    setTimeout(function() {
+      if (window.chartRef && window.activeTradesLocal && window.activeTradesLocal.length > 0) {
+        var pendingTrades = window.activeTradesLocal.filter(function(t) {
+          return t.status === 'pending';
+        });
+        if (pendingTrades.length > 0) {
+          var latest = pendingTrades[pendingTrades.length - 1];
+          if (typeof renderEntryLine === 'function') {
+            renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
+            console.log('[Reload] ✅ Entry restored:', latest.type);
+          }
+          if (typeof renderVerticalLines === 'function') {
+            renderVerticalLines(latest.entryTime, latest.expiresAt);
+          }
+        }
+      }
+    }, 2000);
+
     setTimeout(function() {
       if (typeof window.initAdminCandleConsumer === 'function') {
         window.initAdminCandleConsumer();
@@ -1437,28 +1456,23 @@ function loadActiveTrades() {
     var badge2 = document.getElementById("trades-count-badge");
     if (badge2) badge2.textContent = activeTradesLocal.length;
 
-    // ⭐ Reload হলে latest pending trade RESTORE
+        // ⭐ Reload হলে latest pending trade RESTORE
     var latest = activeTradesLocal[activeTradesLocal.length - 1];
     if (latest && latest.status === "pending") {
-      // Restore entry marker (line + dot + tick)
-      if (typeof renderEntryLine === 'function') {
-        renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
-      }
-      // Restore vertical lines
-      if (typeof renderVerticalLines === 'function') {
-        renderVerticalLines(latest.entryTime, latest.expiresAt);
-      }
-      // Restore tick mark
-      if (typeof renderTickMark === 'function') {
-        renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
-      }
-      console.log('[Trade] ✅ Restored from Firestore:', latest.type, latest.entryPrice);
-    }
-    if (latest && latest.status === "pending") {
-      renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
-      renderVerticalLines(latest.entryTime, latest.expiresAt);
-      renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
-      console.log('[Trade] Restored from Firestore:', latest.type, latest.entryPrice);
+      // ⭐ Delay to ensure chart is fully ready
+      setTimeout(function() {
+        if (typeof renderEntryLine === 'function') {
+          renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
+          console.log('[Trade] ✅ Entry restored:', latest.type, '@', latest.entryPrice);
+        }
+        if (typeof renderVerticalLines === 'function') {
+          renderVerticalLines(latest.entryTime, latest.expiresAt);
+          console.log('[Trade] ✅ V-lines restored');
+        }
+        if (typeof renderTickMark === 'function') {
+          renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
+        }
+      }, 300);
     }
     updateBigTimer();
   });
