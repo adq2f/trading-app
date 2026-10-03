@@ -779,7 +779,7 @@
   };
 
 // ============================================================
-  // PART 3: TIME SCALE (QUOTEX EXACT — PERFECT CANDLE LOCK)
+  // PART 3: TIME SCALE (QUOTEX EXACT — CANDLE LOCKED, NO DRIFT)
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -796,9 +796,7 @@
     var offsetX = this.viewport.offsetX;
     if (spacing <= 0) return;
 
-    // ============================================
-    // Bottom border line (Quotex frame)
-    // ============================================
+    // Bottom border
     ctx.strokeStyle = '#1a2332';
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
@@ -807,14 +805,10 @@
     ctx.lineTo(pad.left + chartW, pad.top + chartH + 0.5);
     ctx.stroke();
 
-    // ============================================
-    // Dynamic label interval
-    // ============================================
     var minLabelWidth = 50;
     var labelEvery = Math.max(1, Math.ceil(minLabelWidth / spacing));
 
-    // ⭐ CRITICAL: NO Math.floor on offsetX — use EXACT value
-    //    এতে scroll এর মধ্যে label candle এর সাথে perfectly lock থাকবে
+    // NO floor on offsetX — this prevents drift
     var startIdx = Math.ceil(offsetX / labelEvery) * labelEvery;
     if (startIdx < range.start) startIdx = range.start;
 
@@ -826,22 +820,16 @@
 
     var lastLabelX = -1000;
 
-    // ============================================
-    // Time labels — EXACT same formula as candles (fractional offsetX)
-    // ============================================
     for (var i = startIdx; i < range.end; i += labelEvery) {
       var c = this.candles[i];
       if (!c || typeof c.time !== 'number') continue;
 
-      // ⭐ Same formula as candle drawing — NO extra snapping
+      // EXACT same formula as candle drawing
       var relativeIdx = i - offsetX;
       var xCenter = pad.left + (relativeIdx + 0.5) * spacing;
 
-      // Boundary check
       if (xCenter < pad.left - 5) continue;
       if (xCenter > pad.left + chartW + 5) continue;
-
-      // Overlap check
       if (xCenter - lastLabelX < minLabelWidth) continue;
 
       var t = c.time;
@@ -858,19 +846,15 @@
       lastLabelX = xCenter;
     }
 
-    // ============================================
-    // Last candle time — EXACT same formula (perfect lock)
-    // ============================================
+    // Last candle time (locked to candle)
     if (this.candles.length > 0) {
       var lastIdx = this.candles.length - 1;
       var lastCandle = this.candles[lastIdx];
       if (!lastCandle || typeof lastCandle.time !== 'number') return;
 
-      // ⭐ Exact same formula
       var relativeLastIdx = lastIdx - offsetX;
       var lastX = pad.left + (relativeLastIdx + 0.5) * spacing;
 
-      // Screen boundary check
       if (lastX > pad.left - 5 && lastX < pad.left + chartW + 5) {
         var t2 = lastCandle.time;
         if (t2 < 1e10) t2 = t2 * 1000;
@@ -884,7 +868,6 @@
         var boxW = 48;
         var boxH = 16;
 
-        // Dark box with green border (Quotex exact)
         ctx.fillStyle = '#0d1117';
         ctx.fillRect(lastX - boxW / 2, timeY - boxH / 2, boxW, boxH);
 
@@ -1241,8 +1224,7 @@
     }
   };
 
-// ============================================================
-  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
+  // ============================================================
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
@@ -1257,9 +1239,17 @@
     var H = this.options.height;
     var chartW = W - pad.left - pad.right;
 
-    var entryX = this._timeToX(entry.time);
+    var entryIdx = this._findCandleIndex(entry.time);
+    if (entryIdx === -1) return;
+
+    // EXACT same formula as candle drawing (no drift)
+    var spacing = this.viewport.candleSpacing;
+    var offsetX = this.viewport.offsetX;
+    var entryRelativeIdx = entryIdx - offsetX;
+    var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
+
     var y = this._priceToY(entry.price);
-    if (entryX === null || y === null) return;
+    if (y === null) return;
     if (y < pad.top || y > H - pad.bottom) return;
 
     var isCall = entry.type === 'CALL';
@@ -1267,75 +1257,106 @@
 
     ctx.save();
 
-    // ============================================
-    // 1. SHORT horizontal line — entry circle左右 মোট ~80px
-    //    (Quotex exact: 40px left + 40px right)
-    // ============================================
-    var lineHalf = 40;
-    var lineL = Math.max(pad.left + 2, entryX - lineHalf);
-    var lineR = Math.min(pad.left + chartW - 2, entryX + lineHalf);
+    // 1. LEFT DOTS (only dots, no ticks)
+    var maxLeftDots = 40;
+    for (var li = 1; li <= maxLeftDots; li++) {
+      var leftIdx = entryIdx - li;
+      if (leftIdx < 0) break;
+      var relativeLeftIdx = leftIdx - offsetX;
+      var lx = pad.left + (relativeLeftIdx + 0.5) * spacing;
+      if (lx < pad.left - 10) break;
+      if (lx > pad.left + chartW + 10) continue;
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(lx, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. HORIZONTAL LINE (entry → 1 candle right)
+    var lineStart = entryX;
+    var lineEnd = entryX + spacing;
+    lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(Math.round(lineL), Math.round(y) + 0.5);
-    ctx.lineTo(Math.round(lineR), Math.round(y) + 0.5);
+    ctx.moveTo(entryX, Math.round(y) + 0.5);
+    ctx.lineTo(lineEnd, Math.round(y) + 0.5);
     ctx.stroke();
 
-    // ============================================
-    // 2. ENTRY CIRCLE — white ring + colored center
-    //    (Quotex exact: big white circle, colored inner dot)
-    // ============================================
+    // 3. ENTRY DOT (white ring + colored center)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(entryX, y, 6, 0, Math.PI * 2);
+    ctx.arc(entryX, y, 5.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(entryX, y, 3.5, 0, Math.PI * 2);
+    ctx.arc(entryX, y, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // ============================================
-    // 3. ↑ / ↓ ICON — dot এর ঠিক ডান পাশে (high quality)
-    //    Quotex exact: small circle with arrow inside
-    // ============================================
-    var iconX = entryX + 14;
-    var iconY = y;
-    var iconR = 8;
+    // 4. ONE TICK at line end
+    var tickX = lineEnd;
+    var tickY = y;
+    var tickSize = 5;
 
-    // Icon background circle (white)
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Icon colored border
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(iconX, iconY, iconR, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Arrow inside icon
-    var arrowSize = 4;
     ctx.fillStyle = color;
     ctx.beginPath();
-
     if (isCall) {
-      // ↑ UP arrow (CALL)
-      ctx.moveTo(iconX, iconY - arrowSize);                    // tip
-      ctx.lineTo(iconX - arrowSize * 0.7, iconY + arrowSize * 0.5);
-      ctx.lineTo(iconX + arrowSize * 0.7, iconY + arrowSize * 0.5);
+      ctx.moveTo(tickX, tickY - tickSize - 2);
+      ctx.lineTo(tickX - tickSize, tickY + 2);
+      ctx.lineTo(tickX + tickSize, tickY + 2);
     } else {
-      // ↓ DOWN arrow (PUT)
-      ctx.moveTo(iconX, iconY + arrowSize);                    // tip
-      ctx.lineTo(iconX - arrowSize * 0.7, iconY - arrowSize * 0.5);
-      ctx.lineTo(iconX + arrowSize * 0.7, iconY - arrowSize * 0.5);
+      ctx.moveTo(tickX, tickY + tickSize + 2);
+      ctx.lineTo(tickX - tickSize, tickY - 2);
+      ctx.lineTo(tickX + tickSize, tickY - 2);
     }
     ctx.closePath();
     ctx.fill();
+
+    // 5. TIMER BOX
+    if (entry.expiresAt) {
+      var now = Date.now();
+      var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
+      var mm = Math.floor(remaining / 60);
+      var ss = remaining % 60;
+      var timerStr = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+
+      var timerW = 46;
+      var timerH = 18;
+      var timerX = (entryX + lineEnd) / 2 - timerW / 2;
+      var timerY = y - 22;
+
+      ctx.fillStyle = '#1a2332';
+      ctx.fillRect(timerX, timerY, timerW, timerH);
+      ctx.strokeStyle = '#2a3546';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px ' + this.options.fontFamily;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
+    }
+
+    // 6. PRICE BOX (blue, right edge)
+    var priceText = formatPrice(entry.price, this.options.priceDecimals);
+    ctx.font = 'bold 11px ' + this.options.fontFamily;
+    var priceW = ctx.measureText(priceText).width + 14;
+    var priceH = 20;
+    var priceBoxX = pad.left + chartW + 2;
+    var priceBoxY = y - priceH / 2;
+
+    ctx.fillStyle = '#2962ff';
+    ctx.fillRect(priceBoxX, priceBoxY, priceW, priceH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(priceText, priceBoxX + priceW / 2, priceBoxY + priceH / 2 + 0.5);
 
     ctx.restore();
   };
@@ -1438,7 +1459,7 @@
   // ============================================================
   // PART 4: PUBLIC API — Trade markers
   // ============================================================
-  QuotexChart.prototype.setTradeEntry = function(entry) {
+    QuotexChart.prototype.setTradeEntry = function(entry) {
     if (!entry || !entry.time || typeof entry.price !== 'number') {
       this.tradeEntry = null;
       return;
@@ -1447,7 +1468,8 @@
       time: entry.time,
       price: entry.price,
       type: entry.type === 'PUT' ? 'PUT' : 'CALL',
-      amount: entry.amount || 0
+      amount: entry.amount || 0,
+      expiresAt: entry.expiresAt || null
     };
   };
 
