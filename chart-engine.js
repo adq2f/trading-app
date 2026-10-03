@@ -1224,8 +1224,8 @@
     }
   };
 
-  // ============================================================
-  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL)
+// ============================================================
+  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL v3)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     if (!this.tradeEntry) return;
@@ -1242,7 +1242,6 @@
     var entryIdx = this._findCandleIndex(entry.time);
     if (entryIdx === -1) return;
 
-    // EXACT same formula as candle drawing (no drift)
     var spacing = this.viewport.candleSpacing;
     var offsetX = this.viewport.offsetX;
     var entryRelativeIdx = entryIdx - offsetX;
@@ -1257,23 +1256,35 @@
 
     ctx.save();
 
-    // 1. LEFT DOTS (only dots, no ticks)
-    var maxLeftDots = 40;
+    // ============================================
+    // 1. LEFT SIDE DOTS — DISTINCT dots
+    //    Zoom In: spread apart
+    //    Zoom Out: tight but not touching
+    // ============================================
+    var dotRadius = Math.max(1.5, Math.min(3.5, spacing * 0.35));
+    var maxLeftDots = 60;
+
     for (var li = 1; li <= maxLeftDots; li++) {
       var leftIdx = entryIdx - li;
       if (leftIdx < 0) break;
       var relativeLeftIdx = leftIdx - offsetX;
       var lx = pad.left + (relativeLeftIdx + 0.5) * spacing;
-      if (lx < pad.left - 10) break;
-      if (lx > pad.left + chartW + 10) continue;
+      if (lx < pad.left - 5) break;
+      if (lx > pad.left + chartW + 5) continue;
+
+      // ⭐ Distinction: only draw dot if there's enough space
+      //    (prevents merging when zoomed out)
+      if (spacing < 4 && li % 2 === 0) continue;
 
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(lx, y, 3, 0, Math.PI * 2);
+      ctx.arc(lx, y, dotRadius, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 2. HORIZONTAL LINE (entry → 1 candle right)
+    // ============================================
+    // 2. HORIZONTAL LINE — Entry → 1 candle right
+    // ============================================
     var lineStart = entryX;
     var lineEnd = entryX + spacing;
     lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
@@ -1282,11 +1293,13 @@
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.moveTo(entryX, Math.round(y) + 0.5);
-    ctx.lineTo(lineEnd, Math.round(y) + 0.5);
+    ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
+    ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
     ctx.stroke();
 
-    // 3. ENTRY DOT (white ring + colored center)
+    // ============================================
+    // 3. ENTRY DOT — white ring + colored center
+    // ============================================
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(entryX, y, 5.5, 0, Math.PI * 2);
@@ -1297,26 +1310,54 @@
     ctx.arc(entryX, y, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. ONE TICK at line end
+    // ============================================
+    // 4. HIGH QUALITY TICK — Quotex exact 🔺🔻
+    //    Sharp triangle, bold, spread to the right
+    // ============================================
     var tickX = lineEnd;
     var tickY = y;
-    var tickSize = 5;
+    var tickSize = 7;
 
     ctx.fillStyle = color;
     ctx.beginPath();
+
     if (isCall) {
-      ctx.moveTo(tickX, tickY - tickSize - 2);
-      ctx.lineTo(tickX - tickSize, tickY + 2);
-      ctx.lineTo(tickX + tickSize, tickY + 2);
+      // 🔺 UP triangle (CALL) — sits ABOVE the line
+      ctx.moveTo(tickX, tickY - tickSize - 2);              // top tip
+      ctx.lineTo(tickX - tickSize * 0.85, tickY - 1);       // bottom left
+      ctx.lineTo(tickX + tickSize * 0.85, tickY - 1);       // bottom right
     } else {
-      ctx.moveTo(tickX, tickY + tickSize + 2);
-      ctx.lineTo(tickX - tickSize, tickY - 2);
-      ctx.lineTo(tickX + tickSize, tickY - 2);
+      // 🔻 DOWN triangle (PUT) — sits BELOW the line
+      ctx.moveTo(tickX, tickY + tickSize + 2);              // bottom tip
+      ctx.lineTo(tickX - tickSize * 0.85, tickY + 1);       // top left
+      ctx.lineTo(tickX + tickSize * 0.85, tickY + 1);       // top right
     }
     ctx.closePath();
     ctx.fill();
 
-    // 5. TIMER BOX
+    // ⭐ Bold outline for high quality
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Inner white highlight for premium look
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    if (isCall) {
+      ctx.moveTo(tickX, tickY - tickSize + 1);
+      ctx.lineTo(tickX - tickSize * 0.4, tickY - 3);
+      ctx.lineTo(tickX + tickSize * 0.4, tickY - 3);
+    } else {
+      ctx.moveTo(tickX, tickY + tickSize - 1);
+      ctx.lineTo(tickX - tickSize * 0.4, tickY + 3);
+      ctx.lineTo(tickX + tickSize * 0.4, tickY + 3);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // ============================================
+    // 5. TIMER BOX (above line, right side of tick)
+    // ============================================
     if (entry.expiresAt) {
       var now = Date.now();
       var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
@@ -1326,7 +1367,7 @@
 
       var timerW = 46;
       var timerH = 18;
-      var timerX = (entryX + lineEnd) / 2 - timerW / 2;
+      var timerX = tickX + 8;
       var timerY = y - 22;
 
       ctx.fillStyle = '#1a2332';
@@ -1341,22 +1382,6 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
     }
-
-    // 6. PRICE BOX (blue, right edge)
-    var priceText = formatPrice(entry.price, this.options.priceDecimals);
-    ctx.font = 'bold 11px ' + this.options.fontFamily;
-    var priceW = ctx.measureText(priceText).width + 14;
-    var priceH = 20;
-    var priceBoxX = pad.left + chartW + 2;
-    var priceBoxY = y - priceH / 2;
-
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(priceBoxX, priceBoxY, priceW, priceH);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(priceText, priceBoxX + priceW / 2, priceBoxY + priceH / 2 + 0.5);
 
     ctx.restore();
   };
