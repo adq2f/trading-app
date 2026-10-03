@@ -67,6 +67,8 @@
 
     .login-logo {
       margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
     }
 
     .login-title {
@@ -114,13 +116,13 @@
     }
 
     .input-group input:focus {
-      border-color: #00c853;
+      border-color: #00c076;
     }
 
     .btn-primary {
       width: 100%;
       padding: 14px;
-      background: linear-gradient(180deg, #00c853 0%, #00a844 100%);
+      background: #00c076;
       border: none;
       border-radius: 8px;
       color: #ffffff;
@@ -156,7 +158,7 @@
     }
 
     /* ============================================
-       DASHBOARD — FLEX LAYOUT (100vh fixed)
+       DASHBOARD
        ============================================ */
     #dashboard-page {
       height: 100vh;
@@ -174,14 +176,15 @@
     }
 
     /* ============================================
-       TOP BAR (fixed)
+       TOP BAR (48px)
        ============================================ */
     .qx-topbar {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      background: #0e1621;
+      height: 48px;
+      background: #131722;
       border-bottom: 1px solid #1e2a3a;
       flex-shrink: 0;
     }
@@ -206,12 +209,13 @@
     .qx-flag { font-size: 16px; }
 
     .qx-badge {
-      background: #ff9800;
+      background: #f59e0b;
       color: #ffffff;
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 7px;
+      border-radius: 5px;
+      letter-spacing: 0.3px;
     }
 
     .qx-balance {
@@ -229,12 +233,12 @@
 
     .qx-bell-btn {
       position: relative;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #1a2332;
+      background: #1e222d;
       border: none;
       border-radius: 8px;
       cursor: pointer;
@@ -243,26 +247,28 @@
 
     .qx-bell-badge {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: -4px;
+      right: -4px;
       background: #ff3b30;
       color: #ffffff;
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
-      border-radius: 8px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
+      border: 2px solid #131722;
     }
 
     .qx-deposit-btn {
-      padding: 9px 16px;
-      background: linear-gradient(180deg, #00c853 0%, #00a844 100%);
+      padding: 8px 18px;
+      height: 36px;
+      background: #00c076;
       border: none;
-      border-radius: 8px;
+      border-radius: 18px;
       color: #ffffff;
       font-size: 13px;
       font-weight: 700;
@@ -271,15 +277,20 @@
       font-family: inherit;
     }
 
+    .qx-deposit-btn:active {
+      transform: scale(0.96);
+    }
+
     /* ============================================
-       BONUS BANNER (fixed)
+       BONUS BANNER (36px, GREEN)
        ============================================ */
     .qx-bonus-banner {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 8px 12px;
-      background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+      height: 36px;
+      background: #00c076;
       color: #ffffff;
       font-size: 12px;
       font-weight: 600;
@@ -287,36 +298,47 @@
       position: relative;
     }
 
-    .qx-bonus-rocket { font-size: 14px; }
+    .qx-bonus-rocket { font-size: 16px; }
 
     .qx-bonus-text { flex: 1; }
 
+    .qx-bonus-text strong {
+      font-weight: 800;
+    }
+
     .qx-bonus-tag {
       background: rgba(0, 0, 0, 0.25);
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 9px;
+      border-radius: 20px;
       font-size: 11px;
+      font-weight: 700;
     }
 
     .qx-bonus-close {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.2);
       border: none;
       color: #ffffff;
-      font-size: 14px;
+      font-size: 12px;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-family: inherit;
     }
 
     /* ============================================
-       CHART AREA (fixed height, no scroll)
+       CHART AREA (55vh)
        ============================================ */
     .qx-chart-area {
       position: relative;
       width: 100%;
-      height: 40vh;
-      max-height: 40vh;
-      min-height: 260px;
+      height: 55vh;
+      max-height: 55vh;
+      min-height: 320px;
       background: #0d1117;
       flex-shrink: 0;
       overflow: hidden;
@@ -327,31 +349,36 @@
       top: 8px;
       left: 8px;
       display: flex;
+      flex-direction: column;
       gap: 6px;
       z-index: 20;
     }
 
     .qx-icon-btn {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(26, 35, 50, 0.9);
+      background: rgba(30, 34, 45, 0.95);
       border: none;
       border-radius: 8px;
       cursor: pointer;
       backdrop-filter: blur(4px);
     }
 
+    .qx-icon-btn-active {
+      background: #2196f3;
+    }
+
     .qx-tf-badge {
-      min-width: 36px;
-      height: 36px;
+      min-width: 40px;
+      height: 40px;
       padding: 0 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(26, 35, 50, 0.9);
+      background: rgba(30, 34, 45, 0.95);
       border-radius: 8px;
       color: #e6edf3;
       font-size: 13px;
@@ -368,7 +395,7 @@
       align-items: center;
       gap: 6px;
       padding: 8px 12px;
-      background: rgba(26, 35, 50, 0.95);
+      background: rgba(30, 34, 45, 0.95);
       border-radius: 8px;
       color: #ffffff;
       font-size: 14px;
@@ -380,7 +407,7 @@
     .qx-timer-dot {
       width: 8px;
       height: 8px;
-      background: #00c853;
+      background: #00c076;
       border-radius: 50%;
       animation: pulse 1.5s infinite;
     }
@@ -436,7 +463,7 @@
       left: 50%;
       transform: translateX(-50%);
       padding: 6px 14px;
-      background: rgba(0, 200, 83, 0.9);
+      background: rgba(0, 192, 118, 0.9);
       border-radius: 20px;
       color: #ffffff;
       font-size: 14px;
@@ -445,11 +472,11 @@
     }
 
     /* ============================================
-       TRADE PANEL (fixed)
+       TRADE PANEL
        ============================================ */
     .qx-trade-panel {
       padding: 12px 14px 14px 14px;
-      background: #0e1621;
+      background: #131722;
       border-top: 1px solid #1e2a3a;
       flex-shrink: 0;
     }
@@ -492,7 +519,7 @@
     }
 
     .qx-payout-badge {
-      color: #ff9800;
+      color: #f59e0b;
       font-size: 13px;
       font-weight: 700;
     }
@@ -516,7 +543,7 @@
       height: 22px;
       background: #2a3546;
       border: none;
-      border-radius: 12px;
+      border-radius: 11px;
       position: relative;
       cursor: pointer;
       transition: background 0.2s;
@@ -570,7 +597,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 44px;
+      height: 45px;
       box-sizing: border-box;
     }
 
@@ -609,7 +636,7 @@
     .qx-inc-btn {
       width: 32px;
       height: 32px;
-      border-radius: 6px;
+      border-radius: 50%;
       background: #2a3546;
       border: none;
       color: #ffffff;
@@ -648,7 +675,7 @@
     }
 
     #payout-display {
-      color: #00c853;
+      color: #00c076;
       font-size: 15px;
       font-weight: 700;
     }
@@ -678,24 +705,23 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 14px;
-      height: 54px;
+      height: 55px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 16px;
       font-weight: 700;
       color: #ffffff;
       cursor: pointer;
       font-family: inherit;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
       transition: transform 0.1s;
     }
 
     .qx-buy-btn {
-      background: linear-gradient(180deg, #00c853 0%, #00a844 100%);
+      background: #00c076;
     }
 
     .qx-sell-btn {
-      background: linear-gradient(180deg, #ff3b30 0%, #e62e24 100%);
+      background: #ff3b30;
     }
 
     .qx-buy-btn:active,
@@ -709,7 +735,7 @@
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.25);
       border-radius: 50%;
       font-size: 16px;
       font-weight: 900;
@@ -725,10 +751,10 @@
     }
 
     /* ============================================
-       TRADES SECTION (scrollable)
+       TRADES SECTION
        ============================================ */
     .qx-trades-section {
-      background: #0e1621;
+      background: #131722;
       border-top: 1px solid #1e2a3a;
       flex: 1 1 auto;
       overflow-y: auto;
@@ -742,7 +768,7 @@
       border-bottom: 1px solid #1e2a3a;
       position: sticky;
       top: 0;
-      background: #0e1621;
+      background: #131722;
       z-index: 5;
     }
 
@@ -814,14 +840,6 @@
       padding: 0 14px;
     }
 
-    .qx-empty {
-      text-align: center;
-      color: #6b7a90;
-      font-size: 13px;
-      padding: 30px 0;
-      margin: 0;
-    }
-
     .qx-trade-card {
       display: flex;
       justify-content: space-between;
@@ -833,16 +851,16 @@
     }
 
     /* ============================================
-       BOTTOM NAV (fixed)
+       BOTTOM NAV (55px)
        ============================================ */
     .qx-bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 58px;
+      height: 55px;
       display: flex;
-      background: #0e1621;
+      background: #131722;
       border-top: 1px solid #1e2a3a;
       z-index: 100;
       padding-bottom: env(safe-area-inset-bottom, 0);
@@ -868,6 +886,23 @@
 
     .qx-nav-btn:active {
       color: #ffffff;
+    }
+
+    .qx-nav-badge {
+      position: absolute;
+      top: 8px;
+      right: calc(50% - 22px);
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      background: #2196f3;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* ============================================
@@ -899,7 +934,7 @@
       max-width: 400px;
       max-height: 85vh;
       overflow-y: auto;
-      background: #1a2332;
+      background: #1e222d;
       border-radius: 16px;
       padding: 20px;
       display: flex;
@@ -916,7 +951,8 @@
 
     .popup-header h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
+      font-weight: 700;
       color: #ffffff;
     }
 
@@ -935,7 +971,7 @@
     .popup-content select {
       width: 100%;
       padding: 12px 14px;
-      background: #0d1117;
+      background: #131722;
       border: 1px solid #2a3546;
       border-radius: 8px;
       color: #ffffff;
@@ -946,7 +982,7 @@
 
     .popup-content input:focus,
     .popup-content select:focus {
-      border-color: #00c853;
+      border-color: #00c076;
     }
 
     .popup-note {
@@ -956,7 +992,7 @@
     }
 
     .payment-info {
-      background: #0d1117;
+      background: #131722;
       border-radius: 8px;
       padding: 12px;
     }
@@ -975,8 +1011,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px;
-      background: #0d1117;
+      padding: 14px;
+      background: #2a3546;
       border-radius: 10px;
       border: 2px solid transparent;
       cursor: pointer;
@@ -984,40 +1020,40 @@
     }
 
     .qx-acc-option.active {
-      border-color: #00c853;
+      border-color: #00c076;
     }
 
     .qx-acc-radio {
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      border: 2px solid #2a3546;
+      border: 2px solid #6b7a90;
       position: relative;
       flex-shrink: 0;
     }
 
     .qx-acc-option.active .qx-acc-radio {
-      border-color: #00c853;
+      border-color: #00c076;
     }
 
     .qx-acc-option.active .qx-acc-radio::after {
       content: '';
       position: absolute;
       inset: 3px;
-      background: #00c853;
+      background: #00c076;
       border-radius: 50%;
     }
 
     .qx-acc-info { flex: 1; }
 
     .qx-acc-title {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       color: #ffffff;
     }
 
     .qx-acc-balance {
-      font-size: 12px;
+      font-size: 13px;
       color: #6b7a90;
       margin-top: 2px;
     }
@@ -1025,10 +1061,10 @@
     .qx-acc-edit {
       background: #2a3546;
       border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
+      border-radius: 8px;
+      padding: 8px 14px;
       color: #ffffff;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
@@ -1039,7 +1075,7 @@
       flex-direction: column;
       gap: 10px;
       padding: 12px;
-      background: #0d1117;
+      background: #131722;
       border-radius: 10px;
     }
 
@@ -1070,7 +1106,7 @@
     }
 
     .qx-edit-save {
-      background: #00c853;
+      background: #00c076;
       color: #ffffff;
     }
 
@@ -1089,7 +1125,7 @@
     .acc-btn-popup {
       width: 100%;
       padding: 14px;
-      background: #0d1117;
+      background: #131722;
       border: 2px solid transparent;
       border-radius: 10px;
       color: #ffffff;
@@ -1101,7 +1137,7 @@
     }
 
     .acc-btn-popup.active {
-      border-color: #00c853;
+      border-color: #00c076;
     }
 
     .chat-popup-content {
@@ -1112,7 +1148,7 @@
     .user-chat-messages {
       flex: 1;
       overflow-y: auto;
-      background: #0d1117;
+      background: #131722;
       border-radius: 8px;
       padding: 12px;
       display: flex;
@@ -1153,7 +1189,7 @@
 
     .user-chat-input-row button {
       padding: 12px 20px;
-      background: #00c853;
+      background: #00c076;
       border: none;
       border-radius: 8px;
       color: #ffffff;
@@ -1181,13 +1217,13 @@
 
     .qx-more-panel {
       position: absolute;
-      bottom: 0;
-      left: 0;
+      top: 0;
       right: 0;
-      background: #1a2332;
-      border-radius: 16px 16px 0 0;
+      bottom: 0;
+      width: 300px;
+      max-width: 85vw;
+      background: #1e222d;
       padding: 20px;
-      max-height: 80vh;
       overflow-y: auto;
     }
 
@@ -1200,7 +1236,8 @@
 
     .qx-more-header h3 {
       margin: 0;
-      font-size: 18px;
+      font-size: 22px;
+      font-weight: 700;
     }
 
     .qx-more-close {
@@ -1223,19 +1260,20 @@
       background: transparent;
       border: none;
       color: #ffffff;
-      font-size: 14px;
+      font-size: 15px;
       text-align: left;
       cursor: pointer;
       border-radius: 8px;
       font-family: inherit;
+      font-weight: 500;
     }
 
     .qx-more-item:active {
-      background: #0d1117;
+      background: #2a3546;
     }
 
     .qx-more-item.logout {
-      color: #ff5252;
+      color: #ff3b30;
     }
 
     .qx-more-divider {
@@ -1251,7 +1289,7 @@
       bottom: 0;
       width: 300px;
       max-width: 85vw;
-      background: #1a2332;
+      background: #1e222d;
       z-index: 1000;
       overflow-y: auto;
       transform: translateX(0);
@@ -1336,7 +1374,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 8px 10px;
-      background: #0d1117;
+      background: #131722;
       border-radius: 8px;
       font-size: 12px;
     }
@@ -1355,7 +1393,7 @@
     }
 
     .qx-dh-type.call {
-      background: #00c853;
+      background: #00c076;
       color: #ffffff;
     }
 
@@ -1380,7 +1418,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: #1a2332;
+      background: #1e222d;
       border-radius: 16px 16px 0 0;
       padding: 16px;
       z-index: 1000;
@@ -1424,7 +1462,7 @@
       align-items: center;
       gap: 4px;
       padding: 10px 6px;
-      background: #0d1117;
+      background: #131722;
       border: 2px solid transparent;
       border-radius: 8px;
       color: #e6edf3;
@@ -1473,7 +1511,7 @@
       position: relative;
       width: 100%;
       max-width: 500px;
-      background: #1a2332;
+      background: #1e222d;
       border-radius: 16px 16px 0 0;
       padding: 16px;
       max-height: 70vh;
@@ -1508,7 +1546,7 @@
 
     .qx-tf-item {
       padding: 12px 8px;
-      background: #0d1117;
+      background: #131722;
       border: 2px solid transparent;
       border-radius: 8px;
       color: #e6edf3;
@@ -1530,7 +1568,7 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: #00c853;
+      background: #00c076;
       transform: translateX(50%);
       pointer-events: none;
       z-index: 10;
@@ -1559,7 +1597,7 @@
     }
 
     .qx-time-label.active {
-      color: #00c853;
+      color: #00c076;
       font-weight: 700;
     }
 
@@ -1578,12 +1616,12 @@
        ============================================ */
     @media (max-height: 700px) {
       .qx-chart-area {
-        height: 42vh;
-        min-height: 240px;
+        height: 50vh;
+        min-height: 280px;
       }
       .qx-buy-btn,
       .qx-sell-btn {
-        height: 48px;
+        height: 50px;
       }
       .qx-topbar {
         padding: 8px 12px;
@@ -1604,7 +1642,6 @@
       }
     }
 
-    /* Scrollbar hidden for cleaner look */
     ::-webkit-scrollbar {
       width: 0;
       height: 0;
@@ -1644,9 +1681,9 @@
     <div class="login-box">
       <div class="login-logo">
         <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="21" stroke="#00c853" stroke-width="2.5"/>
-          <path d="M14 30 L20 22 L26 26 L34 16" stroke="#00c853" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <circle cx="34" cy="16" r="2.5" fill="#00c853"/>
+          <circle cx="24" cy="24" r="21" stroke="#00c076" stroke-width="2.5"/>
+          <path d="M14 30 L20 22 L26 26 L34 16" stroke="#00c076" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="34" cy="16" r="2.5" fill="#00c076"/>
         </svg>
       </div>
       <h1 class="login-title">Quotex Clone</h1>
@@ -1671,6 +1708,7 @@
   <!-- DASHBOARD PAGE -->
   <div id="dashboard-page" class="page hidden">
 
+    <!-- TOP BAR -->
     <header class="qx-topbar">
       <button class="qx-account-chip" id="balance-chip">
         <span class="qx-flag">&#127470;&#127475;</span>
@@ -1680,16 +1718,17 @@
       </button>
 
       <button class="qx-bell-btn" id="notif-btn" aria-label="Notifications">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
         </svg>
-        <span class="qx-bell-badge" id="notif-badge">0</span>
+        <span class="qx-bell-badge" id="notif-badge">5</span>
       </button>
 
       <button class="qx-deposit-btn" id="deposit-btn">Deposit</button>
     </header>
 
+    <!-- BONUS BANNER -->
     <div class="qx-bonus-banner" id="bonus-banner">
       <span class="qx-bonus-rocket">&#128640;</span>
       <span class="qx-bonus-text">Get a <strong>50% bonus</strong> on your deposit!</span>
@@ -1721,6 +1760,22 @@
         <div class="qx-tf-badge" id="tf-badge">
           <span id="qx-tf-active">1m</span>
         </div>
+
+        <button class="qx-icon-btn qx-icon-btn-active" id="candle-type-btn" aria-label="Candle type">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2196f3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="7" y="3" width="2" height="18"/>
+            <rect x="6" y="8" width="4" height="8" fill="#2196f3"/>
+            <rect x="15" y="3" width="2" height="18"/>
+            <rect x="14" y="6" width="4" height="10" fill="#2196f3"/>
+          </svg>
+        </button>
+
+        <button class="qx-icon-btn" id="indicator-btn" aria-label="Indicators">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17l5-5 4 4 8-8"/>
+            <path d="M14 8h7v7"/>
+          </svg>
+        </button>
       </div>
 
       <div class="qx-chart-timer hidden" id="top-countdown-timer">
@@ -1809,8 +1864,7 @@
       <p id="trade-message" class="qx-trade-message"></p>
 
     </section>
-
-    <!-- TRADES SECTION -->
+         <!-- TRADES SECTION -->
     <section class="qx-trades-section">
       <div class="qx-trades-header">
         <button class="qx-trades-tab active" data-trades-tab="active">
@@ -1842,43 +1896,46 @@
     <!-- BOTTOM NAV -->
     <nav class="qx-bottom-nav">
       <button class="qx-nav-btn" data-nav="chart" aria-label="Chart">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="7" width="18" height="13" rx="2"/>
           <circle cx="12" cy="13" r="3.5"/>
         </svg>
       </button>
       <button class="qx-nav-btn" data-nav="help" aria-label="Help">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9"/>
           <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .8-1 1.7"/>
           <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
         </svg>
       </button>
       <button class="qx-nav-btn active" data-nav="profile" aria-label="Profile">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"/>
           <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
         </svg>
       </button>
       <button class="qx-nav-btn" data-nav="tournament" aria-label="Tournament">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 4h12v6a6 6 0 0 1-12 0z"/>
           <path d="M6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3"/>
           <path d="M9 20h6M12 16v4"/>
         </svg>
+        <span class="qx-nav-badge">4</span>
       </button>
       <button class="qx-nav-btn" data-nav="more" aria-label="More">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
           <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
           <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
         </svg>
+        <span class="qx-nav-badge">4</span>
       </button>
     </nav>
 
   </div>
+  <!-- end dashboard-page -->
 
-  <!-- DRAWER -->
+  <!-- DRAWER (Info panel) -->
   <div class="qx-drawer hidden" id="qx-drawer">
     <div class="qx-drawer-header">
       <h3>Info</h3>
@@ -1952,8 +2009,7 @@
       </div>
     </div>
   </div>
-
-  <!-- POPUPS -->
+    <!-- ACCOUNTS POPUP -->
   <div class="popup hidden" id="balance-popup">
     <div class="popup-overlay" id="balance-popup-overlay"></div>
     <div class="popup-content">
@@ -1992,6 +2048,7 @@
     </div>
   </div>
 
+  <!-- ACCOUNT SWITCH POPUP -->
   <div class="popup hidden" id="account-popup">
     <div class="popup-overlay" id="account-popup-overlay"></div>
     <div class="popup-content">
@@ -2004,6 +2061,7 @@
     </div>
   </div>
 
+  <!-- DEPOSIT POPUP -->
   <div class="popup hidden" id="deposit-popup">
     <div class="popup-overlay" id="deposit-popup-overlay"></div>
     <div class="popup-content">
@@ -2029,6 +2087,7 @@
     </div>
   </div>
 
+  <!-- WITHDRAW POPUP -->
   <div class="popup hidden" id="withdraw-popup">
     <div class="popup-overlay" id="withdraw-popup-overlay"></div>
     <div class="popup-content">
@@ -2048,6 +2107,7 @@
     </div>
   </div>
 
+  <!-- CHAT POPUP -->
   <div class="popup hidden" id="chat-popup">
     <div class="popup-overlay" id="chat-popup-overlay"></div>
     <div class="popup-content chat-popup-content">
@@ -2065,6 +2125,7 @@
     </div>
   </div>
 
+  <!-- MORE MENU -->
   <div class="qx-more-menu hidden" id="more-menu">
     <div class="qx-more-overlay" id="more-menu-overlay"></div>
     <div class="qx-more-panel">
@@ -2073,17 +2134,22 @@
         <button class="qx-more-close" id="more-menu-close">&#10005;</button>
       </div>
       <div class="qx-more-list">
+        <button class="qx-more-item" data-menu="market">Market</button>
+        <button class="qx-more-item" data-menu="analytics">Analytics</button>
+        <button class="qx-more-item" data-menu="top">TOP</button>
+        <button class="qx-more-item" data-menu="signals">Signals</button>
         <button class="qx-more-item" data-menu="deposit">Deposit</button>
-        <button class="qx-more-item" data-menu="withdraw">Withdraw</button>
-        <button class="qx-more-item" data-menu="referral">Refer & Earn</button>
-        <button class="qx-more-item" data-menu="chat">Support</button>
-        <button class="qx-more-item" data-menu="trades">My Trades</button>
+        <button class="qx-more-item" data-menu="withdraw">Withdrawal</button>
+        <button class="qx-more-item" data-menu="payments">Payments</button>
+        <button class="qx-more-item" data-menu="trades">Trades</button>
         <div class="qx-more-divider"></div>
+        <button class="qx-more-item" data-menu="settings">Settings</button>
         <button class="qx-more-item logout" data-menu="logout">Logout</button>
       </div>
     </div>
   </div>
 
+  <!-- TOURNAMENT POPUP -->
   <div class="popup hidden" id="tournament-popup">
     <div class="popup-overlay" id="tournament-popup-overlay"></div>
     <div class="popup-content">
@@ -2095,6 +2161,7 @@
     </div>
   </div>
 
+  <!-- REFERRAL POPUP -->
   <div class="popup hidden" id="referral-popup">
     <div class="popup-overlay" id="referral-popup-overlay"></div>
     <div class="popup-content">
@@ -2106,6 +2173,7 @@
     </div>
   </div>
 
+  <!-- ERROR HANDLER SCRIPT -->
   <script>
   (function() {
     window.__jsErrors = window.__jsErrors || [];
@@ -2131,8 +2199,10 @@
   })();
   </script>
 
+  <!-- CHART ENGINE -->
   <script src="chart-engine.js"></script>
 
+  <!-- APP.JS (auto-versioned) -->
   <script type="module">
     (function() {
       var v = window.__APP_VERSION || Date.now();
