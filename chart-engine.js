@@ -1228,7 +1228,7 @@
   // ============================================================
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — MULTI-TRADE)
   // ============================================================
-      QuotexChart.prototype._drawTradeEntry = function() {
+        QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
                   ? this.tradeEntries
                   : (this.tradeEntry ? [this.tradeEntry] : []);
@@ -1243,9 +1243,14 @@
     var spacing = this.viewport.candleSpacing;
     var offsetX = this.viewport.offsetX;
 
+    // ⭐ Scale with zoom
+    var dotRadius = Math.max(2, Math.min(3.5, spacing * 0.4));
+    var tickSize = Math.max(4, Math.min(6, spacing * 0.6));
+    var showDots = spacing > 5;   // Zoom out → dots hide (Quotex behaviour)
+
     ctx.save();
 
-    // ⭐ Group trades by entry candle (same candle = stack left dots)
+    // ⭐ Group by entry (same candle + same price)
     var grouped = {};
     var order = [];
     for (var gi = 0; gi < entries.length; gi++) {
@@ -1259,108 +1264,130 @@
       grouped[key].push(e);
     }
 
-    // ⭐ Draw each group
+    // ⭐ Draw each group — Quotex exact
     for (var oi = 0; oi < order.length; oi++) {
       var group = grouped[order[oi]];
       if (!group || group.length === 0) continue;
 
-      var entry = group[group.length - 1]; // latest in group
-      var entryIdx = this._findCandleIndex(entry.time);
-      if (entryIdx === -1) continue;
+      // ⭐ Draw ALL trades in group (Buy + Sell same position = 2 lines)
+      for (var tIdx = 0; tIdx < group.length; tIdx++) {
+        var entry = group[tIdx];
+        var entryIdx = this._findCandleIndex(entry.time);
+        if (entryIdx === -1) continue;
 
-      var entryRelativeIdx = entryIdx - offsetX;
-      var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
+        var entryRelativeIdx = entryIdx - offsetX;
+        var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
 
-      var y = this._priceToY(entry.price);
-      if (y === null) continue;
-      if (y < pad.top || y > H - pad.bottom) continue;
+        var y = this._priceToY(entry.price);
+        if (y === null) continue;
+        if (y < pad.top || y > H - pad.bottom) continue;
 
-      var isCall = entry.type === 'CALL';
-      var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
+        var isCall = entry.type === 'CALL';
+        var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
 
-      // ⭐ Line: tick position → next candle এর আগে
-      var tickX = entryX;
-      var lineStart = entryX;
-      var lineEnd = entryX + spacing;
-      lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
+        // ⭐ Line: entry candle → 1 candle right
+        var lineStart = entryX;
+        var lineEnd = entryX + spacing;
+        lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
 
-      // ⭐ 1. HORIZONTAL LINE — from tick position → right end
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
-      ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
-      ctx.stroke();
+        // ⭐ 1. HORIZONTAL LINE
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
+        ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
+        ctx.stroke();
 
-      // ⭐ 2. RIGHT DOT (at line end)
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(lineEnd, y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+        // ⭐ 2. LEFT SIDE DOTS — for same-position repeats (from 2nd onward)
+        var leftDotsCount = group.length - 1;
+        if (tIdx < leftDotsCount && showDots) {
+          var dotSpacing = Math.max(8, spacing * 0.55);
+          var dotX = entryX - dotSpacing * (tIdx + 1);
+          if (dotX >= pad.left - 5) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(dotX, y, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
 
-      // ⭐ 3. TICK (at entry candle center, ছোট)
-      var tickSize = 5;   // ছোট tick
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      if (isCall) {
-        // 🔺 UP tick
-        ctx.moveTo(tickX, y - tickSize - 3);
-        ctx.lineTo(tickX - tickSize * 0.7, y - 3);
-        ctx.lineTo(tickX + tickSize * 0.7, y - 3);
-      } else {
-        // 🔻 DOWN tick
-        ctx.moveTo(tickX, y + tickSize + 3);
-        ctx.lineTo(tickX - tickSize * 0.7, y + 3);
-        ctx.lineTo(tickX + tickSize * 0.7, y + 3);
-      }
-      ctx.closePath();
-      ctx.fill();
+        // ⭐ 3. CENTER TICK — small triangle AT candle center
+        //    Quotex এ tick টা line এর সাথেই milito (same y)
+        var tickX = entryX;
+        var tickY = y;
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (isCall) {
+          // 🔺 UP triangle
+          ctx.moveTo(tickX, tickY - tickSize - 2);
+          ctx.lineTo(tickX - tickSize * 0.7, tickY - 1);
+          ctx.lineTo(tickX + tickSize * 0.7, tickY - 1);
+        } else {
+          // 🔻 DOWN triangle
+          ctx.moveTo(tickX, tickY + tickSize + 2);
+          ctx.lineTo(tickX - tickSize * 0.7, tickY + 1);
+          ctx.lineTo(tickX + tickSize * 0.7, tickY + 1);
+        }
+        ctx.closePath();
+        ctx.fill();
 
-      // ⭐ 4. LEFT SIDE DOTS (if group has > 1 trade)
-      //    For N trades in same position → N-1 dots on left side
-      var extraDots = group.length - 1;
-      if (extraDots > 0) {
-        var dotSpacing = Math.max(8, spacing * 0.6);
-        for (var di = 1; di <= extraDots; di++) {
-          var dotX = tickX - dotSpacing * di;
-          if (dotX < pad.left - 5) break;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
+        // ⭐ 4. RIGHT DOT — at line end (only latest trade in group)
+        if (tIdx === group.length - 1 && showDots) {
           ctx.fillStyle = color;
           ctx.beginPath();
-          ctx.arc(dotX, y, 3, 0, Math.PI * 2);
+          ctx.arc(lineEnd, y, dotRadius, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
         }
       }
 
-      // ⭐ 5. TIMER BOX (only for latest group)
-      if (oi === order.length - 1 && entry.expiresAt) {
-        var now = Date.now();
-        var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
-        var mm = Math.floor(remaining / 60);
-        var ss = remaining % 60;
-        var timerStr = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+      // ⭐ 5. TIMER BOX — only for latest group
+      if (oi === order.length - 1) {
+        var latestEntry = group[group.length - 1];
+        if (latestEntry && latestEntry.expiresAt) {
+          var now = Date.now();
+          var remaining = Math.max(0, Math.ceil((latestEntry.expiresAt - now) / 1000));
+          var mm = Math.floor(remaining / 60);
+          var ss = remaining % 60;
+          var timerStr = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
 
-        var timerW = 46;
-        var timerH = 18;
-        var timerX = (tickX + lineEnd) / 2 - timerW / 2;
-        var timerY = y - 26;
+          var entryIdxL = this._findCandleIndex(latestEntry.time);
+          if (entryIdxL !== -1) {
+            var entryXL = pad.left + (entryIdxL - offsetX + 0.5) * spacing;
+            var lineEndL = Math.min(entryXL + spacing, pad.left + chartW - 2);
+            var yL = this._priceToY(latestEntry.price);
 
-        ctx.fillStyle = '#1a2332';
-        ctx.fillRect(timerX, timerY, timerW, timerH);
-        ctx.strokeStyle = '#2a3546';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
+            if (yL !== null) {
+              var timerW = 46;
+              var timerH = 18;
+              var timerX = (entryXL + lineEndL) / 2 - timerW / 2;
+              var timerY = yL - 28;
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 10px ' + this.options.fontFamily;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
+              ctx.fillStyle = '#1a2332';
+              ctx.fillRect(timerX, timerY, timerW, timerH);
+              ctx.strokeStyle = '#2a3546';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
+
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 10px ' + this.options.fontFamily;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
+            }
+          }
+        }
       }
     }
 
