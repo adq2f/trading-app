@@ -317,7 +317,7 @@
   };
 
   // ============================================================
-  // MAIN RENDER (Quotex exact draw order)
+  // MAIN RENDER
   // ============================================================
   QuotexChart.prototype._render = function() {
     var ctx = this.ctx;
@@ -345,7 +345,7 @@
   window.QuotexChart = QuotexChart;
 
   // ============================================================
-  // PART 2: VISIBLE RANGE
+  // VISIBLE RANGE
   // ============================================================
   QuotexChart.prototype._getVisibleRange = function() {
     if (!this.candles || this.candles.length === 0) {
@@ -589,7 +589,7 @@
   };
 
   // ============================================================
-  // PART 3: COORDINATE SYSTEM
+  // COORDINATE SYSTEM
   // ============================================================
   QuotexChart.prototype._timeToX = function(time) {
     var pad = this.options.padding;
@@ -657,7 +657,7 @@
   };
 
   // ============================================================
-  // FIX 1 + 2: PRICE SCALE (WHITE dashed line + BLUE label)
+  // FIX 1 + 2: PRICE SCALE (BRIGHT WHITE dashed line + BLUE label)
   // ============================================================
   QuotexChart.prototype._drawPriceScale = function() {
     var ctx = this.ctx;
@@ -701,11 +701,11 @@
 
       if (currentY >= pad.top && currentY <= pad.top + chartH) {
 
-        // ⭐ FIX 1: WHITE DASHED LINE (full width, left → right)
+        // ⭐ FIX 1: WHITE DASHED LINE — BRIGHT, THICK
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 4]);
+        ctx.globalAlpha = 1.0;
         ctx.beginPath();
         ctx.moveTo(pad.left, Math.round(currentY) + 0.5);
         ctx.lineTo(pad.left + chartW, Math.round(currentY) + 0.5);
@@ -735,7 +735,7 @@
   };
 
   // ============================================================
-  // FIX 3: TIME SCALE (WHITE text, no green border)
+  // FIX 3 + 4 + 5: TIME SCALE (BRIGHT white, visible bottom line)
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -752,7 +752,8 @@
     var offsetX = this.viewport.offsetX;
     if (spacing <= 0) return;
 
-    ctx.strokeStyle = '#1a2332';
+    // ⭐ FIX 4: BOTTOM SCALE LINE — visible white
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
     ctx.beginPath();
@@ -799,7 +800,7 @@
       lastLabelX = xCenter;
     }
 
-    // ⭐ FIX 3: Last candle time — WHITE text, no green border
+    // ⭐ FIX 3: Last candle time — BRIGHTER white, no border
     if (this.candles.length > 0) {
       var lastIdx = this.candles.length - 1;
       var lastCandle = this.candles[lastIdx];
@@ -821,8 +822,8 @@
         var boxW = 48;
         var boxH = 16;
 
-        // Subtle white bg
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        // Brighter white bg
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.fillRect(lastX - boxW / 2, timeY - boxH / 2, boxW, boxH);
 
         // White text
@@ -834,7 +835,7 @@
   };
 
   // ============================================================
-  // BOTTOM TIME BAR (progress + next candle time)
+  // FIX 6 + 8: BOTTOM TIME BAR (BRIGHT progress + next candle time)
   // ============================================================
   QuotexChart.prototype._drawTimeBar = function() {
     if (!this.candles || this.candles.length === 0) return;
@@ -862,15 +863,15 @@
     var barY = H - 3;
     var barH = 3;
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    // Background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.fillRect(pad.left, barY, chartW, barH);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = 0.5;
+    // ⭐ FIX 8: Progress fill — brighter
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.fillRect(pad.left, barY, chartW * progress, barH);
-    ctx.globalAlpha = 1;
 
-    // Next candle time on right
+    // ⭐ FIX 6: Next candle time — brighter, more visible
     var candleEndMs = candleStartMs + this.timeframe;
     var endDate = new Date(candleEndMs);
     var nextHH = String(endDate.getHours()).padStart(2, '0');
@@ -890,7 +891,7 @@
       var tx = lastX - tw / 2;
       var ty = timeY - th / 2;
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
       ctx.fillRect(tx, ty, tw, th);
 
       ctx.fillStyle = '#ffffff';
@@ -902,7 +903,7 @@
   };
 
   // ============================================================
-  // PART 3: CLOCK (BD time 24h, top-left)
+  // CLOCK (BD time 24h, top-left)
   // ============================================================
   QuotexChart.prototype._drawClock = function() {
     if (!this.options.showClock) return;
@@ -940,7 +941,7 @@
   };
 
   // ============================================================
-  // PART 4: PAN + ZOOM
+  // PAN + ZOOM
   // ============================================================
   QuotexChart.prototype._applyPan = function(offsetDelta) {
     var pad = this.options.padding;
@@ -1151,7 +1152,7 @@
   };
 
   // ============================================================
-  // FIX 4: VERTICAL LINES (WHITE dashed)
+  // FIX 7: VERTICAL LINES (BRIGHT WHITE dashed + label)
   // ============================================================
   QuotexChart.prototype._drawVerticalLines = function() {
     if (!this.tradeVLines || this.tradeVLines.length === 0) return;
@@ -1180,11 +1181,11 @@
 
       ctx.save();
 
-      // ⭐ FIX 4: WHITE dashed line
+      // ⭐ FIX 7: BRIGHT WHITE dashed line
       ctx.strokeStyle = v.color || '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.globalAlpha = 0.85;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.globalAlpha = 1.0;
       ctx.beginPath();
       ctx.moveTo(Math.round(x) + 0.5, chartTop);
       ctx.lineTo(Math.round(x) + 0.5, chartBottom);
@@ -1192,20 +1193,23 @@
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
 
+      // ⭐ FIX 7: Label at top ("Beginning of trade" / "End of trade")
       if (v.label) {
-        ctx.font = 'bold 9px ' + this.options.fontFamily;
-        var lw = ctx.measureText(v.label).width + 10;
-        var lh = 14;
+        ctx.font = 'bold 10px ' + this.options.fontFamily;
+        var lw = ctx.measureText(v.label).width + 14;
+        var lh = 18;
         var lx = Math.round(x) - lw / 2;
-        var ly = chartTop + 4;
+        var ly = chartTop + 6;
 
         if (lx < pad.left + 2) lx = pad.left + 2;
         if (lx + lw > W - pad.right - 2) lx = W - pad.right - lw - 2;
 
-        ctx.fillStyle = v.color || '#ffffff';
+        // Dark bg
+        ctx.fillStyle = 'rgba(26, 35, 50, 0.95)';
         ctx.fillRect(lx, ly, lw, lh);
 
-        ctx.fillStyle = '#0d1117';
+        // White text
+        ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(v.label, lx + lw / 2, ly + lh / 2 + 0.5);
@@ -1216,7 +1220,7 @@
   };
 
   // ============================================================
-  // TRADE ENTRY MARKER (Quotex exact — multi-trade)
+  // TRADE ENTRY MARKER
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
@@ -1324,7 +1328,7 @@
       }
     }
 
-    // Timer box (border RAKHA hoyeche)
+    // Timer box (border remove korechi — Quotex e border nei)
     if (order.length > 0) {
       var lastGroup = grouped[order[order.length - 1]];
       var latest = lastGroup[lastGroup.length - 1];
@@ -1346,11 +1350,9 @@
             var timerX = lx + spacing / 2 + (circleSpacing * (lastGroup.length - 1)) / 2 - timerW / 2;
             var timerY = ly - 26;
 
-            ctx.fillStyle = '#1a2332';
+            // ⭐ Dark bg, NO border (Quotex exact)
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.9)';
             ctx.fillRect(timerX, timerY, timerW, timerH);
-            ctx.strokeStyle = '#2a3546';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
 
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 10px ' + this.options.fontFamily;
@@ -1458,7 +1460,7 @@
   };
 
   // ============================================================
-  // PUBLIC API — Trade markers
+  // PUBLIC API
   // ============================================================
   QuotexChart.prototype.setTradeEntry = function(entry) {
     if (!entry) {
@@ -1555,7 +1557,7 @@
   };
 
   // ============================================================
-  // PART 5: SET DATA
+  // SET DATA
   // ============================================================
   QuotexChart.prototype.setData = function(data) {
     if (!Array.isArray(data)) return;
