@@ -1037,11 +1037,13 @@ function renderEntryLine(type, entryPrice, expiresAt) {
       if (amtInput) entryAmount = parseFloat(amtInput.value) || 1;
     } catch(e) {}
 
+    // ⭐ expiresAt pass করা হচ্ছে
     window.chartRef.setTradeEntry({
       time: lastCandle.time,
       price: parseFloat(entryPrice),
       type: type === 'call' ? 'CALL' : 'PUT',
-      amount: entryAmount
+      amount: entryAmount,
+      expiresAt: expiresAt
     });
 
     window.__activeEntryData = { type: type, entryPrice: entryPrice, expiresAt: expiresAt };
@@ -1050,7 +1052,6 @@ function renderEntryLine(type, entryPrice, expiresAt) {
     console.error('[Entry] Error:', e);
   }
 }
-
 function clearEntryLine() {
   window.__activeEntryData = null;
   if (window.__activePriceLine) {
@@ -1082,21 +1083,22 @@ function renderVerticalLines(startTime, endTime) {
     var startSec = Math.floor(new Date(startTime).getTime() / 1000);
     var endSec = Math.floor(endTime / 1000);
 
+    // FIX E: Quotex exact labels — Beginning / End of trade
     window.chartRef.addVerticalLine({
       time: startSec,
-      label: '',
+      label: 'Beginning of trade',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
     window.chartRef.addVerticalLine({
       time: endSec,
-      label: '',
+      label: 'End of trade',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
-    console.log('[VLine] Beginning + End lines added');
+    console.log('[VLine] Beginning + End lines added with labels');
   } catch(e) {
     console.error('[VLine] Error:', e);
   }
@@ -1275,7 +1277,7 @@ async function checkExpiredTrades() {
   for (var i = 0; i < activeTradesLocal.length; i++) {
     var trade = activeTradesLocal[i];
     if (trade.expiresAt <= now && trade.status === "pending") {
-      // CRITICAL: Clear ALL markers IMMEDIATELY
+      // ⭐ CRITICAL: Clear ALL chart markers IMMEDIATELY on expire
       try {
         if (window.chartRef) {
           if (typeof window.chartRef.clearTradeEntry === 'function') {
@@ -1284,7 +1286,14 @@ async function checkExpiredTrades() {
           if (typeof window.chartRef.clearVerticalLines === 'function') {
             window.chartRef.clearVerticalLines();
           }
+          if (typeof window.chartRef.clearResultMarkers === 'function') {
+            window.chartRef.clearResultMarkers();
+          }
         }
+        // Also clear DOM-based markers
+        if (typeof clearEntryLine === 'function') clearEntryLine();
+        if (typeof clearVerticalLines === 'function') clearVerticalLines();
+        if (typeof clearTickMark === 'function') clearTickMark();
       } catch(e) { console.error('Clear markers err:', e); }
 
       var exitPrice = currentPrice;
@@ -1293,14 +1302,32 @@ async function checkExpiredTrades() {
       if (trade.type === "call" && exitPrice > entryPrice) result = "win";
       else if (trade.type === "put" && exitPrice < entryPrice) result = "win";
       var profit = result === "win" ? trade.amount * 1.85 : 0;
+
       try {
         await updateDoc(doc(db, "trades", trade.id), {
           status: "completed", result: result, exitPrice: exitPrice,
           profit: profit, completedAt: new Date().toISOString()
         });
-        clearEntryLine();
-        clearVerticalLines();
+
+        // ⭐ Reset marker count so restore triggers on next pending trade
         window.__lastPendingCount = -1;
+        window.__pendingCount = 0;
+
+        // Show result marker (WIN/LOSS) — canvas
+        try {
+          if (window.chartRef && typeof window.chartRef.addResultMarker === 'function') {
+            var lastCandle = window.chartRef.candles[window.chartRef.candles.length - 1];
+            if (lastCandle) {
+              window.chartRef.addResultMarker({
+                time: lastCandle.time,
+                price: result === "win" ? lastCandle.high : lastCandle.low,
+                result: result === "win" ? 'WIN' : 'LOSS',
+                amount: result === "win" ? profit : trade.amount
+              });
+            }
+          }
+        } catch(e) {}
+
         if (result === "win") {
           var userDoc = await getDoc(doc(db, "users", currentUser.uid));
           var currentBal = userDoc.data().balance || 0;
@@ -1410,11 +1437,13 @@ function loadActiveTrades() {
     var badge2 = document.getElementById("trades-count-badge");
     if (badge2) badge2.textContent = activeTradesLocal.length;
 
+    // ⭐ Reload হলে latest pending trade restore
     var latest = activeTradesLocal[activeTradesLocal.length - 1];
     if (latest && latest.status === "pending") {
       renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
       renderVerticalLines(latest.entryTime, latest.expiresAt);
       renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
+      console.log('[Trade] Restored from Firestore:', latest.type, latest.entryPrice);
     }
     updateBigTimer();
   });
