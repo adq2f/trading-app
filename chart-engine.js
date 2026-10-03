@@ -139,6 +139,7 @@
     this.crosshair = { x: -1, y: -1, active: false };
 
     this.tradeEntry = null;
+    this.tradeEntries = [];
     this.tradeVLines = [];
     this.tradeResults = [];
 
@@ -1224,123 +1225,153 @@
     }
   };
 
+  // ============================================================
+  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — MULTI-TRADE)
+  // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
-    if (!this.tradeEntry) return;
-
-    var entry = this.tradeEntry;
-    if (!entry.time || typeof entry.price !== 'number') return;
-
+    // ⭐ Multi-trade support
+    var entries = this.tradeEntries && this.tradeEntries.length > 0
+                  ? this.tradeEntries
+                  : (this.tradeEntry ? [this.tradeEntry] : []);
+    
+    if (entries.length === 0) return;
+    
     var ctx = this.ctx;
     var pad = this.options.padding;
     var W = this.options.width;
     var H = this.options.height;
     var chartW = W - pad.left - pad.right;
-
-    var entryIdx = this._findCandleIndex(entry.time);
-    if (entryIdx === -1) return;
-
+    
     var spacing = this.viewport.candleSpacing;
     var offsetX = this.viewport.offsetX;
-    var entryRelativeIdx = entryIdx - offsetX;
-    var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
-
-    var y = this._priceToY(entry.price);
-    if (y === null) return;
-    if (y < pad.top || y > H - pad.bottom) return;
-
-    var isCall = entry.type === 'CALL';
-    var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
-
+    
+    // Candle width
+    var bodyWidth = spacing * this.options.candleBodyRatio;
+    if (bodyWidth < 3) bodyWidth = 3;
+    if (bodyWidth > spacing) bodyWidth = spacing;
+    
     ctx.save();
-
-    // 1. HORIZONTAL LINE — Entry → 1 candle right
-    var lineStart = entryX;
-    var lineEnd = entryX + spacing;
-    lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
-    ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
-    ctx.stroke();
-
-    // 2. ENTRY DOT — ONE dot only
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(entryX, y, 5.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(entryX, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 3. HIGH QUALITY TICK — Sharp triangle
-    var tickX = lineEnd;
-    var tickY = y;
-    var tickSize = 7;
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    if (isCall) {
-      ctx.moveTo(tickX, tickY - tickSize - 2);
-      ctx.lineTo(tickX - tickSize * 0.85, tickY - 1);
-      ctx.lineTo(tickX + tickSize * 0.85, tickY - 1);
-    } else {
-      ctx.moveTo(tickX, tickY + tickSize + 2);
-      ctx.lineTo(tickX - tickSize * 0.85, tickY + 1);
-      ctx.lineTo(tickX + tickSize * 0.85, tickY + 1);
-    }
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // White highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.beginPath();
-    if (isCall) {
-      ctx.moveTo(tickX, tickY - tickSize + 1);
-      ctx.lineTo(tickX - tickSize * 0.4, tickY - 3);
-      ctx.lineTo(tickX + tickSize * 0.4, tickY - 3);
-    } else {
-      ctx.moveTo(tickX, tickY + tickSize - 1);
-      ctx.lineTo(tickX - tickSize * 0.4, tickY + 3);
-      ctx.lineTo(tickX + tickSize * 0.4, tickY + 3);
-    }
-    ctx.closePath();
-    ctx.fill();
-
-    // 4. TIMER BOX
-    if (entry.expiresAt) {
-      var now = Date.now();
-      var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
-      var mm = Math.floor(remaining / 60);
-      var ss = remaining % 60;
-      var timerStr = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
-
-      var timerW = 46;
-      var timerH = 18;
-      var timerX = tickX + 8;
-      var timerY = y - 22;
-
-      ctx.fillStyle = '#1a2332';
-      ctx.fillRect(timerX, timerY, timerW, timerH);
-      ctx.strokeStyle = '#2a3546';
+    
+    // ⭐ Draw each trade separately
+    for (var ei = 0; ei < entries.length; ei++) {
+      var entry = entries[ei];
+      if (!entry || !entry.time || typeof entry.price !== 'number') continue;
+      
+      var entryIdx = this._findCandleIndex(entry.time);
+      if (entryIdx === -1) continue;
+      
+      var entryRelativeIdx = entryIdx - offsetX;
+      var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
+      
+      var y = this._priceToY(entry.price);
+      if (y === null) continue;
+      if (y < pad.top || y > H - pad.bottom) continue;
+      
+      var isCall = entry.type === 'CALL';
+      var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
+      
+      // ⭐ Position dots
+      var leftDotX = entryX - bodyWidth / 2;      // Left edge
+      var rightDotX = entryX + bodyWidth * 0.4;   // ~40% right
+      var centerX = entryX;                        // Center (tick position)
+      
+      // 1. LEFT DOT (at left edge)
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(leftDotX, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // 2. TICK (at center, milito with dot)
+      var tickX = centerX;
+      var tickY = y;
+      var tickSize = 7;
+      
+      // Center dot (under tick)
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(centerX, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Tick triangle
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (isCall) {
+        ctx.moveTo(tickX, tickY - tickSize - 3);
+        ctx.lineTo(tickX - tickSize * 0.85, tickY - 4);
+        ctx.lineTo(tickX + tickSize * 0.85, tickY - 4);
+      } else {
+        ctx.moveTo(tickX, tickY + tickSize + 3);
+        ctx.lineTo(tickX - tickSize * 0.85, tickY + 4);
+        ctx.lineTo(tickX + tickSize * 0.85, tickY + 4);
+      }
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.strokeStyle = color;
       ctx.lineWidth = 1;
-      ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px ' + this.options.fontFamily;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
+      ctx.stroke();
+      
+      // White highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      if (isCall) {
+        ctx.moveTo(tickX, tickY - tickSize - 1);
+        ctx.lineTo(tickX - tickSize * 0.4, tickY - 5);
+        ctx.lineTo(tickX + tickSize * 0.4, tickY - 5);
+      } else {
+        ctx.moveTo(tickX, tickY + tickSize + 1);
+        ctx.lineTo(tickX - tickSize * 0.4, tickY + 5);
+        ctx.lineTo(tickX + tickSize * 0.4, tickY + 5);
+      }
+      ctx.closePath();
+      ctx.fill();
+      
+      // 3. RIGHT DOT (~40% right of candle center)
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(rightDotX, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // 4. HORIZONTAL LINE — from center to 1 candle right
+      var lineStart = entryX;
+      var lineEnd = entryX + spacing;
+      lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
+      
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
+      ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
+      ctx.stroke();
+      
+      // 5. TIMER BOX (only for latest trade)
+      if (ei === entries.length - 1 && entry.expiresAt) {
+        var now = Date.now();
+        var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
+        var mm = Math.floor(remaining / 60);
+        var ss = remaining % 60;
+        var timerStr = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+        
+        var timerW = 46;
+        var timerH = 18;
+        var timerX = entryX + spacing / 2 - timerW / 2;
+        var timerY = y - 26;
+        
+        ctx.fillStyle = '#1a2332';
+        ctx.fillRect(timerX, timerY, timerW, timerH);
+        ctx.strokeStyle = '#2a3546';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(timerX + 0.5, timerY + 0.5, timerW - 1, timerH - 1);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px ' + this.options.fontFamily;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timerStr, timerX + timerW / 2, timerY + timerH / 2 + 0.5);
+      }
     }
-
+    
     ctx.restore();
   };
   // ============================================================
@@ -1442,7 +1473,32 @@
   // PART 4: PUBLIC API — Trade markers
   // ============================================================
 QuotexChart.prototype.setTradeEntry = function(entry) {
-    if (!entry || !entry.time || typeof entry.price !== 'number') {
+    if (!entry) {
+      this.tradeEntries = [];
+      this.tradeEntry = null;
+      return;
+    }
+    
+    // ⭐ Multi-trade support: array
+    if (Array.isArray(entry)) {
+      this.tradeEntries = entry.map(function(e) {
+        return {
+          time: e.time,
+          price: e.price,
+          type: e.type === 'PUT' ? 'PUT' : 'CALL',
+          amount: e.amount || 0,
+          expiresAt: e.expiresAt || null
+        };
+      });
+      this.tradeEntry = this.tradeEntries.length > 0 
+                        ? this.tradeEntries[this.tradeEntries.length - 1] 
+                        : null;
+      return;
+    }
+    
+    // Single trade
+    if (!entry.time || typeof entry.price !== 'number') {
+      this.tradeEntries = [];
       this.tradeEntry = null;
       return;
     }
@@ -1453,11 +1509,13 @@ QuotexChart.prototype.setTradeEntry = function(entry) {
       amount: entry.amount || 0,
       expiresAt: entry.expiresAt || null
     };
-  };
-  QuotexChart.prototype.clearTradeEntry = function() {
-    this.tradeEntry = null;
+    this.tradeEntries = [this.tradeEntry];
   };
 
+  QuotexChart.prototype.clearTradeEntry = function() {
+    this.tradeEntries = [];
+    this.tradeEntry = null;
+  };
   QuotexChart.prototype.addVerticalLine = function(opts) {
     if (!opts || typeof opts.time !== 'number') return null;
     if (!this.tradeVLines) this.tradeVLines = [];
@@ -1499,6 +1557,7 @@ QuotexChart.prototype.setTradeEntry = function(entry) {
   };
 
   QuotexChart.prototype.clearAllTradeElements = function() {
+    this.tradeEntries = [];
     this.tradeEntry = null;
     this.tradeVLines = [];
     this.tradeResults = [];
