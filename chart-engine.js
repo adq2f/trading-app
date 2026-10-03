@@ -1228,7 +1228,7 @@
   // ============================================================
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — MULTI-TRADE)
   // ============================================================
-  QuotexChart.prototype._drawTradeEntry = function() {
+    QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
                   ? this.tradeEntries
                   : (this.tradeEntry ? [this.tradeEntry] : []);
@@ -1242,11 +1242,6 @@
 
     var spacing = this.viewport.candleSpacing;
     var offsetX = this.viewport.offsetX;
-
-    // ⭐ Candle body width (exact same as candle drawing)
-    var bodyWidth = spacing * this.options.candleBodyRatio;
-    if (bodyWidth < 3) bodyWidth = 3;
-    if (bodyWidth > spacing) bodyWidth = spacing;
 
     ctx.save();
 
@@ -1268,16 +1263,16 @@
       var isCall = entry.type === 'CALL';
       var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
 
-      // ⭐ Dot positions — ALL three at entry candle
-      var leftDotX = entryX - bodyWidth / 2;      // Left edge of candle body
-      var centerX = entryX;                       // Center of candle body
-      var rightDotX = entryX + bodyWidth / 2;     // Right edge of candle body
-
-      // ⭐ HORIZONTAL LINE — from center to 1 candle right
+      // ⭐ Line END = 1 candle right (next candle এর আগে)
       var lineStart = entryX;
       var lineEnd = entryX + spacing;
       lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
 
+      // ⭐ Position: Center dot at entry candle, Right dot at line end
+      var centerX = entryX;
+      var rightDotX = lineEnd;
+
+      // ⭐ 1. HORIZONTAL LINE — center → right end
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
@@ -1286,58 +1281,45 @@
       ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
       ctx.stroke();
 
-      // ⭐ LEFT DOT (at candle left edge)
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(leftDotX, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ⭐ CENTER DOT + TICK (milito — same position)
+      // ⭐ 2. CENTER DOT (at entry candle center)
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(centerX, y, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Tick triangle (milito with center dot)
-      var tickSize = 7;
+      // ⭐ 3. RIGHT DOT (at line end, next candle এর আগে)
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(rightDotX, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // ⭐ 4. TICK (milito with right dot — at line end)
+      var tickX = rightDotX;
+      var tickY = y;
+      var tickSize = 6;
+
       ctx.fillStyle = color;
       ctx.beginPath();
       if (isCall) {
-        // 🔺 UP triangle — tip pointing UP, base AT center dot
-        ctx.moveTo(centerX, y - tickSize - 2);           // tip top
-        ctx.lineTo(centerX - tickSize * 0.7, y - 1);     // bottom left
-        ctx.lineTo(centerX + tickSize * 0.7, y - 1);     // bottom right
+        // 🔺 UP triangle — tip pointing UP
+        ctx.moveTo(tickX, tickY - tickSize - 4);
+        ctx.lineTo(tickX - tickSize * 0.75, tickY - 4);
+        ctx.lineTo(tickX + tickSize * 0.75, tickY - 4);
       } else {
-        // 🔻 DOWN triangle — tip pointing DOWN, base AT center dot
-        ctx.moveTo(centerX, y + tickSize + 2);           // tip bottom
-        ctx.lineTo(centerX - tickSize * 0.7, y + 1);     // top left
-        ctx.lineTo(centerX + tickSize * 0.7, y + 1);     // top right
+        // 🔻 DOWN triangle — tip pointing DOWN
+        ctx.moveTo(tickX, tickY + tickSize + 4);
+        ctx.lineTo(tickX - tickSize * 0.75, tickY + 4);
+        ctx.lineTo(tickX + tickSize * 0.75, tickY + 4);
       }
       ctx.closePath();
       ctx.fill();
 
-      // White highlight for premium look
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.beginPath();
-      if (isCall) {
-        ctx.moveTo(centerX, y - tickSize + 1);
-        ctx.lineTo(centerX - tickSize * 0.35, y - 3);
-        ctx.lineTo(centerX + tickSize * 0.35, y - 3);
-      } else {
-        ctx.moveTo(centerX, y + tickSize - 1);
-        ctx.lineTo(centerX - tickSize * 0.35, y + 3);
-        ctx.lineTo(centerX + tickSize * 0.35, y + 3);
-      }
-      ctx.closePath();
-      ctx.fill();
+      // White outline for premium look
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-      // ⭐ RIGHT DOT (at candle right edge)
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(rightDotX, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ⭐ TIMER BOX (only for latest trade)
+      // ⭐ 5. TIMER BOX (only for latest trade)
       if (ei === entries.length - 1 && entry.expiresAt) {
         var now = Date.now();
         var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
@@ -1347,7 +1329,7 @@
 
         var timerW = 46;
         var timerH = 18;
-        var timerX = entryX + spacing / 2 - timerW / 2;
+        var timerX = (entryX + lineEnd) / 2 - timerW / 2;
         var timerY = y - 26;
 
         ctx.fillStyle = '#1a2332';
