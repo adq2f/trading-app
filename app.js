@@ -1083,22 +1083,22 @@ function renderVerticalLines(startTime, endTime) {
     var startSec = Math.floor(new Date(startTime).getTime() / 1000);
     var endSec = Math.floor(endTime / 1000);
 
-    // FIX E: Quotex exact labels — Beginning / End of trade
+    // ⭐ SHORT labels only (prevents overlap on small screens)
     window.chartRef.addVerticalLine({
       time: startSec,
-      label: 'Beginning of trade',
+      label: 'BEGIN',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
     window.chartRef.addVerticalLine({
       time: endSec,
-      label: 'End of trade',
+      label: 'END',
       color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
 
-    console.log('[VLine] Beginning + End lines added with labels');
+    console.log('[VLine] BEGIN + END lines added');
   } catch(e) {
     console.error('[VLine] Error:', e);
   }
@@ -1437,8 +1437,23 @@ function loadActiveTrades() {
     var badge2 = document.getElementById("trades-count-badge");
     if (badge2) badge2.textContent = activeTradesLocal.length;
 
-    // ⭐ Reload হলে latest pending trade restore
+    // ⭐ Reload হলে latest pending trade RESTORE
     var latest = activeTradesLocal[activeTradesLocal.length - 1];
+    if (latest && latest.status === "pending") {
+      // Restore entry marker (line + dot + tick)
+      if (typeof renderEntryLine === 'function') {
+        renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
+      }
+      // Restore vertical lines
+      if (typeof renderVerticalLines === 'function') {
+        renderVerticalLines(latest.entryTime, latest.expiresAt);
+      }
+      // Restore tick mark
+      if (typeof renderTickMark === 'function') {
+        renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
+      }
+      console.log('[Trade] ✅ Restored from Firestore:', latest.type, latest.entryPrice);
+    }
     if (latest && latest.status === "pending") {
       renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
       renderVerticalLines(latest.entryTime, latest.expiresAt);
