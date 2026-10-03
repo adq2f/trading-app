@@ -1224,9 +1224,6 @@
     }
   };
 
-// ============================================================
-  // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — FINAL v3)
-  // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     if (!this.tradeEntry) return;
 
@@ -1256,35 +1253,7 @@
 
     ctx.save();
 
-    // ============================================
-    // 1. LEFT SIDE DOTS — DISTINCT dots
-    //    Zoom In: spread apart
-    //    Zoom Out: tight but not touching
-    // ============================================
-    var dotRadius = Math.max(1.5, Math.min(3.5, spacing * 0.35));
-    var maxLeftDots = 60;
-
-    for (var li = 1; li <= maxLeftDots; li++) {
-      var leftIdx = entryIdx - li;
-      if (leftIdx < 0) break;
-      var relativeLeftIdx = leftIdx - offsetX;
-      var lx = pad.left + (relativeLeftIdx + 0.5) * spacing;
-      if (lx < pad.left - 5) break;
-      if (lx > pad.left + chartW + 5) continue;
-
-      // ⭐ Distinction: only draw dot if there's enough space
-      //    (prevents merging when zoomed out)
-      if (spacing < 4 && li % 2 === 0) continue;
-
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(lx, y, dotRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ============================================
-    // 2. HORIZONTAL LINE — Entry → 1 candle right
-    // ============================================
+    // 1. HORIZONTAL LINE — Entry → 1 candle right
     var lineStart = entryX;
     var lineEnd = entryX + spacing;
     lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
@@ -1297,9 +1266,7 @@
     ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
     ctx.stroke();
 
-    // ============================================
-    // 3. ENTRY DOT — white ring + colored center
-    // ============================================
+    // 2. ENTRY DOT — ONE dot only
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(entryX, y, 5.5, 0, Math.PI * 2);
@@ -1310,38 +1277,31 @@
     ctx.arc(entryX, y, 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // ============================================
-    // 4. HIGH QUALITY TICK — Quotex exact 🔺🔻
-    //    Sharp triangle, bold, spread to the right
-    // ============================================
+    // 3. HIGH QUALITY TICK — Sharp triangle
     var tickX = lineEnd;
     var tickY = y;
     var tickSize = 7;
 
     ctx.fillStyle = color;
     ctx.beginPath();
-
     if (isCall) {
-      // 🔺 UP triangle (CALL) — sits ABOVE the line
-      ctx.moveTo(tickX, tickY - tickSize - 2);              // top tip
-      ctx.lineTo(tickX - tickSize * 0.85, tickY - 1);       // bottom left
-      ctx.lineTo(tickX + tickSize * 0.85, tickY - 1);       // bottom right
+      ctx.moveTo(tickX, tickY - tickSize - 2);
+      ctx.lineTo(tickX - tickSize * 0.85, tickY - 1);
+      ctx.lineTo(tickX + tickSize * 0.85, tickY - 1);
     } else {
-      // 🔻 DOWN triangle (PUT) — sits BELOW the line
-      ctx.moveTo(tickX, tickY + tickSize + 2);              // bottom tip
-      ctx.lineTo(tickX - tickSize * 0.85, tickY + 1);       // top left
-      ctx.lineTo(tickX + tickSize * 0.85, tickY + 1);       // top right
+      ctx.moveTo(tickX, tickY + tickSize + 2);
+      ctx.lineTo(tickX - tickSize * 0.85, tickY + 1);
+      ctx.lineTo(tickX + tickSize * 0.85, tickY + 1);
     }
     ctx.closePath();
     ctx.fill();
 
-    // ⭐ Bold outline for high quality
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Inner white highlight for premium look
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    // White highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.beginPath();
     if (isCall) {
       ctx.moveTo(tickX, tickY - tickSize + 1);
@@ -1355,9 +1315,7 @@
     ctx.closePath();
     ctx.fill();
 
-    // ============================================
-    // 5. TIMER BOX (above line, right side of tick)
-    // ============================================
+    // 4. TIMER BOX
     if (entry.expiresAt) {
       var now = Date.now();
       var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
@@ -1385,7 +1343,6 @@
 
     ctx.restore();
   };
-
   // ============================================================
   // PART 4: RESULT MARKERS (WIN/LOSS)
   // ============================================================
@@ -1484,7 +1441,7 @@
   // ============================================================
   // PART 4: PUBLIC API — Trade markers
   // ============================================================
-    QuotexChart.prototype.setTradeEntry = function(entry) {
+QuotexChart.prototype.setTradeEntry = function(entry) {
     if (!entry || !entry.time || typeof entry.price !== 'number') {
       this.tradeEntry = null;
       return;
@@ -1497,7 +1454,6 @@
       expiresAt: entry.expiresAt || null
     };
   };
-
   QuotexChart.prototype.clearTradeEntry = function() {
     this.tradeEntry = null;
   };
