@@ -1228,7 +1228,7 @@
   // ============================================================
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — MULTI-TRADE)
   // ============================================================
-    QuotexChart.prototype._drawTradeEntry = function() {
+      QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
                   ? this.tradeEntries
                   : (this.tradeEntry ? [this.tradeEntry] : []);
@@ -1245,14 +1245,29 @@
 
     ctx.save();
 
-    for (var ei = 0; ei < entries.length; ei++) {
-      var entry = entries[ei];
-      if (!entry || !entry.time || typeof entry.price !== 'number') continue;
+    // ⭐ Group trades by entry candle (same candle = stack left dots)
+    var grouped = {};
+    var order = [];
+    for (var gi = 0; gi < entries.length; gi++) {
+      var e = entries[gi];
+      if (!e || !e.time || typeof e.price !== 'number') continue;
+      var key = e.time + '|' + Math.round(e.price * 100);
+      if (!grouped[key]) {
+        grouped[key] = [];
+        order.push(key);
+      }
+      grouped[key].push(e);
+    }
 
+    // ⭐ Draw each group
+    for (var oi = 0; oi < order.length; oi++) {
+      var group = grouped[order[oi]];
+      if (!group || group.length === 0) continue;
+
+      var entry = group[group.length - 1]; // latest in group
       var entryIdx = this._findCandleIndex(entry.time);
       if (entryIdx === -1) continue;
 
-      // ⭐ EXACT same formula as candle drawing — no drift
       var entryRelativeIdx = entryIdx - offsetX;
       var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
 
@@ -1263,16 +1278,13 @@
       var isCall = entry.type === 'CALL';
       var color = isCall ? COLORS.entryGreen : COLORS.entryRed;
 
-      // ⭐ Line END = 1 candle right (next candle এর আগে)
+      // ⭐ Line: tick position → next candle এর আগে
+      var tickX = entryX;
       var lineStart = entryX;
       var lineEnd = entryX + spacing;
       lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
 
-      // ⭐ Position: Center dot at entry candle, Right dot at line end
-      var centerX = entryX;
-      var rightDotX = lineEnd;
-
-      // ⭐ 1. HORIZONTAL LINE — center → right end
+      // ⭐ 1. HORIZONTAL LINE — from tick position → right end
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
@@ -1281,46 +1293,52 @@
       ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
       ctx.stroke();
 
-      // ⭐ 2. CENTER DOT (at entry candle center)
+      // ⭐ 2. RIGHT DOT (at line end)
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(centerX, y, 3.5, 0, Math.PI * 2);
+      ctx.arc(lineEnd, y, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // ⭐ 3. RIGHT DOT (at line end, next candle এর আগে)
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(rightDotX, y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ⭐ 4. TICK (milito with right dot — at line end)
-      var tickX = rightDotX;
-      var tickY = y;
-      var tickSize = 6;
-
+      // ⭐ 3. TICK (at entry candle center, ছোট)
+      var tickSize = 5;   // ছোট tick
       ctx.fillStyle = color;
       ctx.beginPath();
       if (isCall) {
-        // 🔺 UP triangle — tip pointing UP
-        ctx.moveTo(tickX, tickY - tickSize - 4);
-        ctx.lineTo(tickX - tickSize * 0.75, tickY - 4);
-        ctx.lineTo(tickX + tickSize * 0.75, tickY - 4);
+        // 🔺 UP tick
+        ctx.moveTo(tickX, y - tickSize - 3);
+        ctx.lineTo(tickX - tickSize * 0.7, y - 3);
+        ctx.lineTo(tickX + tickSize * 0.7, y - 3);
       } else {
-        // 🔻 DOWN triangle — tip pointing DOWN
-        ctx.moveTo(tickX, tickY + tickSize + 4);
-        ctx.lineTo(tickX - tickSize * 0.75, tickY + 4);
-        ctx.lineTo(tickX + tickSize * 0.75, tickY + 4);
+        // 🔻 DOWN tick
+        ctx.moveTo(tickX, y + tickSize + 3);
+        ctx.lineTo(tickX - tickSize * 0.7, y + 3);
+        ctx.lineTo(tickX + tickSize * 0.7, y + 3);
       }
       ctx.closePath();
       ctx.fill();
 
-      // White outline for premium look
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // ⭐ 5. TIMER BOX (only for latest trade)
-      if (ei === entries.length - 1 && entry.expiresAt) {
+      // ⭐ 4. LEFT SIDE DOTS (if group has > 1 trade)
+      //    For N trades in same position → N-1 dots on left side
+      var extraDots = group.length - 1;
+      if (extraDots > 0) {
+        var dotSpacing = Math.max(8, spacing * 0.6);
+        for (var di = 1; di <= extraDots; di++) {
+          var dotX = tickX - dotSpacing * di;
+          if (dotX < pad.left - 5) break;
+
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(dotX, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // ⭐ 5. TIMER BOX (only for latest group)
+      if (oi === order.length - 1 && entry.expiresAt) {
         var now = Date.now();
         var remaining = Math.max(0, Math.ceil((entry.expiresAt - now) / 1000));
         var mm = Math.floor(remaining / 60);
@@ -1329,7 +1347,7 @@
 
         var timerW = 46;
         var timerH = 18;
-        var timerX = (entryX + lineEnd) / 2 - timerW / 2;
+        var timerX = (tickX + lineEnd) / 2 - timerW / 2;
         var timerY = y - 26;
 
         ctx.fillStyle = '#1a2332';
