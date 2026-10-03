@@ -1228,7 +1228,7 @@
   // ============================================================
   // PART 4: TRADE ENTRY MARKER (QUOTEX EXACT — MULTI-TRADE)
   // ============================================================
-          QuotexChart.prototype._drawTradeEntry = function() {
+         QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
                   ? this.tradeEntries
                   : (this.tradeEntry ? [this.tradeEntry] : []);
@@ -1244,9 +1244,8 @@
     var offsetX = this.viewport.offsetX;
 
     // ⭐ Scale with zoom
-    var dotRadius = Math.max(2, Math.min(3.5, spacing * 0.35));
-    var showDots = spacing > 4.5;
-    var showRightDot = spacing > 6;
+    var circleR = Math.max(3, Math.min(5, spacing * 0.45));
+    var showRightDot = spacing > 5.5;
 
     ctx.save();
 
@@ -1269,103 +1268,86 @@
       var group = grouped[order[oi]];
       if (!group || group.length === 0) continue;
 
+      var firstEntry = group[0];
+      var entryIdx = this._findCandleIndex(firstEntry.time);
+      if (entryIdx === -1) continue;
+
+      var entryRelativeIdx = entryIdx - offsetX;
+      var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
+
+      var y = this._priceToY(firstEntry.price);
+      if (y === null) continue;
+      if (y < pad.top || y > H - pad.bottom) continue;
+
+      // ⭐ Circle horizontal spacing
+      var circleSpacing = circleR * 2.5;
+
+      // ⭐ Line: from first circle → 1 candle right
+      var lineStart = entryX;
+      var lineEnd = entryX + spacing + circleSpacing * (group.length - 1);
+      lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
+
+      // ⭐ Use latest trade for line colour
+      var latestEntry = group[group.length - 1];
+      var isCall = latestEntry.type === 'CALL';
+      var lineColor = isCall ? '#00c076' : '#ff3b30';
+
+      // ⭐ 1. HORIZONTAL LINE
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(Math.round(lineStart), Math.round(y) + 0.5);
+      ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
+      ctx.stroke();
+
+      // ⭐ 2. RIGHT DOT at line end
+      if (showRightDot) {
+        var rightDotR = circleR * 0.85;
+        var rdColor = isCall ? '#00c076' : '#ff3b30';
+
+        ctx.fillStyle = rdColor;
+        ctx.beginPath();
+        ctx.arc(lineEnd, y, rightDotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ⭐ 3. DRAW ALL CIRCLES (horizontal — right grow)
       for (var tIdx = 0; tIdx < group.length; tIdx++) {
-        var entry = group[tIdx];
-        var entryIdx = this._findCandleIndex(entry.time);
-        if (entryIdx === -1) continue;
+        var trade = group[tIdx];
+        var tradeCall = trade.type === 'CALL';
+        var tradeColor = tradeCall ? '#00c076' : '#ff3b30';
 
-        var entryRelativeIdx = entryIdx - offsetX;
-        var entryX = pad.left + (entryRelativeIdx + 0.5) * spacing;
+        var circleX = entryX + circleSpacing * tIdx;
+        var circleY = y;
 
-        var y = this._priceToY(entry.price);
-        if (y === null) continue;
-        if (y < pad.top || y > H - pad.bottom) continue;
-
-        var isCall = entry.type === 'CALL';
-
-        // ⭐ QUOTEX EXACT COLOURS — different from candle
-        var mainColor = isCall ? '#26a69a' : '#ef5350';   // Line colour (teal/coral)
-        var dotColor  = isCall ? '#00c076' : '#ff3b30';   // Dot colour (bright)
-        var arrowColor = isCall ? '#00c076' : '#ff3b30';
-
-        // ⭐ Line: entry candle → 1 candle right
-        var lineStart = entryX;
-        var lineEnd = entryX + spacing;
-        lineEnd = Math.min(lineEnd, pad.left + chartW - 2);
-
-        // ⭐ Same position multiple trades → vertical offset
-        var yOffset = tIdx * (dotRadius * 2.8);
-
-        // ⭐ 1. HORIZONTAL LINE (Quotex exact colour)
-        ctx.strokeStyle = mainColor;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([]);
+        // Solid circle fill
+        ctx.fillStyle = tradeColor;
         ctx.beginPath();
-        ctx.moveTo(Math.round(lineStart), Math.round(y - yOffset) + 0.5);
-        ctx.lineTo(Math.round(lineEnd), Math.round(y - yOffset) + 0.5);
-        ctx.stroke();
-
-        // ⭐ 2. CENTER CIRCLE (round combined with tick)
-        //    Quotex: circle AT candle center, tick INSIDE circle
-        var circleR = dotRadius + 2;
-        var cy = y - yOffset;
-
-        // Outer white ring
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(entryX, cy, circleR + 1, 0, Math.PI * 2);
+        ctx.arc(circleX, circleY, circleR, 0, Math.PI * 2);
         ctx.fill();
 
-        // Coloured circle
-        ctx.fillStyle = dotColor;
-        ctx.beginPath();
-        ctx.arc(entryX, cy, circleR, 0, Math.PI * 2);
-        ctx.fill();
-
-        // White border ring
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(entryX, cy, circleR, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // ⭐ 3. TICK INSIDE CIRCLE (round combined shape)
+        // ⭐ 4. TICK INSIDE CIRCLE (white arrow)
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        var arrowSize = dotRadius * 0.7;
-        if (isCall) {
-          // 🔺 UP arrow INSIDE circle
-          ctx.moveTo(entryX, cy - arrowSize);
-          ctx.lineTo(entryX - arrowSize * 0.65, cy + arrowSize * 0.4);
-          ctx.lineTo(entryX + arrowSize * 0.65, cy + arrowSize * 0.4);
+        var arrowSize = circleR * 0.55;
+        if (tradeCall) {
+          // ▲ UP arrow
+          ctx.moveTo(circleX, circleY - arrowSize);
+          ctx.lineTo(circleX - arrowSize * 0.7, circleY + arrowSize * 0.5);
+          ctx.lineTo(circleX + arrowSize * 0.7, circleY + arrowSize * 0.5);
         } else {
-          // 🔻 DOWN arrow INSIDE circle
-          ctx.moveTo(entryX, cy + arrowSize);
-          ctx.lineTo(entryX - arrowSize * 0.65, cy - arrowSize * 0.4);
-          ctx.lineTo(entryX + arrowSize * 0.65, cy - arrowSize * 0.4);
+          // ▼ DOWN arrow
+          ctx.moveTo(circleX, circleY + arrowSize);
+          ctx.lineTo(circleX - arrowSize * 0.7, circleY - arrowSize * 0.5);
+          ctx.lineTo(circleX + arrowSize * 0.7, circleY - arrowSize * 0.5);
         }
         ctx.closePath();
         ctx.fill();
-
-        // ⭐ 4. RIGHT DOT (at line end) — only if zoom in enough
-        if (showRightDot) {
-          var rightDotX = lineEnd;
-          var rightDotR = dotRadius * 0.9;
-
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(rightDotX, cy, rightDotR + 1, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = dotColor;
-          ctx.beginPath();
-          ctx.arc(rightDotX, cy, rightDotR, 0, Math.PI * 2);
-          ctx.fill();
-        }
       }
     }
 
-    // ⭐ 5. TIMER BOX (latest group only)
+    // ⭐ 4. TIMER BOX (latest group only)
     if (order.length > 0) {
       var lastGroup = grouped[order[order.length - 1]];
       var latest = lastGroup[lastGroup.length - 1];
@@ -1379,14 +1361,13 @@
         var lIdx = this._findCandleIndex(latest.time);
         if (lIdx !== -1) {
           var lx = pad.left + (lIdx - offsetX + 0.5) * spacing;
-          var lEnd = Math.min(lx + spacing, pad.left + chartW - 2);
           var ly = this._priceToY(latest.price);
 
           if (ly !== null) {
             var timerW = 46;
             var timerH = 18;
-            var timerX = (lx + lEnd) / 2 - timerW / 2;
-            var timerY = ly - 30;
+            var timerX = lx + spacing / 2 + (circleSpacing * (lastGroup.length - 1)) / 2 - timerW / 2;
+            var timerY = ly - 26;
 
             ctx.fillStyle = '#1a2332';
             ctx.fillRect(timerX, timerY, timerW, timerH);
