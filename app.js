@@ -1,11 +1,9 @@
 // ============================================================
-// QUOTEX CLONE — app.js v30 (COMPLETE)
-// Part 1/3: Guards + Firebase + DOM + Auth + Chart + Firestore
+// QUOTEX CLONE — app.js v31 (COMPLETE + ALL FIXES)
+// Part 1/2: Guards + Firebase + DOM + Auth + Chart + Drawing
 // ============================================================
 
-// ============================================================
 // SAFE TEXT GUARD
-// ============================================================
 (function safeTextGuard() {
   if (window.__safeTextGuard) return;
   window.__safeTextGuard = true;
@@ -21,9 +19,7 @@
   console.log("[SAFE-GUARD] Active");
 })();
 
-// ============================================================
 // GLOBAL NULL-GUARD
-// ============================================================
 (function() {
   if (window.__globalNullSafe) return;
   window.__globalNullSafe = true;
@@ -49,9 +45,7 @@
   console.log('[NULL-GUARD] Active');
 })();
 
-// ============================================================
 // IMPORTS
-// ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -62,9 +56,7 @@ import {
   addDoc, query, where, onSnapshot, orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ============================================================
 // SAFE TEXT REPLACEMENT
-// ============================================================
 (function safeTextReplacement() {
   if (window.__safeTextReplacement) return;
   window.__safeTextReplacement = true;
@@ -94,9 +86,7 @@ import {
   } catch(e) {}
 })();
 
-// ============================================================
 // FIREBASE CONFIG
-// ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDSHI9UELxtQe0jrApkjg_F46LwKuG-vns",
   authDomain: "trading-app-b2b27.firebaseapp.com",
@@ -110,9 +100,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ============================================================
 // DOM ELEMENTS
-// ============================================================
 const loginPage = document.getElementById("login-page");
 const dashboardPage = document.getElementById("dashboard-page");
 const emailInput = document.getElementById("email");
@@ -165,9 +153,7 @@ const activeTradesList = document.getElementById("active-trades-list");
 const historyList = document.getElementById("history-list");
 const activeCount = document.getElementById("active-count");
 
-// ============================================================
 // GLOBALS
-// ============================================================
 let currentUser = null;
 window.currentUser = null;
 let userBalance = 0;
@@ -193,19 +179,15 @@ let drawings = [];
 let isDrawing = false;
 let drawStartPoint = null;
 
-// Chart refs
 window.chartRef = null;
 window.chart = null;
 
-// Expose selection vars
 window.selectedTime = 60;
 window.selectedTimeframe = "1m";
 window.selectedAsset = "BTCUSDT";
 window.accountType = "demo";
 
-// ============================================================
 // SOUNDS
-// ============================================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -274,9 +256,7 @@ function animateBalanceChange(amount) {
   }, 2000);
 }
 
-// ============================================================
 // AUTH EVENTS
-// ============================================================
 signupBtn.addEventListener("click", async () => {
   var email = emailInput.value.trim();
   var password = passwordInput.value;
@@ -311,9 +291,7 @@ loginBtn.addEventListener("click", async () => {
   }
 });
 
-// ============================================================
 // AUTH STATE
-// ============================================================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
@@ -338,7 +316,6 @@ onAuthStateChanged(auth, async (user) => {
     if (typeof loadActiveTrades === "function") loadActiveTrades();
     if (typeof loadHistory === "function") loadHistory();
 
-    // ⭐ Reload হলে chart init হওয়ার পর marker restore
     setTimeout(function() {
       if (window.chartRef && window.activeTradesLocal && window.activeTradesLocal.length > 0) {
         var pendingTrades = window.activeTradesLocal.filter(function(t) {
@@ -348,10 +325,6 @@ onAuthStateChanged(auth, async (user) => {
           var latest = pendingTrades[pendingTrades.length - 1];
           if (typeof renderEntryLine === 'function') {
             renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
-            console.log('[Reload] ✅ Entry restored:', latest.type);
-          }
-          if (typeof renderVerticalLines === 'function') {
-            renderVerticalLines(latest.entryTime, latest.expiresAt);
           }
         }
       }
@@ -386,9 +359,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ============================================================
 // EXPOSE FIREBASE
-// ============================================================
 window.db = db;
 window.auth = auth;
 window.getDocs = getDocs;
@@ -404,9 +375,7 @@ window.getDoc = getDoc;
 
 console.log("===== PART 1 LOADED =====");
 
-// ============================================================
 // INIT CHART
-// ============================================================
 function initChart() {
   console.log('>>> initChart() START');
   if (!chartEl) { console.error('[CHART] tv-chart element not found'); return; }
@@ -469,7 +438,6 @@ function initChart() {
     });
     window.candleSeries = candleSeries;
 
-    // Hide HTML overlays (canvas draws everything)
     try { var oldWm = chartEl.querySelector('.qx-chart-watermark'); if (oldWm) oldWm.remove(); } catch(e) {}
     try { var pd = document.getElementById("qx-price-dot"); if (pd) pd.style.display = "none"; } catch(e) {}
     try { var hl = document.getElementById('qx-time-labels'); if (hl) hl.style.display = 'none'; } catch(e) {}
@@ -492,7 +460,6 @@ function initChart() {
     window.__chartInitDone = true;
     console.log('[CHART] ✅ Init complete');
 
-    // Trigger Firestore consumer
     if (typeof window.initAdminCandleConsumer === 'function') {
       setTimeout(function() { window.initAdminCandleConsumer(); }, 500);
     }
@@ -502,9 +469,7 @@ function initChart() {
   }
 }
 
-// ============================================================
 // TIMEFRAME HELPERS
-// ============================================================
 function convertTimeframe(tf) {
   var map = {
     "5s": "5s", "10s": "10s", "15s": "15s", "30s": "30s",
@@ -525,9 +490,7 @@ function tfToMs(tf) {
   return map[tf] || 60000;
 }
 
-// ============================================================
-// LOAD CANDLES (Firestore via Admin)
-// ============================================================
+// LOAD CANDLES
 async function loadCandles() {
   console.log("[Candles] Loading via Firestore:", selectedAsset, selectedTimeframe);
   if (typeof window.switchToAdminMarket === 'function') {
@@ -535,9 +498,6 @@ async function loadCandles() {
   }
 }
 
-// ============================================================
-// LIVE PRICE (Binance WS — disabled by default)
-// ============================================================
 function startLivePrice() {
   if (window.USE_BINANCE !== true) return;
   stopLivePrice();
@@ -579,30 +539,7 @@ function stopLivePrice() {
   if (livePriceWS) { try { livePriceWS.close(); } catch(e) {} livePriceWS = null; }
 }
 
-// ============================================================
-// TIME LABELS (HTML overlay — for Quotex style bottom labels)
-// ============================================================
-function startTimeLabelsUpdater() {
-  if (window.__timeLabelsInterval) return;
-  window.__timeLabelsInterval = setInterval(function() {
-    updateTimeLabels();
-  }, 5000);
-  setTimeout(updateTimeLabels, 1000);
-}
-
-function updateTimeLabels() {
-  try {
-    var labelsEl = document.getElementById("qx-time-labels");
-    if (!labelsEl) return;
-    if (!window.chartRef || !window.candleSeries) return;
-    // Canvas draws time labels — HTML overlay disabled
-    labelsEl.innerHTML = "";
-  } catch(e) {}
-}
-
-// ============================================================
 // CANDLE COUNTDOWN
-// ============================================================
 function updateCandleCountdown() {
   try {
     if (!window.candleSeries) return;
@@ -654,26 +591,20 @@ function updateCandleCountdown() {
   } catch(e) {}
 }
 
-// ============================================================
-// EXPOSE PART 2
-// ============================================================
 window.initChart = initChart;
 window.loadCandles = loadCandles;
 window.startLivePrice = startLivePrice;
 window.stopLivePrice = stopLivePrice;
-window.updateTimeLabels = updateTimeLabels;
 window.updateCandleCountdown = updateCandleCountdown;
 window.convertTimeframe = convertTimeframe;
 window.tfToMs = tfToMs;
 
 console.log("===== PART 1/3 LOADED =====");
 // ============================================================
-// PART 2/3: Drawing + Trade Logic + Markers + Popups
+// PART 2/3: Drawing + Trade Logic + Markers
 // ============================================================
 
-// ============================================================
 // DRAWING SYSTEM
-// ============================================================
 var drawingCtx = null;
 
 function initDrawingSystem() {
@@ -877,7 +808,6 @@ function drawFibonacci(p1, p2) {
   });
 }
 
-// Drawing tool buttons
 document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   btn.addEventListener("click", function() {
     var tool = btn.dataset.tool;
@@ -892,16 +822,13 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   });
 });
 
-// ============================================================
 // DRAWER TOGGLE
-// ============================================================
 (function initDrawer() {
   var toggleBtn = document.getElementById("drawer-toggle");
   var drawer = document.getElementById("qx-drawer");
   var overlay = document.getElementById("drawer-overlay");
   var closeBtn = document.getElementById("drawer-close");
   if (!drawer) return;
-
   function openDrawer() {
     drawer.classList.remove("hidden");
     if (overlay) overlay.classList.remove("hidden");
@@ -914,19 +841,15 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   if (toggleBtn) toggleBtn.addEventListener("click", openDrawer);
   if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
   if (overlay) overlay.addEventListener("click", closeDrawer);
-  console.log("[Drawer] Initialized");
 })();
 
-// ============================================================
-// DRAWING PANEL TOGGLE
-// ============================================================
+// DRAWING PANEL
 (function initDrawingPanel() {
   var toggleBtn = document.getElementById("drawing-toggle");
   var panel = document.getElementById("drawing-panel");
   var overlay = document.getElementById("drawing-overlay");
   var closeBtn = document.getElementById("drawing-panel-close");
   if (!panel) return;
-
   function openPanel() {
     panel.classList.remove("hidden");
     if (overlay) overlay.classList.remove("hidden");
@@ -938,12 +861,9 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   if (toggleBtn) toggleBtn.addEventListener("click", openPanel);
   if (closeBtn) closeBtn.addEventListener("click", closePanel);
   if (overlay) overlay.addEventListener("click", closePanel);
-  console.log("[DrawingPanel] Initialized");
 })();
 
-// ============================================================
-// TIMEFRAME MODAL TOGGLE
-// ============================================================
+// TIMEFRAME MODAL
 (function initTimeframeModal() {
   var badge = document.getElementById("tf-badge");
   var modal = document.getElementById("tf-modal");
@@ -951,10 +871,8 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   var closeBtn = document.getElementById("tf-close");
   var activeLabel = document.getElementById("qx-tf-active");
   if (!modal) return;
-
   function openModal() { modal.classList.remove("hidden"); }
   function closeModal() { modal.classList.add("hidden"); }
-
   if (badge) badge.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (overlay) overlay.addEventListener("click", closeModal);
@@ -968,16 +886,12 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
       window.selectedTimeframe = tf;
       if (activeLabel) activeLabel.textContent = tf;
       closeModal();
-      console.log("[TF] Changed to:", tf);
       if (typeof loadCandles === "function") await loadCandles();
     });
   });
-  console.log("[TimeframeModal] Initialized");
 })();
 
-// ============================================================
 // BOTTOM NAV
-// ============================================================
 (function initBottomNav() {
   var navBtns = document.querySelectorAll(".qx-nav-btn");
   navBtns.forEach(function(btn) {
@@ -1002,12 +916,9 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
       }
     });
   });
-  console.log("[BottomNav] Initialized");
 })();
 
-// ============================================================
 // CHART MENU BUTTON
-// ============================================================
 (function initChartMenuBtn() {
   var btn = document.getElementById("chart-menu-btn");
   if (!btn) return;
@@ -1020,31 +931,21 @@ document.querySelectorAll(".qx-tool-btn").forEach(function(btn) {
   });
 })();
 
-// ============================================================
-// EXPOSE DRAWING
-// ============================================================
 window.initDrawingSystem = initDrawingSystem;
 window.resizeDrawingCanvas = resizeDrawingCanvas;
 window.redrawDrawings = redrawDrawings;
 window.clearAllDrawings = clearAllDrawings;
 
-// ============================================================
-// ENTRY LINE / VLINE / MARKERS
-// ============================================================
+// ENTRY / VLINE / MARKERS
 window.__activeEntryData = null;
 window.__activePriceLine = null;
+window.__activeVLines = null;
 
 function updateEntryLine() { return; }
 
-// ============================================================
-// renderEntryLine — calls chart-engine v7 API
-// ============================================================
 function renderEntryLine(type, entryPrice, expiresAt) {
   try {
-    if (!window.chartRef || typeof window.chartRef.setTradeEntry !== 'function') {
-      console.warn('[Entry] chartRef.setTradeEntry not available');
-      return;
-    }
+    if (!window.chartRef || typeof window.chartRef.setTradeEntry !== 'function') return;
 
     var candleData = window.candleSeries ? window.candleSeries.data() : [];
     if (!candleData || candleData.length === 0) return;
@@ -1056,21 +957,45 @@ function renderEntryLine(type, entryPrice, expiresAt) {
       if (amtInput) entryAmount = parseFloat(amtInput.value) || 1;
     } catch(e) {}
 
-    // ⭐ expiresAt pass করা হচ্ছে
-    window.chartRef.setTradeEntry({
-      time: lastCandle.time,
-      price: parseFloat(entryPrice),
-      type: type === 'call' ? 'CALL' : 'PUT',
-      amount: entryAmount,
-      expiresAt: expiresAt
-    });
+    var allEntries = [];
+    var trades = window.activeTradesLocal || [];
+    for (var i = 0; i < trades.length; i++) {
+      var t = trades[i];
+      if (t.status !== 'pending') continue;
+      var entrySec = Math.floor(new Date(t.entryTime).getTime() / 1000);
+      var closestCandleTime = null;
+      var minDiff = Infinity;
+      for (var j = 0; j < candleData.length; j++) {
+        var diff = Math.abs(candleData[j].time - entrySec);
+        if (diff < minDiff) { minDiff = diff; closestCandleTime = candleData[j].time; }
+      }
+      if (closestCandleTime === null) continue;
+      allEntries.push({
+        time: closestCandleTime,
+        price: parseFloat(t.entryPrice),
+        type: t.type === 'call' ? 'CALL' : 'PUT',
+        amount: parseFloat(t.amount) || 1,
+        expiresAt: t.expiresAt
+      });
+    }
 
+    if (allEntries.length === 0) {
+      allEntries.push({
+        time: lastCandle.time,
+        price: parseFloat(entryPrice),
+        type: type === 'call' ? 'CALL' : 'PUT',
+        amount: entryAmount,
+        expiresAt: expiresAt
+      });
+    }
+
+    window.chartRef.setTradeEntry(allEntries);
     window.__activeEntryData = { type: type, entryPrice: entryPrice, expiresAt: expiresAt };
-    console.log('[Entry] Entry marker shown at', entryPrice);
   } catch(e) {
     console.error('[Entry] Error:', e);
   }
 }
+
 function clearEntryLine() {
   window.__activeEntryData = null;
   if (window.__activePriceLine) {
@@ -1081,46 +1006,25 @@ function clearEntryLine() {
   if (container) container.innerHTML = "";
 }
 
-window.__activeVLines = null;
-
-// ============================================================
-// renderVerticalLines — calls chart-engine v7 API
-// ============================================================
 function renderVerticalLines(startTime, endTime) {
   window.__activeVLines = { startTime: startTime, endTime: endTime };
-
   try {
-    if (!window.chartRef || typeof window.chartRef.addVerticalLine !== 'function') {
-      console.warn('[VLine] chartRef.addVerticalLine not available');
-      return;
-    }
-
+    if (!window.chartRef || typeof window.chartRef.addVerticalLine !== 'function') return;
     if (typeof window.chartRef.clearVerticalLines === 'function') {
       window.chartRef.clearVerticalLines();
     }
-
     var startSec = Math.floor(new Date(startTime).getTime() / 1000);
     var endSec = Math.floor(endTime / 1000);
 
-    // ⭐ SHORT labels only (prevents overlap on small screens)
     window.chartRef.addVerticalLine({
-      time: startSec,
-      label: 'BEGIN',
-      color: '#7b8ba3',
+      time: startSec, label: 'BEGIN', color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
-
     window.chartRef.addVerticalLine({
-      time: endSec,
-      label: 'END',
-      color: '#7b8ba3',
+      time: endSec, label: 'END', color: '#7b8ba3',
       expiresAt: endSec * 1000 + 120000
     });
-
-    console.log('[VLine] BEGIN + END lines added');
-  } catch(e) {
-    console.error('[VLine] Error:', e);
-  }
+  } catch(e) {}
 }
 
 function refreshVerticalLines() {
@@ -1139,60 +1043,7 @@ function clearVerticalLines() {
 window.refreshVerticalLines = refreshVerticalLines;
 
 function renderTickMark(type, entryPrice, entryTime) {
-  // Canvas draws tick via setTradeEntry — no-op
-}
-
-window.__entryPriceLines = [];
-
-function renderAllMarkers() {
-  try {
-    var container = document.getElementById("qx-tick-container");
-    if (!container) return;
-    container.innerHTML = "";
-    if (window.candleSeries && window.candleSeries.setMarkers) window.candleSeries.setMarkers([]);
-    if (window.__entryPriceLines && window.__entryPriceLines.length > 0) {
-      window.__entryPriceLines.forEach(function(pl) {
-        try { window.candleSeries.removePriceLine(pl); } catch(e) {}
-      });
-    }
-    window.__entryPriceLines = [];
-
-    var trades = window.activeTradesLocal || [];
-    if (trades.length === 0) { console.log("[Marker] No active trades"); return; }
-    if (!window.chartRef || !window.candleSeries) return;
-    var candleData = window.candleSeries.data();
-    if (!candleData || candleData.length === 0) return;
-
-    trades.forEach(function(trade) {
-      if (trade.status !== "pending") return;
-      if (!trade.entryTime || !trade.entryPrice) return;
-      var entrySec = Math.floor(new Date(trade.entryTime).getTime() / 1000);
-      var closestCandleTime = null;
-      var minDiff = Infinity;
-      for (var i = 0; i < candleData.length; i++) {
-        var diff = Math.abs(candleData[i].time - entrySec);
-        if (diff < minDiff) { minDiff = diff; closestCandleTime = candleData[i].time; }
-      }
-      if (closestCandleTime === null) return;
-      var xPos = window.chartRef.timeScale().timeToCoordinate(closestCandleTime);
-      var yPos = window.candleSeries.priceToCoordinate(trade.entryPrice);
-      if (xPos === null || yPos === null) return;
-      var isCall = trade.type === "call";
-      var color = isCall ? "#00c853" : "#ff5252";
-
-      var line = document.createElement("div");
-      line.className = "qx-entry-mark " + trade.type;
-      line.style.cssText = "position:absolute;left:" + (xPos - 15) + "px;top:" + (yPos - 1.5) + "px;width:30px;height:3px;background:" + color + ";border-radius:2px;box-shadow:0 0 6px " + color + ";z-index:40;pointer-events:none;";
-      container.appendChild(line);
-
-      var tickSize = 12;
-      var tick = document.createElement("div");
-      tick.style.cssText = "position:absolute;left:" + (xPos + 15 - tickSize/2) + "px;top:" + (yPos - tickSize/2) + "px;width:" + tickSize + "px;height:" + tickSize + "px;border-radius:50%;background:" + color + ";border:2px solid #ffffff;box-shadow:0 0 8px " + color + ";color:#ffffff;font-size:8px;font-weight:900;text-align:center;line-height:" + (tickSize-4) + "px;font-family:Inter,sans-serif;z-index:41;pointer-events:none;";
-      tick.textContent = "\u2713";
-      container.appendChild(tick);
-    });
-    console.log("[Marker] ✅ Rendered " + trades.length + " markers");
-  } catch(e) {}
+  // Canvas draws tick — no-op
 }
 
 function clearTickMark() {
@@ -1203,14 +1054,20 @@ function clearTickMark() {
   } catch(e) {}
 }
 
-// ============================================================
+function renderAllMarkers() {
+  try {
+    var container = document.getElementById("qx-tick-container");
+    if (container) container.innerHTML = "";
+  } catch(e) {}
+}
+
 // PLACE TRADE
-// ============================================================
 async function placeTrade(type) {
   if (!currentUser) return;
   var now = Date.now();
   if (now - lastTradeTime < 500) return;
   lastTradeTime = now;
+
   var amountInput = document.getElementById("trade-amount");
   var amount = amountInput ? parseFloat(amountInput.value) : 1;
 
@@ -1256,10 +1113,8 @@ async function placeTrade(type) {
       var tm = document.getElementById("trade-message");
       if (tm) tm.textContent = "";
     }, 2000);
-    console.log("[Trade] Placed:", type, "$" + amount, "@ $" + entryPrice.toFixed(2));
   } catch (error) {
     showMsg(error.message);
-    console.error("[Trade] Error:", error);
   }
 }
 
@@ -1270,7 +1125,6 @@ function bindTradeButtons() {
     callBtnEl.dataset.bound = "1";
     callBtnEl.addEventListener("click", function(e) {
       e.preventDefault();
-      console.log("[Trade] CALL clicked");
       placeTrade("call");
     });
   }
@@ -1278,7 +1132,6 @@ function bindTradeButtons() {
     putBtnEl.dataset.bound = "1";
     putBtnEl.addEventListener("click", function(e) {
       e.preventDefault();
-      console.log("[Trade] PUT clicked");
       placeTrade("put");
     });
   }
@@ -1287,100 +1140,91 @@ function bindTradeButtons() {
 bindTradeButtons();
 setTimeout(bindTradeButtons, 1500);
 
-// ============================================================
 // CHECK EXPIRED TRADES
-// ============================================================
 async function checkExpiredTrades() {
   if (!currentUser) return;
   var now = Date.now();
+
+  var expiredTrades = [];
   for (var i = 0; i < activeTradesLocal.length; i++) {
     var trade = activeTradesLocal[i];
     if (trade.expiresAt <= now && trade.status === "pending") {
-      // ⭐ CRITICAL: Clear ALL chart markers IMMEDIATELY on expire
-      try {
-        if (window.chartRef) {
-          if (typeof window.chartRef.clearTradeEntry === 'function') {
-            window.chartRef.clearTradeEntry();
-          }
-          if (typeof window.chartRef.clearVerticalLines === 'function') {
-            window.chartRef.clearVerticalLines();
-          }
-          if (typeof window.chartRef.clearResultMarkers === 'function') {
-            window.chartRef.clearResultMarkers();
-          }
-        }
-        // Also clear DOM-based markers
-        if (typeof clearEntryLine === 'function') clearEntryLine();
-        if (typeof clearVerticalLines === 'function') clearVerticalLines();
-        if (typeof clearTickMark === 'function') clearTickMark();
-      } catch(e) { console.error('Clear markers err:', e); }
-
-      var exitPrice = currentPrice;
-      var entryPrice = trade.entryPrice;
-      var result = "loss";
-      if (trade.type === "call" && exitPrice > entryPrice) result = "win";
-      else if (trade.type === "put" && exitPrice < entryPrice) result = "win";
-      var profit = result === "win" ? trade.amount * 1.85 : 0;
-
-      try {
-        await updateDoc(doc(db, "trades", trade.id), {
-          status: "completed", result: result, exitPrice: exitPrice,
-          profit: profit, completedAt: new Date().toISOString()
-        });
-
-        // ⭐ Reset marker count so restore triggers on next pending trade
-        window.__lastPendingCount = -1;
-        window.__pendingCount = 0;
-
-        // Show result marker (WIN/LOSS) — canvas
-        try {
-          if (window.chartRef && typeof window.chartRef.addResultMarker === 'function') {
-            var lastCandle = window.chartRef.candles[window.chartRef.candles.length - 1];
-            if (lastCandle) {
-              window.chartRef.addResultMarker({
-                time: lastCandle.time,
-                price: result === "win" ? lastCandle.high : lastCandle.low,
-                result: result === "win" ? 'WIN' : 'LOSS',
-                amount: result === "win" ? profit : trade.amount
-              });
-            }
-          }
-        } catch(e) {}
-
-        if (result === "win") {
-          var userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          var currentBal = userDoc.data().balance || 0;
-          var newBal = currentBal + profit;
-          var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
-          await updateDoc(doc(db, "users", currentUser.uid), {
-            [balanceField]: newBal, balance: newBal
-          });
-          userBalance = newBal;
-          window.userBalance = newBal;
-          safeSetTextById("balance", userBalance.toFixed(2));
-          animateBalanceChange(profit);
-          showResultFlash("win");
-          playSound("win");
-          var tm1 = document.getElementById("trade-message");
-          if (tm1) { tm1.style.color = "#00c853"; tm1.textContent = "WIN +$" + profit.toFixed(2); }
-        } else {
-          showResultFlash("loss");
-          playSound("loss");
-          var tm2 = document.getElementById("trade-message");
-          if (tm2) { tm2.style.color = "#ff5252"; tm2.textContent = "LOSS -$" + trade.amount.toFixed(2); }
-        }
-        setTimeout(function() {
-          var tm3 = document.getElementById("trade-message");
-          if (tm3) tm3.textContent = "";
-        }, 3500);
-      } catch (error) { console.error("Trade expire error:", error); }
+      expiredTrades.push(trade);
     }
   }
+  if (expiredTrades.length === 0) return;
+
+  try {
+    if (window.chartRef) {
+      if (typeof window.chartRef.clearTradeEntry === 'function') window.chartRef.clearTradeEntry();
+      if (typeof window.chartRef.clearVerticalLines === 'function') window.chartRef.clearVerticalLines();
+    }
+    if (typeof clearEntryLine === 'function') clearEntryLine();
+    if (typeof clearVerticalLines === 'function') clearVerticalLines();
+  } catch(e) {}
+
+  for (var j = 0; j < expiredTrades.length; j++) {
+    var trade = expiredTrades[j];
+    var exitPrice = currentPrice;
+    var entryPrice = trade.entryPrice;
+    var result = "loss";
+    if (trade.type === "call" && exitPrice > entryPrice) result = "win";
+    else if (trade.type === "put" && exitPrice < entryPrice) result = "win";
+    var profit = result === "win" ? trade.amount * 1.85 : 0;
+
+    try {
+      await updateDoc(doc(db, "trades", trade.id), {
+        status: "completed", result: result, exitPrice: exitPrice,
+        profit: profit, completedAt: new Date().toISOString()
+      });
+      window.__lastPendingCount = -1;
+
+      try {
+        if (window.chartRef && typeof window.chartRef.addResultMarker === 'function') {
+          var lastCandle = window.chartRef.candles[window.chartRef.candles.length - 1];
+          if (lastCandle) {
+            window.chartRef.addResultMarker({
+              time: lastCandle.time,
+              price: result === "win" ? lastCandle.high : lastCandle.low,
+              result: result === "win" ? 'WIN' : 'LOSS',
+              amount: result === "win" ? profit : trade.amount
+            });
+          }
+        }
+      } catch(e) {}
+
+      if (result === "win") {
+        var userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        var currentBal = userDoc.data().balance || 0;
+        var newBal = currentBal + profit;
+        var balanceField = accountType === "demo" ? "demoBalance" : "realBalance";
+        await updateDoc(doc(db, "users", currentUser.uid), {
+          [balanceField]: newBal, balance: newBal
+        });
+        userBalance = newBal;
+        window.userBalance = newBal;
+        safeSetTextById("balance", userBalance.toFixed(2));
+        animateBalanceChange(profit);
+        showResultFlash("win");
+        playSound("win");
+      } else {
+        showResultFlash("loss");
+        playSound("loss");
+      }
+    } catch (error) {}
+  }
+
+  setTimeout(function() {
+    var remaining = activeTradesLocal.filter(function(t) { return t.status === 'pending'; });
+    if (remaining.length > 0) {
+      var latest = remaining[remaining.length - 1];
+      if (typeof renderEntryLine === 'function') renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
+      if (typeof renderVerticalLines === 'function') renderVerticalLines(latest.entryTime, latest.expiresAt);
+    }
+  }, 100);
 }
 
-// ============================================================
 // UPDATE BIG TIMER
-// ============================================================
 function updateBigTimer() {
   var timerEl = document.getElementById("trade-timer-display");
   var topTimer = document.getElementById("countdown-time");
@@ -1411,9 +1255,7 @@ function updateBigTimer() {
   updateEntryLine();
 }
 
-// ============================================================
 // LOAD ACTIVE TRADES
-// ============================================================
 function loadActiveTrades() {
   if (!currentUser) return;
   var q = query(collection(db, "trades"),
@@ -1456,31 +1298,18 @@ function loadActiveTrades() {
     var badge2 = document.getElementById("trades-count-badge");
     if (badge2) badge2.textContent = activeTradesLocal.length;
 
-        // ⭐ Reload হলে latest pending trade RESTORE
     var latest = activeTradesLocal[activeTradesLocal.length - 1];
     if (latest && latest.status === "pending") {
-      // ⭐ Delay to ensure chart is fully ready
       setTimeout(function() {
-        if (typeof renderEntryLine === 'function') {
-          renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
-          console.log('[Trade] ✅ Entry restored:', latest.type, '@', latest.entryPrice);
-        }
-        if (typeof renderVerticalLines === 'function') {
-          renderVerticalLines(latest.entryTime, latest.expiresAt);
-          console.log('[Trade] ✅ V-lines restored');
-        }
-        if (typeof renderTickMark === 'function') {
-          renderTickMark(latest.type, latest.entryPrice, latest.entryTime);
-        }
+        if (typeof renderEntryLine === 'function') renderEntryLine(latest.type, latest.entryPrice, latest.expiresAt);
+        if (typeof renderVerticalLines === 'function') renderVerticalLines(latest.entryTime, latest.expiresAt);
       }, 300);
     }
     updateBigTimer();
   });
 }
 
-// ============================================================
 // LOAD HISTORY
-// ============================================================
 function loadHistory() {
   if (!currentUser) return;
   var q = query(collection(db, "trades"),
@@ -1505,14 +1334,11 @@ function loadHistory() {
     });
     trades.sort(function(a, b) { return new Date(b.completedAt || 0) - new Date(a.completedAt || 0); });
 
-    // Main list (30)
     trades.slice(0, 30).forEach(function(trade) {
       var card = document.createElement("div");
       card.className = "qx-trade-card " + (trade.result || "");
       var entryPrice = Number(trade.entryPrice || 0).toFixed(2);
-      var pl = trade.result === "win"
-        ? "+$" + Number(trade.profit || 0).toFixed(2)
-        : "-$" + Number(trade.amount || 0).toFixed(2);
+      var pl = trade.result === "win" ? "+$" + Number(trade.profit || 0).toFixed(2) : "-$" + Number(trade.amount || 0).toFixed(2);
       card.innerHTML =
         '<div class="qx-tc-left"><div class="qx-tc-symbol">' + (trade.asset || "BTC/USDT") +
         '<span class="qx-tc-type-badge ' + trade.type + '">' + trade.type.toUpperCase() + '</span></div>' +
@@ -1521,7 +1347,6 @@ function loadHistory() {
       if (historyList) historyList.appendChild(card);
     });
 
-    // Drawer history (10)
     if (drawerHistory) {
       trades.slice(0, 10).forEach(function(trade) {
         var item = document.createElement("div");
@@ -1529,9 +1354,7 @@ function loadHistory() {
         var d = new Date(trade.completedAt || trade.createdAt || Date.now());
         var hh = String(d.getHours()).padStart(2, "0");
         var mm = String(d.getMinutes()).padStart(2, "0");
-        var pl = trade.result === "win"
-          ? "+$" + Number(trade.profit || 0).toFixed(2)
-          : "-$" + Number(trade.amount || 0).toFixed(2);
+        var pl = trade.result === "win" ? "+$" + Number(trade.profit || 0).toFixed(2) : "-$" + Number(trade.amount || 0).toFixed(2);
         item.innerHTML =
           '<div class="qx-dh-left"><div class="qx-dh-type ' + trade.type + '">' + trade.type.toUpperCase() + '</div>' +
           '<div class="qx-dh-time">' + hh + ":" + mm + '</div></div>' +
@@ -1542,9 +1365,7 @@ function loadHistory() {
   });
 }
 
-// ============================================================
-// UPDATE LOOP (every 1s)
-// ============================================================
+// UPDATE LOOP
 setInterval(function() {
   if (currentUser && activeTradesLocal.length > 0) {
     updateBigTimer();
@@ -1562,9 +1383,6 @@ setInterval(function() {
   if (currentUser) updateCandleCountdown();
 }, 1000);
 
-// ============================================================
-// EXPOSE TRADE
-// ============================================================
 window.placeTrade = placeTrade;
 window.bindTradeButtons = bindTradeButtons;
 window.updateBigTimer = updateBigTimer;
@@ -1579,9 +1397,7 @@ window.clearVerticalLines = clearVerticalLines;
 window.renderTickMark = renderTickMark;
 window.clearTickMark = clearTickMark;
 
-// ============================================================
-// POPUPS + CHAT + MORE MENU
-// ============================================================
+// POPUPS
 function openPopup(popup, overlay) {
   if (!popup) return;
   popup.classList.remove("hidden");
@@ -1593,7 +1409,6 @@ function closePopup(popup) {
   popup.classList.add("hidden");
 }
 
-// Balance chip
 (function initBalanceChip() {
   var chip = document.getElementById("balance-chip");
   if (!chip) return;
@@ -1629,7 +1444,6 @@ function updateAccountOptionState() {
   });
 }
 
-// Balance popup + edit + account switch
 (function initQuotexBalancePopup() {
   document.querySelectorAll(".qx-acc-option").forEach(function(opt) {
     opt.addEventListener("click", function(e) {
@@ -1640,7 +1454,6 @@ function updateAccountOptionState() {
     });
   });
 
-  // Edit button
   document.querySelectorAll(".qx-acc-edit").forEach(function(btn) {
     btn.addEventListener("click", function(e) {
       e.preventDefault();
@@ -1754,7 +1567,6 @@ async function switchAccount(type) {
   });
 })();
 
-// Deposit
 (function initDeposit() {
   var btn = document.getElementById("deposit-btn");
   var closeBtn = document.getElementById("deposit-popup-close");
@@ -1787,7 +1599,6 @@ async function switchAccount(type) {
   }
 })();
 
-// Withdraw
 (function initWithdraw() {
   var closeBtn = document.getElementById("withdraw-popup-close");
   var overlay = document.getElementById("withdraw-popup-overlay");
@@ -1820,7 +1631,6 @@ async function switchAccount(type) {
   }
 })();
 
-// Notification bell
 (function initNotif() {
   var btn = document.getElementById("notif-btn");
   if (!btn) return;
@@ -1830,7 +1640,6 @@ async function switchAccount(type) {
   });
 })();
 
-// Bonus banner
 (function initBonusClose() {
   var closeBtn = document.getElementById("bonus-close");
   var banner = document.getElementById("bonus-banner");
@@ -1842,7 +1651,6 @@ async function switchAccount(type) {
   try { if (localStorage.getItem("bonusBannerClosed") === "1") banner.classList.add("hidden"); } catch(e) {}
 })();
 
-// User Chat
 window.userChatUnsub = null;
 
 function openUserChat() {
@@ -1903,7 +1711,6 @@ function startUserChatListener() {
   if (overlay) overlay.addEventListener("click", closeUserChat);
 })();
 
-// More menu
 (function initMoreMenu() {
   var closeBtn = document.getElementById("more-menu-close");
   var overlay = document.getElementById("more-menu-overlay");
@@ -1940,7 +1747,6 @@ function startUserChatListener() {
   });
 })();
 
-// Placeholder popups
 (function initPlaceholderPopups() {
   ["tournament-popup", "referral-popup"].forEach(function(id) {
     var popup = document.getElementById(id);
@@ -1952,7 +1758,6 @@ function startUserChatListener() {
   });
 })();
 
-// Trades tabs
 (function initTradesTabs() {
   var tabs = document.querySelectorAll(".qx-trades-tab");
   var activePane = document.getElementById("qx-trades-active-pane");
@@ -1968,7 +1773,6 @@ function startUserChatListener() {
   });
 })();
 
-// Investment buttons
 (function initInvestmentButtons() {
   document.querySelectorAll(".qx-inc-btn").forEach(function(btn) {
     btn.addEventListener("click", function() {
@@ -1982,14 +1786,12 @@ function startUserChatListener() {
   });
 })();
 
-// Pending toggle
 (function initPendingToggle() {
   var btn = document.getElementById("pending-toggle");
   if (!btn) return;
   btn.addEventListener("click", function() { btn.classList.toggle("active"); });
 })();
 
-// Asset select
 (function initAssetSelect() {
   var sel = document.getElementById("asset-select");
   if (!sel) return;
@@ -2001,7 +1803,6 @@ function startUserChatListener() {
   });
 })();
 
-// Auto-fix balance text
 setInterval(function() {
   try {
     var bal = document.getElementById("balance");
@@ -2014,7 +1815,6 @@ setInterval(function() {
   } catch(e) {}
 }, 500);
 
-// Expose popups
 window.switchAccount = switchAccount;
 window.openUserChat = openUserChat;
 window.closeUserChat = closeUserChat;
@@ -2022,42 +1822,14 @@ window.openPopup = openPopup;
 window.closePopup = closePopup;
 
 console.log("===== PART 2/3 LOADED =====");
-// ============================================================
-// PART 3/3: Firestore Consumer + Fallback Master + Phase 12 + Phase 15 + Permanent Fixes
-// ============================================================
 
 // ============================================================
-// AUTO REFRESH MARKERS
+// PART 3/3: Firestore Consumer + Fallback + Phase 12 + Fixes
 // ============================================================
-setInterval(function() {
-  try {
-    if (!window.candleSeries) return;
-    var trades = window.activeTradesLocal || [];
-    var pendingCount = 0;
-    var lastCount = window.__lastPendingCount || 0;
-    for (var i = 0; i < trades.length; i++) {
-      if (trades[i].status === "pending") pendingCount++;
-    }
-    if (pendingCount !== lastCount || pendingCount > 0) {
-      window.__lastPendingCount = pendingCount;
-      renderAllMarkers();
-    }
-    if (pendingCount === 0 && lastCount > 0) {
-      window.__lastPendingCount = 0;
-      clearTickMark();
-    }
-  } catch(e) {}
-}, 1500);
 
-// ============================================================
-// BINANCE FLAG
-// ============================================================
 window.USE_BINANCE = false;
-console.log('[BIN-C] Binance flag: DISABLED (using Firestore)');
+console.log('[BIN-C] Binance DISABLED — using Firestore');
 
-// ============================================================
-// FIRESTORE CANDLE CONSUMER STATE
-// ============================================================
 window.fsCandleState = {
   listening: false,
   marketId: null,
@@ -2068,11 +1840,6 @@ window.fsCandleState = {
   lastPrice: 0
 };
 
-console.log('[FS] Step 2A loaded');
-
-// ============================================================
-// UPDATE USER PRICE DISPLAY
-// ============================================================
 function updateUserPriceDisplay(price) {
   try {
     var priceEl = document.getElementById('current-price');
@@ -2086,16 +1853,11 @@ function updateUserPriceDisplay(price) {
 }
 
 window.updateUserPriceDisplay = updateUserPriceDisplay;
-
-// ============================================================
-// RESOLVE MARKET ID
-// ============================================================
 window.marketCache = window.marketCache || {};
 
 window.resolveMarketId = async function(symbol) {
   if (!symbol) return null;
   if (window.marketCache[symbol]) return window.marketCache[symbol];
-
   try {
     var snap = await window.getDocs(window.collection(window.db, 'markets'));
     var foundId = null;
@@ -2103,30 +1865,18 @@ window.resolveMarketId = async function(symbol) {
       var data = d.data();
       if (data.symbol === symbol && data.enabled !== false) foundId = d.id;
     });
-    if (foundId) {
-      window.marketCache[symbol] = foundId;
-      console.log('[FS-B] Resolved:', symbol, '->', foundId);
-    } else {
-      console.warn('[FS-B] No market found for symbol:', symbol);
-    }
+    if (foundId) window.marketCache[symbol] = foundId;
     return foundId;
-  } catch (err) {
-    console.error('[FS-B] Resolve error:', err.message);
-    return null;
-  }
+  } catch (err) { return null; }
 };
 
-// ============================================================
-// LOAD HISTORICAL CANDLES
-// ============================================================
 window.loadAdminHistoricalCandles = async function(marketId) {
   if (!marketId) return [];
   try {
     var snap = await window.getDocs(
       window.collection(window.db, 'markets', marketId, 'liveCandles')
     );
-    if (snap.empty) { console.log('[FS-B] No historical candles yet'); return []; }
-
+    if (snap.empty) return [];
     var candles = [];
     snap.forEach(function(d) {
       var c = d.data();
@@ -2139,26 +1889,16 @@ window.loadAdminHistoricalCandles = async function(marketId) {
       });
     });
     candles.sort(function(a, b) { return a.time - b.time; });
-    console.log('[FS-B] Historical candles loaded:', candles.length);
     return candles;
-  } catch (err) {
-    console.error('[FS-B] Historical load error:', err.message);
-    return [];
-  }
+  } catch (err) { return []; }
 };
 
-// ============================================================
-// CONNECT LIVE CANDLES
-// ============================================================
 window.connectAdminLiveCandles = function(marketId) {
   if (!marketId) return;
   var state = window.fsCandleState;
   if (state.unsubLive) { try { state.unsubLive(); } catch(e) {} }
-
   state.marketId = marketId;
   state.listening = true;
-  console.log('[FS-B] Connecting live candles:', marketId);
-
   try {
     var liveRef = window.collection(window.db, 'markets', marketId, 'liveCandles');
     state.unsubLive = window.onSnapshot(liveRef, function(snap) {
@@ -2172,22 +1912,12 @@ window.connectAdminLiveCandles = function(marketId) {
       all.sort(function(a, b) { return (a.startTime || 0) - (b.startTime || 0); });
       var recent = all.slice(-200);
       applyCandlesToChart(recent);
-    }, function(err) {
-      console.error('[FS-B] Live listen error:', err.message);
-    });
-  } catch (err) {
-    console.error('[FS-B] Connect error:', err.message);
-  }
+    }, function(err) {});
+  } catch (err) {}
 };
 
-// ============================================================
-// APPLY CANDLES TO CHART — FIXED ORDER (setData FIRST, restore AFTER)
-// ============================================================
 function applyCandlesToChart(candles) {
-  if (!window.candleSeries) {
-    console.warn('[FS-B] candleSeries not ready');
-    return;
-  }
+  if (!window.candleSeries) return;
   if (!candles || candles.length === 0) return;
 
   var chartData = candles.map(function(c) {
@@ -2207,30 +1937,20 @@ function applyCandlesToChart(candles) {
   });
 
   if (chartData.length === 0) return;
-
   chartData.sort(function(a, b) { return a.time - b.time; });
 
   var seen = {};
   var unique = [];
   chartData.forEach(function(c) {
-    if (!seen[c.time]) {
-      seen[c.time] = true;
-      unique.push(c);
-    }
+    if (!seen[c.time]) { seen[c.time] = true; unique.push(c); }
   });
-
   if (unique.length === 0) return;
 
   try {
-    // Step 1: Save viewport BEFORE
-    var savedOffset = 0;
-    var savedSpacing = 6;
-    var wasAtEnd = true;
-
+    var savedOffset = 0, savedSpacing = 6, wasAtEnd = true;
     if (window.chartRef && window.chartRef.candles.length > 0) {
       savedOffset = window.chartRef.viewport.offsetX;
       savedSpacing = window.chartRef.viewport.candleSpacing;
-
       var pad = window.chartRef.options.padding;
       var chartW = window.chartRef.options.width - pad.left - pad.right;
       var maxVisible = Math.ceil(chartW / savedSpacing);
@@ -2240,10 +1960,8 @@ function applyCandlesToChart(candles) {
       wasAtEnd = Math.abs(savedOffset - maxOffset) < 5;
     }
 
-    // Step 2: SET DATA
     window.candleSeries.setData(unique);
 
-    // Step 3: RESTORE VIEWPORT
     if (window.chartRef) {
       if (wasAtEnd) {
         window.chartRef.scrollToRealTime();
@@ -2264,54 +1982,30 @@ function applyCandlesToChart(candles) {
       priceEl.textContent = last.close.toFixed(2);
       priceEl.style.color = last.close >= last.open ? '#00c853' : '#ff5252';
     }
-
-    console.log('[FS-B] ✅ Chart updated:', unique.length, 'candles');
-
-  } catch (err) {
-    console.error('[FS-B] Chart apply error:', err.message);
-  }
+  } catch (err) {}
 }
 
 window.applyCandlesToChart = applyCandlesToChart;
 
-// ============================================================
-// SWITCH TO ADMIN MARKET
-// ============================================================
 window.switchToAdminMarket = async function(symbol) {
   if (!symbol) return;
-  console.log('[FS-B] Switching to:', symbol);
-
   var marketId = await window.resolveMarketId(symbol);
-  if (!marketId) {
-    console.warn('[FS-B] Market not found:', symbol);
-    return;
-  }
-
+  if (!marketId) return;
   if (window.fsCandleState.unsubLive) {
     try { window.fsCandleState.unsubLive(); } catch(e) {}
     window.fsCandleState.unsubLive = null;
   }
-
   var historical = await window.loadAdminHistoricalCandles(marketId);
   if (historical.length > 0) applyCandlesToChart(historical);
-
   window.connectAdminLiveCandles(marketId);
-  console.log('[FS-B] Connected:', symbol, '(' + marketId + ')');
 };
 
-// ============================================================
-// INIT ADMIN CANDLE CONSUMER
-// ============================================================
 window.initAdminCandleConsumer = async function() {
-  console.log('[FS-B] Initial load...');
   var sel = document.getElementById('asset-select');
   var symbol = sel ? sel.value : 'BTCUSDT';
   await window.switchToAdminMarket(symbol);
 };
 
-// ============================================================
-// WAIT FOR CHART + USER THEN INIT
-// ============================================================
 (function hookAuthForFS() {
   var tries = 0;
   var maxTries = 30;
@@ -2319,20 +2013,13 @@ window.initAdminCandleConsumer = async function() {
     tries++;
     if (window.candleSeries && window.currentUser) {
       clearInterval(checkInterval);
-      console.log('[FS-B] Chart + user ready, initializing...');
       window.initAdminCandleConsumer();
     } else if (tries >= maxTries) {
       clearInterval(checkInterval);
-      console.warn('[FS-B] Timeout waiting for chart/user');
     }
   }, 1000);
 })();
 
-console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
-
-// ============================================================
-// PATCH loadCandles
-// ============================================================
 (function patchLoadCandles() {
   var origLoadCandles = window.loadCandles;
   window.loadCandles = async function() {
@@ -2347,23 +2034,14 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
   };
 })();
 
-// ============================================================
-// PATCH startLivePrice
-// ============================================================
 (function patchStartLivePrice() {
   var origStartLivePrice = window.startLivePrice;
   window.startLivePrice = function() {
-    if (!window.USE_BINANCE) {
-      console.log('[BIN-C] Binance WS disabled — using Firestore');
-      return;
-    }
+    if (!window.USE_BINANCE) return;
     return origStartLivePrice.apply(this, arguments);
   };
 })();
 
-// ============================================================
-// PATCH ASSET SELECT (Firestore path)
-// ============================================================
 (function patchAssetSelect() {
   var sel = document.getElementById('asset-select');
   if (!sel) return;
@@ -2373,7 +2051,6 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
     var symbol = newSel.value;
     window.selectedAsset = symbol;
     selectedAsset = symbol;
-    console.log('[BIN-C] Asset changed:', symbol);
     if (window.USE_BINANCE) {
       if (typeof window.loadCandles === 'function') await window.loadCandles();
       if (typeof window.startLivePrice === 'function') window.startLivePrice();
@@ -2385,9 +2062,6 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
   });
 })();
 
-// ============================================================
-// PATCH TIMEFRAME SWITCH
-// ============================================================
 (function patchTimeframeSwitch() {
   var originalItems = document.querySelectorAll('.qx-tf-item');
   originalItems.forEach(function(btn) {
@@ -2403,7 +2077,6 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
       selectedTimeframe = tf;
       var label = document.getElementById('qx-tf-active');
       if (label) label.textContent = tf;
-      console.log('[BIN-C] Timeframe changed:', tf);
       if (!window.USE_BINANCE) {
         var symbol = window.selectedAsset || 'BTCUSDT';
         if (typeof window.switchToAdminMarket === 'function') {
@@ -2414,9 +2087,7 @@ console.log('===== STEP 2B: CHART INTEGRATION LOADED =====');
   });
 })();
 
-// ============================================================
-// USER FALLBACK MASTER STATE
-// ============================================================
+// USER FALLBACK MASTER
 window.userMasterState = {
   isMaster: false,
   masterCheckInterval: null,
@@ -2426,24 +2097,15 @@ window.userMasterState = {
   lastCheck: 0
 };
 
-// ============================================================
-// CHECK ADMIN STATUS
-// ============================================================
 async function checkAdminStatus() {
   try {
-    var docSnap = await window.getDoc(
-      window.doc(window.db, 'settings', 'candleMaster')
-    );
+    var docSnap = await window.getDoc(window.doc(window.db, 'settings', 'candleMaster'));
     if (!docSnap.exists()) return { online: false, masterId: null };
-
     var data = docSnap.data();
     var heartbeat = data.heartbeat || 0;
     var age = Date.now() - heartbeat;
     var isAdminOnline = (data.masterType === 'admin') && (age < 30000);
     var isCronOnline = (data.masterType === 'cron') && (age < 30000);
-
-    window.userMasterState.lastAdminHeartbeat = heartbeat;
-
     return {
       online: isAdminOnline || isCronOnline,
       masterId: data.masterId,
@@ -2451,56 +2113,35 @@ async function checkAdminStatus() {
       age: age
     };
   } catch (err) {
-    console.error('[UserMaster] Check error:', err.message);
     return { online: false, masterId: null };
   }
 }
 
-// ============================================================
-// USER BECOMES MASTER (Fallback)
-// ============================================================
 async function becomeUserMaster() {
   if (window.userMasterState.isMaster) return;
-
   try {
     var status = await checkAdminStatus();
-    if (status.online) {
-      console.log('[UserMaster] Admin/Cron is online, skipping');
-      return;
-    }
-
+    if (status.online) return;
     await window.setDoc(
       window.doc(window.db, 'settings', 'candleMaster'),
       {
-        masterId: window.currentUser.uid,
-        masterType: 'user',
+        masterId: window.currentUser.uid, masterType: 'user',
         masterEmail: window.currentUser.email,
-        heartbeat: Date.now(),
-        declaredAt: new Date().toISOString(),
+        heartbeat: Date.now(), declaredAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
       { merge: true }
     );
-
     window.userMasterState.isMaster = true;
-    console.log('[UserMaster] User became fallback master');
-
     startUserHeartbeat();
     startUserCandleEngine();
-
-  } catch (err) {
-    console.error('[UserMaster] Become master error:', err.message);
-  }
+  } catch (err) {}
 }
 
-// ============================================================
-// USER HEARTBEAT
-// ============================================================
 function startUserHeartbeat() {
   if (window.userMasterState.masterHeartbeatTimer) {
     clearInterval(window.userMasterState.masterHeartbeatTimer);
   }
-
   window.userMasterState.masterHeartbeatTimer = setInterval(async function() {
     if (!window.userMasterState.isMaster) return;
     try {
@@ -2510,34 +2151,18 @@ function startUserHeartbeat() {
       );
     } catch (err) {}
   }, 10000);
-
-  console.log('[UserMaster] User heartbeat started (every 10s)');
 }
 
-// ============================================================
-// USER CANDLE ENGINE
-// ============================================================
 function startUserCandleEngine() {
   if (window.userMasterState.candleTimer) {
     clearInterval(window.userMasterState.candleTimer);
   }
-
   var marketId = window.fsCandleState?.marketId;
-  if (!marketId) {
-    console.warn('[UserMaster] No market selected for candle engine');
-    return;
-  }
-
-  console.log('[UserMaster] Starting candle engine for:', marketId);
-
+  if (!marketId) return;
   window.userMasterState.candleTimer = setInterval(async function() {
-    if (!window.userMasterState.isMaster) {
-      stopUserCandleEngine();
-      return;
-    }
+    if (!window.userMasterState.isMaster) { stopUserCandleEngine(); return; }
     var status = await checkAdminStatus();
     if (status.online && (status.masterType === 'admin' || status.masterType === 'cron')) {
-      console.log('[UserMaster] Admin/Cron came back online — stepping down');
       stepDownUserMaster();
       return;
     }
@@ -2545,30 +2170,21 @@ function startUserCandleEngine() {
   }, 60000);
 }
 
-// ============================================================
-// GENERATE USER CANDLE
-// ============================================================
 async function generateUserCandle() {
   var marketId = window.fsCandleState?.marketId;
   if (!marketId) return;
-
   try {
     var marketDoc = await window.getDoc(window.doc(window.db, 'markets', marketId));
     if (!marketDoc.exists()) return;
-
     var market = marketDoc.data();
     var currentPriceVal = market.currentPrice || market.basePrice || 50000;
-    var basePrice = market.basePrice || 50000;
-
     var now = Date.now();
-    // Timeframe-aware alignment (not hardcoded 60s)
     var tfStr = window.selectedTimeframe || '1m';
     var tfMs = 60000;
     if (tfStr === '5s') tfMs = 5000;
     else if (tfStr === '10s') tfMs = 10000;
     else if (tfStr === '15s') tfMs = 15000;
     else if (tfStr === '30s') tfMs = 30000;
-    else if (tfStr === '1m') tfMs = 60000;
     else if (tfStr === '2m') tfMs = 120000;
     else if (tfStr === '3m') tfMs = 180000;
     else if (tfStr === '5m') tfMs = 300000;
@@ -2578,8 +2194,6 @@ async function generateUserCandle() {
     else if (tfStr === '1h') tfMs = 3600000;
 
     var alignedStart = Math.floor(now / tfMs) * tfMs;
-
-    // Realistic movement
     var volatilityPct = 0.0005 + Math.random() * 0.001;
     var direction = Math.random() - 0.5;
     var open = currentPriceVal;
@@ -2588,54 +2202,35 @@ async function generateUserCandle() {
     var wickSize = Math.abs(movement) * (0.5 + Math.random() * 1.5);
     var high = Math.max(open, close) + wickSize * Math.random();
     var low = Math.min(open, close) - wickSize * Math.random();
-
     var liveCandleId = 'live_' + alignedStart;
 
     await window.setDoc(
       window.doc(window.db, 'markets', marketId, 'liveCandles', liveCandleId),
       {
-        id: liveCandleId,
-        marketId: marketId,
-        startTime: alignedStart,
-        endTime: alignedStart + tfMs,
-        open: Number(open.toFixed(2)),
-        high: Number(high.toFixed(2)),
-        low: Number(low.toFixed(2)),
-        close: Number(close.toFixed(2)),
+        id: liveCandleId, marketId: marketId,
+        startTime: alignedStart, endTime: alignedStart + tfMs,
+        open: Number(open.toFixed(2)), high: Number(high.toFixed(2)),
+        low: Number(low.toFixed(2)), close: Number(close.toFixed(2)),
         direction: close >= open ? 'up' : 'down',
-        behavior: 'normal',
-        size: 'normal',
-        generatedBy: 'fallback',
-        updatedAt: Date.now()
+        behavior: 'normal', size: 'normal',
+        generatedBy: 'fallback', updatedAt: Date.now()
       },
       { merge: true }
     );
-
     await window.updateDoc(
       window.doc(window.db, 'markets', marketId),
       { currentPrice: Number(close.toFixed(2)), updatedAt: new Date().toISOString() }
     );
-
-    console.log('[UserMaster] Candle generated:', alignedStart, open.toFixed(2), '→', close.toFixed(2));
-  } catch (err) {
-    console.error('[UserMaster] Candle generation error:', err.message);
-  }
+  } catch (err) {}
 }
 
-// ============================================================
-// STOP USER ENGINE
-// ============================================================
 function stopUserCandleEngine() {
   if (window.userMasterState.candleTimer) {
     clearInterval(window.userMasterState.candleTimer);
     window.userMasterState.candleTimer = null;
   }
-  console.log('[UserMaster] Candle engine stopped');
 }
 
-// ============================================================
-// STEP DOWN
-// ============================================================
 async function stepDownUserMaster() {
   stopUserCandleEngine();
   if (window.userMasterState.masterHeartbeatTimer) {
@@ -2643,7 +2238,6 @@ async function stepDownUserMaster() {
     window.userMasterState.masterHeartbeatTimer = null;
   }
   window.userMasterState.isMaster = false;
-
   try {
     var status = await checkAdminStatus();
     if (status.masterType !== 'admin' && status.masterType !== 'cron') {
@@ -2653,46 +2247,29 @@ async function stepDownUserMaster() {
       );
     }
   } catch (e) {}
-
-  console.log('[UserMaster] Stepped down');
 }
 
-// ============================================================
-// MASTER CHECK (loop)
-// ============================================================
 function startUserMasterCheck() {
   if (window.userMasterState.masterCheckInterval) {
     clearInterval(window.userMasterState.masterCheckInterval);
   }
-
   window.userMasterState.masterCheckInterval = setInterval(async function() {
     if (!window.currentUser) return;
     if (window.userMasterState.isMaster) return;
-
     var status = await checkAdminStatus();
-
-    // If both admin AND cron offline for 30s+, become master
     if (!status.online && status.masterType !== 'user') {
-      console.log('[UserMaster] Admin & Cron offline — attempting to become master');
       await becomeUserMaster();
     }
   }, 15000);
-
-  console.log('[UserMaster] Master check started (every 15s)');
 }
 
-// ============================================================
-// HOOK ON USER LOGIN
-// ============================================================
 (function hookUserLogin() {
   var tries = 0;
   var maxTries = 30;
-
   var check = setInterval(function() {
     tries++;
     if (window.currentUser && window.fsCandleState?.marketId) {
       clearInterval(check);
-      console.log('[UserMaster] User ready - starting master check');
       startUserMasterCheck();
     } else if (tries >= maxTries) {
       clearInterval(check);
@@ -2700,7 +2277,6 @@ function startUserMasterCheck() {
   }, 1000);
 })();
 
-window.userMasterState = window.userMasterState;
 window.checkAdminStatus = checkAdminStatus;
 window.becomeUserMaster = becomeUserMaster;
 window.stepDownUserMaster = stepDownUserMaster;
@@ -2709,10 +2285,7 @@ window.startUserMasterCheck = startUserMasterCheck;
 
 console.log('===== USER FALLBACK MASTER LOADED =====');
 
-// ============================================================
-// PHASE 12: TRADE ALIGNMENT
-// ============================================================
-
+// PHASE 12 ALIGNMENT
 function calcAlignedExpire(nowMs, durationSec, timeframe) {
   var tfMs = tfToMs(timeframe);
   var durationMs = durationSec * 1000;
@@ -2721,17 +2294,12 @@ function calcAlignedExpire(nowMs, durationSec, timeframe) {
   var candleEndTime = Math.ceil(nowMs / tfMs) * tfMs;
   var waitTime = candleEndTime - nowMs;
   var totalWait = alignedExpire - nowMs;
-
   return {
-    alignedExpire: alignedExpire,
-    candleEndTime: candleEndTime,
-    waitTime: waitTime,
-    totalWait: totalWait,
-    tfMs: tfMs
+    alignedExpire: alignedExpire, candleEndTime: candleEndTime,
+    waitTime: waitTime, totalWait: totalWait, tfMs: tfMs
   };
 }
 
-// Override placeTrade with Phase 12 alignment
 var originalPlaceTrade = window.placeTrade;
 
 window.placeTrade = async function(type) {
@@ -2754,7 +2322,6 @@ window.placeTrade = async function(type) {
   if (amount > userBalance) { showMsg('Insufficient balance'); return; }
 
   playSound('click');
-
   var entryPrice = currentPrice;
   var entryTime = new Date().toISOString();
   var timeframe = window.selectedTimeframe || '1m';
@@ -2764,10 +2331,8 @@ window.placeTrade = async function(type) {
   try {
     var newBalance = userBalance - amount;
     var balanceField = accountType === 'demo' ? 'demoBalance' : 'realBalance';
-
     await updateDoc(doc(db, 'users', currentUser.uid), {
-      [balanceField]: newBalance,
-      balance: newBalance
+      [balanceField]: newBalance, balance: newBalance
     });
     userBalance = newBalance;
     window.userBalance = newBalance;
@@ -2775,29 +2340,18 @@ window.placeTrade = async function(type) {
     animateBalanceChange(-amount);
 
     await addDoc(collection(db, 'trades'), {
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      type: type,
-      amount: amount,
-      entryPrice: entryPrice,
-      entryTime: entryTime,
-      expiresAt: alignment.alignedExpire,
+      userId: currentUser.uid, userEmail: currentUser.email,
+      type: type, amount: amount, entryPrice: entryPrice,
+      entryTime: entryTime, expiresAt: alignment.alignedExpire,
       candleEndTime: alignment.candleEndTime,
-      waitTime: alignment.waitTime,
-      totalWait: alignment.totalWait,
-      timeframe: timeframe,
-      duration: duration,
-      asset: selectedAsset,
-      accountType: accountType,
-      status: 'pending',
-      result: null,
-      profit: 0,
-      phase: 'waiting',
-      createdAt: entryTime
+      waitTime: alignment.waitTime, totalWait: alignment.totalWait,
+      timeframe: timeframe, duration: duration,
+      asset: selectedAsset, accountType: accountType,
+      status: 'pending', result: null, profit: 0,
+      phase: 'waiting', createdAt: entryTime
     });
 
-    showMsg(type.toUpperCase() + ' $' + amount + ' placed (' + Math.round(alignment.totalWait / 1000) + 's)',
-      type === 'call' ? '#00c853' : '#ff5252');
+    showMsg(type.toUpperCase() + ' $' + amount + ' placed', type === 'call' ? '#00c853' : '#ff5252');
 
     if (typeof renderEntryLine === 'function') renderEntryLine(type, entryPrice, alignment.alignedExpire);
     if (typeof renderVerticalLines === 'function') renderVerticalLines(entryTime, alignment.alignedExpire);
@@ -2807,18 +2361,8 @@ window.placeTrade = async function(type) {
       var tm = document.getElementById('trade-message');
       if (tm) tm.textContent = '';
     }, 2000);
-
-    console.log('[PA-Phase12] Trade placed:', {
-      type: type,
-      amount: amount,
-      entryPrice: entryPrice,
-      alignedExpire: new Date(alignment.alignedExpire).toLocaleTimeString(),
-      totalWait: alignment.totalWait + 'ms'
-    });
-
   } catch (error) {
     showMsg(error.message);
-    console.error('[PA-Phase12] Trade error:', error);
   }
 };
 
@@ -2836,8 +2380,7 @@ async function updateTradePhase(trade) {
   if (trade.phase !== newPhase) {
     try {
       await updateDoc(doc(db, 'trades', trade.id), {
-        phase: newPhase,
-        phaseUpdatedAt: new Date().toISOString()
+        phase: newPhase, phaseUpdatedAt: new Date().toISOString()
       });
       trade.phase = newPhase;
     } catch (err) {}
@@ -2857,71 +2400,52 @@ setInterval(function() {
   if (currentUser) updateAllTradePhases();
 }, 1000);
 
-window.placeTrade = window.placeTrade;
 window.calcAlignedExpire = calcAlignedExpire;
 window.getTradePhase = getTradePhase;
 window.updateTradePhase = updateTradePhase;
 
-console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
+console.log('===== PHASE 12 LOADED =====');
 
-// ============================================================
-// PHASE 12 AUTO-REBIND (Permanent)
-// ============================================================
+// PHASE 12 REBIND
 (function phase12PermanentRebind() {
-  console.log('[PermanentFix] Loading Phase 12 rebind...');
-
   function rebind() {
     var callBtnEl = document.querySelector('#call-btn');
     var putBtnEl = document.querySelector('#put-btn');
-
     if (callBtnEl && callBtnEl.getAttribute('data-phase12-bound') !== '1') {
       callBtnEl.setAttribute('data-phase12-bound', '1');
       var nc = callBtnEl.cloneNode(true);
       nc.setAttribute('data-phase12-bound', '1');
       callBtnEl.parentNode.replaceChild(nc, callBtnEl);
-
       nc.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+        e.preventDefault(); e.stopPropagation();
         if (typeof window.placeTrade === 'function') window.placeTrade('call');
       }, true);
     }
-
     if (putBtnEl && putBtnEl.getAttribute('data-phase12-bound') !== '1') {
       putBtnEl.setAttribute('data-phase12-bound', '1');
       var np = putBtnEl.cloneNode(true);
       np.setAttribute('data-phase12-bound', '1');
       putBtnEl.parentNode.replaceChild(np, putBtnEl);
-
       np.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+        e.preventDefault(); e.stopPropagation();
         if (typeof window.placeTrade === 'function') window.placeTrade('put');
       }, true);
     }
   }
-
   rebind();
   setTimeout(rebind, 2000);
   setTimeout(rebind, 5000);
   setInterval(rebind, 5000);
 })();
 
-// ============================================================
-// FIX 2 — Firestore Auto-Reconnect
-// ============================================================
+// FIRESTORE RECONNECT
 (function firestoreAutoReconnectFixed() {
-  console.log('[PermanentFix] Firestore reconnect active');
-
   var lastCheck = 0;
-  var checkInterval = 30000;
-
   setInterval(async function() {
     if (!window.currentUser) return;
     var now = Date.now();
-    if (now - lastCheck < checkInterval) return;
+    if (now - lastCheck < 30000) return;
     lastCheck = now;
-
     var candleNeedsRestart = false;
     if (window.fsCandleState) {
       if (!window.fsCandleState.listening) candleNeedsRestart = true;
@@ -2932,13 +2456,11 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
         try { window.connectAdminLiveCandles(window.fsCandleState.marketId); } catch(e) {}
       }
     }
-
     var tradeListenerExists = false;
     try { tradeListenerExists = typeof activeTradesUnsub !== 'undefined' && activeTradesUnsub !== null; } catch(e) {}
     if (!tradeListenerExists && typeof window.loadActiveTrades === 'function') {
       window.loadActiveTrades();
     }
-
     var historyListenerExists = false;
     try { historyListenerExists = typeof historyUnsub !== 'undefined' && historyUnsub !== null; } catch(e) {}
     if (!historyListenerExists && typeof window.loadHistory === 'function') {
@@ -2947,16 +2469,11 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
   }, 15000);
 })();
 
-// ============================================================
-// FIX 3 — Trade Expiry Watchdog
-// ============================================================
+// WATCHDOG
 (function tradeExpiryWatchdog() {
-  console.log('[PermanentFix] Loading expiry watchdog...');
-
   setInterval(async function() {
     if (!window.currentUser) return;
     if (!window.activeTradesLocal || window.activeTradesLocal.length === 0) return;
-
     var now = Date.now();
     var expired = [];
     for (var i = 0; i < window.activeTradesLocal.length; i++) {
@@ -2964,9 +2481,6 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
       if (t.status === 'pending' && t.expiresAt <= now) expired.push(t);
     }
     if (expired.length === 0) return;
-
-    console.log('[PermanentFix] Found', expired.length, 'expired trades');
-
     for (var j = 0; j < expired.length; j++) {
       var trade = expired[j];
       try {
@@ -2975,19 +2489,15 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
         if (trade.type === 'call' && exitPrice > trade.entryPrice) result = 'win';
         else if (trade.type === 'put' && exitPrice < trade.entryPrice) result = 'win';
         var profit = result === 'win' ? trade.amount * 1.85 : 0;
-
         await window.updateDoc(
           window.doc(window.db, 'trades', trade.id),
           {
-            status: 'completed',
-            result: result,
-            exitPrice: exitPrice,
-            profit: profit,
+            status: 'completed', result: result,
+            exitPrice: exitPrice, profit: profit,
             completedAt: new Date().toISOString(),
             phase: 'completed'
           }
         );
-
         if (result === 'win') {
           var userRef = window.doc(window.db, 'users', window.currentUser.uid);
           var uDoc = await window.getDoc(userRef);
@@ -2996,10 +2506,7 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
             var field = trade.accountType === 'real' ? 'realBalance' : 'demoBalance';
             var curBal = uData[field] || 0;
             var newBal = curBal + profit;
-            await window.updateDoc(userRef, {
-              [field]: newBal,
-              balance: newBal
-            });
+            await window.updateDoc(userRef, { [field]: newBal, balance: newBal });
             window.userBalance = newBal;
             userBalance = newBal;
             var balEl = document.querySelector('#balance');
@@ -3011,9 +2518,7 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
   }, 5000);
 })();
 
-// ============================================================
-// FIX 4 — Timer Stuck Fix
-// ============================================================
+// TIMER STUCK FIX
 (function timerStuckFix() {
   setInterval(function() {
     if (!window.currentUser) return;
@@ -3031,161 +2536,19 @@ console.log('===== PHASE 12 — TRADE ALIGNMENT LOADED =====');
       var ss = dur % 60;
       var str = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
       timerEls.forEach(function(el) { if (el) el.textContent = str; });
-      var bigTimer = document.querySelector('#big-timer');
-      if (bigTimer) bigTimer.classList.add('hidden');
-      var topWrap = document.querySelector('#top-countdown-timer');
-      if (topWrap) topWrap.classList.add('hidden');
+      var bt = document.querySelector('#big-timer');
+      if (bt) bt.classList.add('hidden');
+      var tw = document.querySelector('#top-countdown-timer');
+      if (tw) tw.classList.add('hidden');
     }
   }, 2000);
 })();
 
-console.log('===== ALL PERMANENT FIXES LOADED =====');
-
-// ============================================================
-// PHASE 15 — RESULT MARKER
-// ============================================================
-window.resultMarkers = [];
-window.resultMarkerTimeout = null;
-
-window.showResultMarker = function(trade, result, profit) {
-  try {
-    console.log('[Phase15] showResultMarker:', trade.id ? trade.id.slice(0,8) : '?', result, profit);
-    if (!window.chartRef || !window.candleSeries) return;
-    if (!trade.entryTime || !trade.entryPrice) return;
-
-    var candleData = window.candleSeries.data();
-    if (!candleData || candleData.length === 0) return;
-
-    var lastCandle = candleData[candleData.length - 1];
-
-    if (typeof window.chartRef.addResultMarker === 'function') {
-      var isWin = (result === 'win');
-      var priceToShow = isWin ? lastCandle.high : lastCandle.low;
-      var amount = isWin ? Number(profit || 0) : Number(trade.amount || 0);
-
-      window.chartRef.addResultMarker({
-        time: lastCandle.time,
-        price: priceToShow,
-        result: isWin ? 'WIN' : 'LOSS',
-        amount: amount
-      });
-
-      console.log('[Phase15] Canvas result marker added');
-    }
-  } catch(e) {
-    console.error('[Phase15] Error:', e);
-  }
-};
-
-window.clearResultMarkers = function() {
-  try {
-    window.resultMarkers.forEach(function(m) { try { m.element.remove(); } catch(e) {} });
-    window.resultMarkers = [];
-  } catch(e) {}
-};
-
-// Hook into checkExpiredTrades
-(function hookExpiryForMarkers() {
-  if (typeof window.checkExpiredTrades !== 'function') {
-    setTimeout(hookExpiryForMarkers, 2000);
-    return;
-  }
-  if (window.__resultMarkerHooked) return;
-  window.__resultMarkerHooked = true;
-
-  var originalCheck = window.checkExpiredTrades;
-  window.checkExpiredTrades = async function() {
-    await originalCheck.call(this);
-
-    // Clear canvas entry marker when trade expires
-    try {
-      if (window.chartRef && typeof window.chartRef.clearTradeEntry === 'function') {
-        window.chartRef.clearTradeEntry();
-      }
-    } catch(e) {}
-
-    // Clear canvas entry marker when trade expires
-    try {
-      if (window.chartRef && typeof window.chartRef.clearTradeEntry === 'function') {
-        window.chartRef.clearTradeEntry();
-      }
-    } catch(e) {}
-    setTimeout(async function() {
-      try {
-        var now = Date.now();
-        var fiveSecAgo = now - 5000;
-        var snap = await window.getDocs(
-          window.query(
-            window.collection(window.db, 'trades'),
-            window.where('userId', '==', window.currentUser?.uid),
-            window.where('status', '==', 'completed')
-          )
-        );
-        snap.forEach(function(d) {
-          var t = d.data();
-          var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
-          if (completedAt > fiveSecAgo && completedAt <= now) {
-            if (!window.__shownMarkers) window.__shownMarkers = {};
-            if (window.__shownMarkers[d.id]) return;
-            window.__shownMarkers[d.id] = true;
-            window.showResultMarker(t, t.result, t.profit);
-          }
-        });
-      } catch(e) {}
-    }, 500);
-  };
-})();
-
-// Watchdog hook for markers
-(function hookWatchdogForMarkers() {
-  if (window.__watchdogMarkerHooked) return;
-  window.__watchdogMarkerHooked = true;
-
-  setInterval(async function() {
-    if (!window.currentUser) return;
-    try {
-      var now = Date.now();
-      var fiveSecAgo = now - 5000;
-      var snap = await window.getDocs(
-        window.query(
-          window.collection(window.db, 'trades'),
-          window.where('userId', '==', window.currentUser.uid),
-          window.where('status', '==', 'completed')
-        )
-      );
-      snap.forEach(function(d) {
-        var t = d.data();
-        var completedAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
-        if (completedAt > fiveSecAgo && completedAt <= now) {
-          if (!window.__shownMarkers) window.__shownMarkers = {};
-          if (window.__shownMarkers[d.id]) return;
-          window.__shownMarkers[d.id] = true;
-          window.showResultMarker(t, t.result, t.profit);
-        }
-      });
-    } catch(e) {}
-  }, 2000);
-})();
-
-window.showResultMarker = window.showResultMarker;
-window.clearResultMarkers = window.clearResultMarkers;
-
-console.log('===== PHASE 15 — RESULT MARKER LOADED =====');
-console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
-// ============================================================
-// CANDLE TICK SYNC V2 — Force render on candle boundary
-// ============================================================
+// CANDLE TICK SYNC V2
 (function candleTickSyncV2() {
-  if (window.__candleTickSyncV2Loaded) {
-    console.log('[TickSync] Already loaded');
-    return;
-  }
+  if (window.__candleTickSyncV2Loaded) return;
   window.__candleTickSyncV2Loaded = true;
-
-  console.log('[TickSync] V2 loading in app.js...');
-
   var lastBoundary = 0;
-
   setInterval(function() {
     if (!window.currentUser) return;
     if (!window.candleSeries) return;
@@ -3197,7 +2560,6 @@ console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
     else if (tfStr === '10s') tfMs = 10000;
     else if (tfStr === '15s') tfMs = 15000;
     else if (tfStr === '30s') tfMs = 30000;
-    else if (tfStr === '1m') tfMs = 60000;
     else if (tfStr === '2m') tfMs = 120000;
     else if (tfStr === '3m') tfMs = 180000;
     else if (tfStr === '5m') tfMs = 300000;
@@ -3208,16 +2570,11 @@ console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
 
     var nowMs = Date.now();
     var boundary = Math.floor(nowMs / tfMs) * tfMs;
-
     if (boundary === lastBoundary) return;
     lastBoundary = boundary;
 
     var lastCandleTime = window.chartRef.candles[window.chartRef.candles.length - 1].time * 1000;
-
     if (boundary > lastCandleTime) {
-      var secondsInto = (nowMs - boundary) / 1000;
-      console.log('[TickSync V2] New boundary, seconds in:', secondsInto.toFixed(1));
-
       setTimeout(function() {
         try {
           if (window.chartRef) {
@@ -3230,4 +2587,4 @@ console.log('===== app.js COMPLETE — ALL FEATURES LOADED =====');
   }, 500);
 })();
 
-console.log('===== CANDLE TICK SYNC V2 LOADED (app.js) =====');
+console.log('===== app.js v31 COMPLETE — ALL FEATURES LOADED =====');
