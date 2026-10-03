@@ -1,6 +1,7 @@
 // ============================================================
 // QUOTEX CLONE — CHART ENGINE v8 (QUOTEX EXACT)
 // Custom Canvas 2D Chart — 100% Quotex Replica
+// Part 1/4: Foundation + Constructor + Resize + Render Loop
 // ============================================================
 
 (function() {
@@ -74,6 +75,9 @@
     showClock: true
   };
 
+  // ============================================================
+  // HELPER: Merge options
+  // ============================================================
   function mergeOptions(target, source) {
     var result = {};
     var k;
@@ -88,11 +92,17 @@
     return result;
   }
 
+  // ============================================================
+  // HELPER: Format price
+  // ============================================================
   function formatPrice(value, decimals) {
     if (typeof value !== 'number' || isNaN(value)) return '0';
     return value.toFixed(decimals);
   }
 
+  // ============================================================
+  // HELPER: Format time
+  // ============================================================
   function formatTime(timestamp) {
     var t = timestamp;
     if (t < 1e10) t = t * 1000;
@@ -343,9 +353,9 @@
   };
 
   window.QuotexChart = QuotexChart;
-
+  
   // ============================================================
-  // VISIBLE RANGE
+  // PART 2: VISIBLE RANGE
   // ============================================================
   QuotexChart.prototype._getVisibleRange = function() {
     if (!this.candles || this.candles.length === 0) {
@@ -373,6 +383,9 @@
     return { start: start, end: end };
   };
 
+  // ============================================================
+  // PART 2: VISIBLE CANDLES (with cache)
+  // ============================================================
   QuotexChart.prototype._getVisibleCandles = function() {
     if (!this.candles || this.candles.length === 0) return [];
 
@@ -395,6 +408,9 @@
     return result;
   };
 
+  // ============================================================
+  // PART 2: AUTO SCALE (20% padding)
+  // ============================================================
   QuotexChart.prototype._autoScale = function() {
     if (!this.candles || this.candles.length === 0) {
       this.viewport.minPrice = 0;
@@ -432,6 +448,9 @@
     this.viewport.maxPrice = max + range * 0.20;
   };
 
+  // ============================================================
+  // PART 2: DRAW GRID (cached)
+  // ============================================================
   QuotexChart.prototype._drawGrid = function() {
     var ctx = this.ctx;
     var W = this.options.width;
@@ -486,6 +505,9 @@
     ctx.drawImage(this._gridCache, 0, 0, W, H);
   };
 
+  // ============================================================
+  // PART 2: DRAW WATERMARK (cached)
+  // ============================================================
   QuotexChart.prototype._drawWatermark = function() {
     var ctx = this.ctx;
     var W = this.options.width;
@@ -513,6 +535,9 @@
     ctx.drawImage(this._wmCache, 0, 0, W, H);
   };
 
+  // ============================================================
+  // PART 2: DRAW CANDLES (absolute index)
+  // ============================================================
   QuotexChart.prototype._drawCandles = function() {
     var ctx = this.ctx;
     var range = this._getVisibleRange();
@@ -563,6 +588,7 @@
       var bodyBorder = isGreen ? COLORS.candleGreenBorder : COLORS.candleRedBorder;
       var wickColor = isGreen ? COLORS.candleGreenWick : COLORS.candleRedWick;
 
+      // Wick
       ctx.strokeStyle = wickColor;
       ctx.lineWidth = this.options.wickWidth;
       ctx.beginPath();
@@ -570,6 +596,7 @@
       ctx.lineTo(Math.round(xCenter) + 0.5, Math.round(lowY));
       ctx.stroke();
 
+      // Body
       var bodyTop = Math.min(openY, closeY);
       var bodyBottom = Math.max(openY, closeY);
       var bodyHeight = bodyBottom - bodyTop;
@@ -587,9 +614,9 @@
       ctx.strokeRect(bodyLeft + 0.5, Math.round(bodyTop) + 0.5, bw - 1, bh - 1);
     }
   };
-
+  
   // ============================================================
-  // COORDINATE SYSTEM
+  // PART 3: COORDINATE — time to X
   // ============================================================
   QuotexChart.prototype._timeToX = function(time) {
     var pad = this.options.padding;
@@ -600,6 +627,9 @@
     return pad.left + (relativeIdx + 0.5) * spacing;
   };
 
+  // ============================================================
+  // PART 3: COORDINATE — price to Y
+  // ============================================================
   QuotexChart.prototype._priceToY = function(price) {
     var pad = this.options.padding;
     var H = this.options.height;
@@ -611,6 +641,9 @@
     return pad.top + chartH - ((price - priceMin) / priceRange) * chartH;
   };
 
+  // ============================================================
+  // PART 3: COORDINATE — X to time
+  // ============================================================
   QuotexChart.prototype._xToTime = function(x) {
     var pad = this.options.padding;
     var spacing = this.viewport.candleSpacing;
@@ -620,6 +653,9 @@
     return this.candles[idx].time;
   };
 
+  // ============================================================
+  // PART 3: COORDINATE — Y to price
+  // ============================================================
   QuotexChart.prototype._yToPrice = function(y) {
     var pad = this.options.padding;
     var H = this.options.height;
@@ -631,6 +667,9 @@
     return priceMax - ((y - pad.top) / chartH) * priceRange;
   };
 
+  // ============================================================
+  // PART 3: FIND CANDLE INDEX (binary search)
+  // ============================================================
   QuotexChart.prototype._findCandleIndex = function(time) {
     if (this.candles.length === 0) return -1;
 
@@ -657,7 +696,7 @@
   };
 
   // ============================================================
-  // PRICE SCALE — Quotex exact (2px white dashed + blue label)
+  // PART 3: DRAW PRICE SCALE (2px white dashed + blue label)
   // ============================================================
   QuotexChart.prototype._drawPriceScale = function() {
     var ctx = this.ctx;
@@ -700,8 +739,7 @@
                      ((currentPrice - priceMin) / priceRange) * chartH;
 
       if (currentY >= pad.top && currentY <= pad.top + chartH) {
-
-        // ⭐ WHITE DASHED LINE — 2px thick (Quotex exact)
+        // White dashed line — 2px
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 5]);
@@ -713,7 +751,7 @@
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
 
-        // ⭐ BLUE LABEL BOX (right side)
+        // Blue label
         var boxH = 24;
         var boxX = pad.left + chartW + 2;
         var boxW = W - boxX - 2;
@@ -735,7 +773,7 @@
   };
 
   // ============================================================
-  // TIME SCALE — Quotex exact (brighter line, white text)
+  // PART 3: DRAW TIME SCALE
   // ============================================================
   QuotexChart.prototype._drawTimeScale = function() {
     var ctx = this.ctx;
@@ -752,7 +790,7 @@
     var offsetX = this.viewport.offsetX;
     if (spacing <= 0) return;
 
-    // ⭐ BOTTOM SCALE LINE — brighter (Quotex exact)
+    // Bottom scale line
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
@@ -800,7 +838,7 @@
       lastLabelX = xCenter;
     }
 
-    // Last candle time — bright white text
+    // Last candle time (highlighted)
     if (this.candles.length > 0) {
       var lastIdx = this.candles.length - 1;
       var lastCandle = this.candles[lastIdx];
@@ -833,7 +871,7 @@
   };
 
   // ============================================================
-  // BOTTOM TIME BAR — progress + next candle time
+  // PART 3: BOTTOM TIME BAR (progress + next candle time)
   // ============================================================
   QuotexChart.prototype._drawTimeBar = function() {
     if (!this.candles || this.candles.length === 0) return;
@@ -867,7 +905,7 @@
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.fillRect(pad.left, barY, chartW * progress, barH);
 
-    // Next candle time (right side)
+    // Next candle time
     var candleEndMs = candleStartMs + this.timeframe;
     var endDate = new Date(candleEndMs);
     var nextHH = String(endDate.getHours()).padStart(2, '0');
@@ -899,7 +937,7 @@
   };
 
   // ============================================================
-  // CLOCK (BD time 24h, top-left)
+  // PART 3: CLOCK (BD time 24h, chart tools er niche)
   // ============================================================
   QuotexChart.prototype._drawClock = function() {
     if (!this.options.showClock) return;
@@ -917,27 +955,30 @@
     });
     var timeStr = bdFormatter.format(now);
 
+    // ⭐ Clock chart tools er NICHE (5 buttons = 5 * 46 = 230px)
     var x = pad.left + 8;
-    var y = pad.top + 8;
+    var y = pad.top + 245;
 
     ctx.save();
 
+    // Green dot
     ctx.fillStyle = '#00c076';
     ctx.beginPath();
     ctx.arc(x + 3, y + 7, 3, 0, Math.PI * 2);
     ctx.fill();
 
+    // Time text
     ctx.font = 'bold ' + this.options.fontSizeClock + 'px ' + this.options.fontFamily;
     ctx.fillStyle = COLORS.clockText;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(timeStr, x + 12, y + 7);
+    ctx.fillText(timeStr + ' UTC', x + 12, y + 7);
 
     ctx.restore();
   };
 
   // ============================================================
-  // PAN + ZOOM
+  // PART 3: PAN
   // ============================================================
   QuotexChart.prototype._applyPan = function(offsetDelta) {
     var pad = this.options.padding;
@@ -964,6 +1005,9 @@
     this._notifyTimeRange();
   };
 
+  // ============================================================
+  // PART 3: ZOOM (anchor-locked)
+  // ============================================================
   QuotexChart.prototype._applyZoom = function(newSpacing, anchorX) {
     var minS = this.options.minCandleSpacing;
     var maxS = this.options.maxCandleSpacing;
@@ -1007,6 +1051,9 @@
     this._notifyTimeRange();
   };
 
+  // ============================================================
+  // PART 3: WHEEL ZOOM
+  // ============================================================
   QuotexChart.prototype._onWheel = function(e) {
     e.preventDefault();
 
@@ -1020,6 +1067,9 @@
     this._applyZoom(newSpacing, mouseX);
   };
 
+  // ============================================================
+  // PART 3: TOUCH START
+  // ============================================================
   QuotexChart.prototype._onTouchStart = function(e) {
     e.preventDefault();
     var t = e.touches;
@@ -1052,6 +1102,9 @@
     }
   };
 
+  // ============================================================
+  // PART 3: TOUCH MOVE
+  // ============================================================
   QuotexChart.prototype._onTouchMove = function(e) {
     e.preventDefault();
     var t = e.touches;
@@ -1083,6 +1136,9 @@
     }
   };
 
+  // ============================================================
+  // PART 3: TOUCH END
+  // ============================================================
   QuotexChart.prototype._onTouchEnd = function(e) {
     e.preventDefault();
     if (e.touches.length === 0) {
@@ -1103,6 +1159,9 @@
     }
   };
 
+  // ============================================================
+  // PART 3: MOUSE DOWN
+  // ============================================================
   QuotexChart.prototype._onMouseDown = function(e) {
     this._interaction.isPanning = true;
     this._interaction.moved = false;
@@ -1117,6 +1176,9 @@
     this.crosshair.active = true;
   };
 
+  // ============================================================
+  // PART 3: MOUSE MOVE
+  // ============================================================
   QuotexChart.prototype._onMouseMove = function(e) {
     var rect = this.canvas.getBoundingClientRect();
     this.crosshair.x = e.clientX - rect.left;
@@ -1135,12 +1197,18 @@
     }
   };
 
+  // ============================================================
+  // PART 3: MOUSE UP
+  // ============================================================
   QuotexChart.prototype._onMouseUp = function(e) {
     if (this._interaction.isPanning) {
       this._interaction.isPanning = false;
     }
   };
 
+  // ============================================================
+  // PART 3: TOUCH DISTANCE
+  // ============================================================
   QuotexChart.prototype._getTouchDistance = function(t1, t2) {
     var dx = t2.clientX - t1.clientX;
     var dy = t2.clientY - t1.clientY;
@@ -1148,7 +1216,7 @@
   };
 
   // ============================================================
-  // VERTICAL LINES — Quotex exact (2px white dashed + label)
+  // PART 3: VERTICAL LINES (2px white dashed + label)
   // ============================================================
   QuotexChart.prototype._drawVerticalLines = function() {
     if (!this.tradeVLines || this.tradeVLines.length === 0) return;
@@ -1177,7 +1245,7 @@
 
       ctx.save();
 
-      // ⭐ 2px WHITE dashed line (Quotex exact)
+      // 2px white dashed line
       ctx.strokeStyle = v.color || '#ffffff';
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 5]);
@@ -1214,7 +1282,7 @@
   };
 
   // ============================================================
-  // TRADE ENTRY MARKER (Quotex exact)
+  // PART 3: TRADE ENTRY MARKER (Quotex exact)
   // ============================================================
   QuotexChart.prototype._drawTradeEntry = function() {
     var entries = this.tradeEntries && this.tradeEntries.length > 0
@@ -1274,6 +1342,7 @@
       var isCall = latestEntry.type === 'CALL';
       var lineColor = isCall ? '#00c076' : '#ff3b30';
 
+      // Horizontal line
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
@@ -1282,6 +1351,7 @@
       ctx.lineTo(Math.round(lineEnd), Math.round(y) + 0.5);
       ctx.stroke();
 
+      // Right dot
       if (showRightDot) {
         var rightDotR = circleR * 0.85;
         var rdColor = isCall ? '#00c076' : '#ff3b30';
@@ -1292,6 +1362,7 @@
         ctx.fill();
       }
 
+      // Circles with arrows
       for (var tIdx = 0; tIdx < group.length; tIdx++) {
         var trade = group[tIdx];
         var tradeCall = trade.type === 'CALL';
@@ -1322,7 +1393,7 @@
       }
     }
 
-    // Timer box — dark bg, no border (Quotex exact)
+    // Timer box
     if (order.length > 0) {
       var lastGroup = grouped[order[order.length - 1]];
       var latest = lastGroup[lastGroup.length - 1];
@@ -1361,7 +1432,7 @@
   };
 
   // ============================================================
-  // RESULT MARKERS (WIN/LOSS)
+  // PART 3: RESULT MARKERS (WIN/LOSS)
   // ============================================================
   QuotexChart.prototype._drawResultMarkers = function() {
     if (!this.tradeResults || this.tradeResults.length === 0) return;
@@ -1417,6 +1488,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(text, x, boxY + 1);
 
+      // Connecting line
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.globalAlpha = alpha * 0.5;
@@ -1434,6 +1506,9 @@
     }
   };
 
+  // ============================================================
+  // PART 3: NOTIFY TIME RANGE
+  // ============================================================
   QuotexChart.prototype._notifyTimeRange = function() {
     try {
       var vis = this._getVisibleCandles();
@@ -1451,9 +1526,9 @@
   QuotexChart.prototype.subscribeVisibleTimeRangeChange = function(cb) {
     if (typeof cb === 'function') this._timeRangeSubs.push(cb);
   };
-
+ 
   // ============================================================
-  // PUBLIC API
+  // PART 4: PUBLIC API — setTradeEntry
   // ============================================================
   QuotexChart.prototype.setTradeEntry = function(entry) {
     if (!entry) {
@@ -1498,6 +1573,9 @@
     this.tradeEntry = null;
   };
 
+  // ============================================================
+  // PART 4: PUBLIC API — Vertical Lines
+  // ============================================================
   QuotexChart.prototype.addVerticalLine = function(opts) {
     if (!opts || typeof opts.time !== 'number') return null;
     if (!this.tradeVLines) this.tradeVLines = [];
@@ -1515,6 +1593,9 @@
     this.tradeVLines = [];
   };
 
+  // ============================================================
+  // PART 4: PUBLIC API — Result Markers
+  // ============================================================
   QuotexChart.prototype.addResultMarker = function(opts) {
     if (!opts || typeof opts.time !== 'number') return null;
     if (!this.tradeResults) this.tradeResults = [];
@@ -1550,7 +1631,7 @@
   };
 
   // ============================================================
-  // SET DATA
+  // PART 4: SET DATA
   // ============================================================
   QuotexChart.prototype.setData = function(data) {
     if (!Array.isArray(data)) return;
@@ -1600,6 +1681,9 @@
     console.log('[ChartEngine] setData:', this.candles.length, 'candles');
   };
 
+  // ============================================================
+  // PART 4: UPDATE (live candle)
+  // ============================================================
   QuotexChart.prototype.update = function(candle) {
     if (!candle || typeof candle.time !== 'number') return;
 
@@ -1630,6 +1714,9 @@
     this._autoScale();
   };
 
+  // ============================================================
+  // PART 4: IS AT RIGHT EDGE
+  // ============================================================
   QuotexChart.prototype._isAtRightEdge = function() {
     if (this.candles.length === 0) return true;
     var pad = this.options.padding;
@@ -1640,6 +1727,9 @@
     return this.viewport.offsetX >= rightEdge - 2;
   };
 
+  // ============================================================
+  // PART 4: SCROLL TO REAL TIME
+  // ============================================================
   QuotexChart.prototype.scrollToRealTime = function() {
     if (this.candles.length === 0) return;
 
@@ -1654,6 +1744,9 @@
     this._notifyTimeRange();
   };
 
+  // ============================================================
+  // PART 4: FIT CONTENT
+  // ============================================================
   QuotexChart.prototype.fitContent = function() {
     if (this.candles.length === 0) return;
 
@@ -1673,6 +1766,9 @@
     this._notifyTimeRange();
   };
 
+  // ============================================================
+  // PART 4: DRAW CROSSHAIR (dashed + price/time labels)
+  // ============================================================
   QuotexChart.prototype._drawCrosshair = function() {
     if (!this.options.showCrosshair) return;
     if (!this.crosshair || !this.crosshair.active) return;
@@ -1693,6 +1789,7 @@
 
     ctx.save();
 
+    // Vertical dashed line
     ctx.strokeStyle = COLORS.crosshair;
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
@@ -1702,6 +1799,7 @@
     ctx.lineTo(Math.round(x) + 0.5, pad.top + chartH);
     ctx.stroke();
 
+    // Horizontal dashed line
     ctx.beginPath();
     ctx.moveTo(pad.left, Math.round(y) + 0.5);
     ctx.lineTo(pad.left + chartW, Math.round(y) + 0.5);
@@ -1709,6 +1807,7 @@
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
 
+    // Price label
     var price = this._yToPrice(y);
     if (price !== null) {
       var priceText = formatPrice(price, this.options.priceDecimals);
@@ -1730,6 +1829,7 @@
       ctx.fillText(priceText, pX + 6, pY + pH / 2 + 0.5);
     }
 
+    // Time label
     var time = this._xToTime(x);
     if (time !== null) {
       var t = time;
@@ -1762,6 +1862,9 @@
     ctx.restore();
   };
 
+  // ============================================================
+  // PART 4: ADD CANDLESTICK SERIES (LWC compat)
+  // ============================================================
   QuotexChart.prototype.addCandlestickSeries = function(options) {
     var self = this;
 
@@ -1821,6 +1924,9 @@
     return series;
   };
 
+  // ============================================================
+  // PART 4: TIMESCALE (LWC compat)
+  // ============================================================
   QuotexChart.prototype.timeScale = function() {
     var self = this;
 
@@ -1850,6 +1956,9 @@
     };
   };
 
+  // ============================================================
+  // PART 4: APPLY OPTIONS (scroll preservation)
+  // ============================================================
   QuotexChart.prototype.applyOptions = function(opts) {
     if (!opts) return;
 
@@ -1875,6 +1984,9 @@
     this._visibleCache = null;
   };
 
+  // ============================================================
+  // PART 4: GET OPTIONS
+  // ============================================================
   QuotexChart.prototype.getOptions = function() {
     return { width: this.options.width, height: this.options.height };
   };
@@ -1883,6 +1995,9 @@
     return { width: this.options.width, height: this.options.height };
   };
 
+  // ============================================================
+  // PART 4: GET TIME LABELS
+  // ============================================================
   QuotexChart.prototype.getTimeLabels = function() {
     var range = this._getVisibleRange();
     var pad = this.options.padding;
@@ -1908,6 +2023,9 @@
     return labels;
   };
 
+  // ============================================================
+  // PART 4: DESTROY
+  // ============================================================
   QuotexChart.prototype.destroy = function() {
     this.clearAllTradeElements();
     this._stopRenderLoop();
