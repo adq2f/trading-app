@@ -11,6 +11,67 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
+/* ⭐ FIX: Chart tools positioning */
+.qx-chart-tools {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  z-index: 100 !important;
+}
+
+.qx-icon-btn {
+  width: 40px !important;
+  height: 40px !important;
+  background: rgba(30, 34, 45, 0.95) !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.qx-tf-badge {
+  min-width: 40px !important;
+  height: 40px !important;
+  background: rgba(30, 34, 45, 0.95) !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #e6edf3 !important;
+}
+
+.qx-chart-timer {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 100 !important;
+}
+
+/* Chart wrapper z-index */
+.qx-chart-wrapper {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+#tv-chart {
+  position: absolute !important;
+  z-index: 1 !important;
+}
+
+#drawing-canvas {
+  z-index: 5 !important;
+}
+
+/* Watermark opacity — chart tools er overlap na hoy */
+.qx-chart-watermark {
+  z-index: 0 !important;
+  opacity: 0.5 !important;
+}
     /* ============================================
        RESET + PAGE LOCK (Quotex style)
        ============================================ */
